@@ -1,57 +1,115 @@
+<html>
+<head>
+  <title>RISC OS PHP</title>
+</head>
 
-                    PHP 4.0.2  RISC OS version 2.06
-                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-What is it?
-~~~~~~~~~~~
+<body bgcolor="#ffffff">
+<table bgcolor="#aaaaaa" width="99%"><tr>
+<td><center>
+<h1>
+PHP 4.0.7
+</h1>
+</center>
+</td></tr>
+<tr>
+<td><center><h5>
+RISC OS version 2.08 ported by <a href="mailto:alex@alexwaugh.com">Alex Waugh</a>
+</h5></center>
+</td>
+</tr></table>
+
+
+<h5><center>Contents</center></h5>
+<ul>
+<li><a href="#intro">Introduction</a><br>
+<li><a href="#doc">Documentation</a><br>
+<li><a href="#using">Using PHP standalone</a><br>
+<li><a href="#usingweb">Using PHP as a CGI with a webserver</a><br>
+<li><a href="#usingmod">Using PHP as a module for a webserver</a><br>
+<li><a href="#filenames">Filenames</a><br>
+<li><a href="#memory">Memory</a><br>
+<li><a href="#config">Configuration</a><br>
+<li><a href="#stronged">StrongEd mode</a><br>
+<li><a href="#extensions">Extension modules</a><br>
+<li><a href="#problems">Known problems</a><br>
+</ul>
+
+<p>
+<h3>
+<table bgcolor="#cccccc" width="99%"><tr><td>
+<a name="intro">Introduction</a>
+</td></tr></table>
+</h3>
+
+
 PHP, which stands for "PHP: Hypertext Preprocessor", is an HTML-embedded
 scripting language.  Much of its syntax is borrowed from C, Java and
 Perl with a couple of unique PHP-specific features thrown in.  The goal
 of the language is to allow web developers to write dynamically
 generated pages quickly.
+<p>
 The scripts are interpreted by the server, so it works with all browsers.
-
+<p>
 As a simple example:
+<pre>
+&lt;HTML&gt;
+&lt;HEAD&gt;
+&lt;TITLE&gt;PHP Example&lt;/TITLE&gt;
+&lt;/HEAD&gt;
+&lt;BODY&gt;
+This is standard &lt;B&gt;HTML&lt;/B&gt;
 
-<HTML>
-<HEAD>
-<TITLE>PHP Example</TITLE>
-</HEAD>
-<BODY>
-This is standard <B>HTML</B>
+&lt;? echo("This is PHP"); ?&gt;
 
-<? echo("This is PHP"); ?>
-
-</BODY>
-</HTML>
-
-The bits between <? and ?> are PHP code, the rest is normal HTML. In
+&lt;/BODY&gt;
+&lt;/HTML&gt;
+</pre>
+The bits between &lt;? and ?&gt; are PHP code, the rest is normal HTML. In
 this trivial example all the PHP does is to add the text This is PHP to
 the HTML file. PHP is as powerful as a custom CGI script, but simpler to
 use.
-
+<p>
 I have tried to make the minimum of changes whilst porting PHP, so it
 should behave very similar to any other platform.  Thus a script written
 in RISC OS should behave the same when uploaded to a Unix web server, or
 vice versa.
+<p>
+There are three ways PHP can be used:
+<ul>
+<li>Standalone - Double click on a script, and it will be interpreted, and the ouput loaded into a browser. This is a bit limited and is not recommended for anything but the simplest scripts.
+<li>As a CGI script for a webserver
+<li>As a module for a webserver - The fastest method, but currently only available with WebJames.
+</ul>
 
+<p>
+<h3>
+<table bgcolor="#cccccc" width="99%"><tr><td>
+<a name="doc">Documentation</a>
+</td></tr></table>
+</h3>
 
-Documentation
-~~~~~~~~~~~~~
 This file only deals with RISC OS specific issues, for general
 information about PHP you should look at the PHP manual, or
-http://www.php.net/
+<a href="http://www.php.net/">http://www.php.net/</a>
+<p>
 There is a simple introduction and links to other tutorials at
-http://www.php.net/tut.php3
+<a href="http://www.php.net/tut.php3">http://www.php.net/tut.php3</a>
+<p>
 The PHP manual is available is several formats from
-http://www.php.net/manual/, and also in HTML and StrongHelp formats from
-http://www.ecs.soton.ac.uk/~ajw498/ (Please note that the formatting of
-the StrongHelp manual is not particularly good in places, as it was
-automatically converted from the HTML, but it is useful to be able to
-search for a particular function easily.)
+<a href="http://www.php.net/manual/">http://www.php.net/manual/</a>,
+and also in StrongHelp format from
+<a href="http://www.php.alexwaugh.com/">http://www.php.alexwaugh.com/</a>
+(Please note that the formatting of the StrongHelp manual is not particularly
+good in places, as it was automatically converted from the HTML, but it is
+useful to be able to search for a particular function easily.)
 
+<p>
+<h3>
+<table bgcolor="#cccccc" width="99%"><tr><td>
+<a name="using">Using PHP standalone</a>
+</td></tr></table>
+</h3>
 
-Using PHP
-~~~~~~~~~
 Ensure that the !PHP application has been seen before you try to run any
 PHP scripts. You will also need a web browser to view the output. Double
 click on !PHP, then select the Stand alone, single tasking icon, then
@@ -59,100 +117,112 @@ click on Save. Enter your script in a text editor such as !StrongEd,
 !Zap or !Edit, and then save it. Set it's filetype to PHP. Double click
 on it, and it will be interpreted, and the output loaded into your
 browser.
-
+<p>
 If you want PHP to multi-task when interpreting your scripts, then
 select the Stand alone, multitasking icon instead. For most scripts
 there is little advantage to be gained from multitasking.
-
+<p>
 While quite a few scripts will work like this, ones that use GET and
-POST variables from forms, generate GIF images and so forth will only
+POST variables from forms, generate images and so forth will only
 work correctly when running under a web server.
 
+<p>
+<h3>
+<table bgcolor="#cccccc" width="99%"><tr><td>
+<a name="usingweb">Using PHP as a CGI with a webserver</a>
+</td></tr></table>
+</h3>
 
-Using PHP with a web server
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 I have succesfully tested PHP with the following servers
-Navaho server suite (2.00b24) http://www.navaho.co.uk/support/
-Netplex (0.22 and 1.70) http://www.warmsilence.demon.co.uk/products.html#Netplex
-ANT server suite 1.32 http://www.argonet.co.uk/ant/
-WebJames (0.24 and later) http://www.ecs.soton.ac.uk/~ajw498/internet/
-
+<ul>
+<li>Navaho server suite (2.00b24) <a href="http://www.navaho.co.uk/support/">http://www.navaho.co.uk/support/</a>
+<li>Netplex (0.22 and 1.70) <a href="http://www.warmsilence.demon.co.uk/products.html#Netplex">http://www.warmsilence.demon.co.uk/products.html#Netplex</a>
+<li>ANT server suite 1.32 <a href="http://www.argonet.co.uk/ant/">http://www.argonet.co.uk/ant/</a>
+<li>WebJames (0.24 and later) <a href="http://www.webjames.alexwaugh.com/">http://www.webjames.alexwaugh.com/</a>
+</ul>
 PHP does not work with DeltaNet or WebServe
-
+<p>
 Double click on !PHP, then select one of the CGI icons, according to
 which server you are running, then click Save.
 
-
-To use with Navaho, simply create your script as above, make sure that
+<p>
+To use with Navaho, simply create your script in a text editor, make sure that
 it's filetype is PHP, then put the script into Navaho's cgi-bin
 directory.
-
-If you use WebJames then put your script into the cgi-bin2 directory, or,
-if you have version 0.25 then adding the following to your
-attributes file will allow you to put PHP scripts in any directory
-    # global atttributes
-    [/]
-    is-cgi
-    cgi-api=redirect
-    allowed-filetypes=18a
-
-Versions 0.26 and later have this set up by default.
-
+<p>
+To use with WebJames (I recommend you use version 0.30 or later), save your script anywhere in your Site directory, and make sure its filetype is PHP.
+<p>
 To use with the unregistered version of Netplex, or the ANT server, it
 is slightly more complicated, as they will only run certain filetypes as
 CGI programs, therefore put your PHP script in the cgi-bin directory,
 with a name of (for example) Splodge. Then create an Obey file in the same
 directory, called (for example) Squiggle. The obey file should contain the
 line
-Run <Obey$Dir>.Splodge
+<code>Run &lt;Obey$Dir&gt;.Splodge</code>
 Then in your browser, entering
 http://www.your.domain.com/cgi-bin/squiggle will run the PHP script.
-
+<p>
 For registered versions of Netplex (1.62 or later) you can either
 use the above method, or you can open the !Netplex.Resources.UK.Messages
 file and change the line PerlFiletype:&102 to PerlFiletype:&18A (This
 will mean that you can't run Perl scripts though). Thanks to Nik Gare
 for pointing this out.
-
+<p>
 The commercial version of Netplex (2.xx) shouldn't need either of the
 above modifications, but I don't have a copy so haven't tested this.
 
+<p>
+<h3>
+<table bgcolor="#cccccc" width="99%"><tr><td>
+<a name="usingmod">Using PHP as a module for a webserver</a>
+</td></tr></table>
+</h3>
+With this option, the PHP interpreter is compiled as part of the webserver,
+and so is loaded whenever the webserver is loaded. This means that the
+interpreter does not need to be loaded from disc every time a PHP script
+is requested. As the PHP interpreter is quite large (over 1.4MB) then this
+gives a significant speed increase.
+<p>
+This is only possible if you are using WebJames, and have downloaded the
+version that has PHP support compiled in. You do <b>not</b> need the
+<code>!PHP</code> application in this case.
 
-If you get the output scrolling in a command window, then it is
-probably because you are trying to run PHP standalone, but have not
-selected the stand alone icon in !PHP
-
-Filenames
-~~~~~~~~~
+<p>
+<h3>
+<table bgcolor="#cccccc" width="99%"><tr><td>
+<a name="filenames">Filenames</a>
+</td></tr></table>
+</h3>
 PHP uses UnixLib, and therefore takes advantage of it's filename
 translation capabilities. Thus you may refer to files from your scripts
 or the command line in RISC OS format or Unix format. I would suggest
 using Unix format filenames in your scripts, so that they are more
 portable. Note that if you use RISC OS filenames, they should be full
-pathnames (such as ADFS::4.$.File or <PHP$Dir>.File) otherwise they may
+pathnames (such as ADFS::4.$.File or &lt;PHP$Dir&gt;.File) otherwise they may
 be interpreted as Unix filenames. Under Unix, all PHP scripts should
 have the filename extension php, but this is not necessary for RISC OS,
 although doing so might help portability.
-Due to limitations in UnixLib, there are certain situations where a file
-cannot be found even though it exists, eg index/php when there is also
-a directory called index. In general, try to avoid using directory names
-that match any of your filenames (either the part before the extension,
-or the extension itself).
-If you get the error "Primary script not found" then this may well be
-the problem.
 
+<p>
+<h3>
+<table bgcolor="#cccccc" width="99%"><tr><td>
+<a name="memory">Memory</a>
+</td></tr></table>
+</h3>
 
-Memory
-~~~~~~
 PHP needs around 1.6Mb of free memory to run a simple script, and
 complex scripts will need more. By default PHP is set up to use dynamic
 areas. If you don't want it to, or you have RISC OS 3.11 or earlier, you
 can disable their use by editing the !PHP.!Boot file.
 
+<p>
+<h3>
+<table bgcolor="#cccccc" width="99%"><tr><td>
+<a name="config">Configuration</a>
+</td></tr></table>
+</h3>
 
-Configuration
-~~~~~~~~~~~~~
 You can double click on !PHP to configure which webserver you are
 using (or standalone if you aren't using any webserver).
 There are some other options that can be configured, although the
@@ -163,45 +233,63 @@ not relevant to the RISC OS port. More information on the options can be
 found in the PHP manual. You may find changing the error_reporting
 variable to 15 helps with debugging.
 
+<p>
+<h3>
+<table bgcolor="#cccccc" width="99%"><tr><td>
+<a name="stronged">StrongEd mode</a>
+</td></tr></table>
+</h3>
 
-StrongEd
-~~~~~~~~
 I have included a basic PHP modefile for StrongEd, which you may find useful.
 
+<p>
+<h3>
+<table bgcolor="#cccccc" width="99%"><tr><td>
+<a name="extensions">Extension modules</a>
+</td></tr></table>
+</h3>
 
-Extension modules
-~~~~~~~~~~~~~~~~~
 The following extensions have been included with PHP:
-standard  Various common functions
-pcre      Perl compatible regular expressions
-calendar  Date related functions
-ftp       FTP client
-gd        Create/manipulate GIF images
-session   Tracking site visitors
-zlib      Compression functions
-xml       XML parsing
-
+<ul>
+<li>standard  Various common functions
+<li>pcre      Perl compatible regular expressions
+<li>calendar  Date related functions
+<li>ftp       FTP client
+<li>gd        Create/manipulate png/jpeg/wbpm images
+<li>session   Tracking site visitors
+<li>zlib      Compression functions
+<li>xml       XML parsing
+</ul>
 If there are other extensions that you would like added then let me know
 and I will take a look at them.
 
-
-Problems
-~~~~~~~~
+<p>
+<h3>
+<table bgcolor="#cccccc" width="99%"><tr><td>
+<a name="problems">Known Problems</a>
+</td></tr></table>
+</h3>
 There are many functions in PHP, and I am not able to test every single
 one of them, so if you come across something that doesn't work, please
 let me know.
-
+<p>
 Some functions will not work as they do not have any meaning under RISC OS,
 eg. Symbolic links and file ownership.
-
-popen, system, exec and friends do not work.
-
+<p>
+Due to the way the filename translation works, there are certain situations
+where a file cannot be found even though it exists, eg index/php when there is
+also a directory called index. In general, try to avoid using directory names
+that match any of your filenames (either the part before the extension,
+or the extension itself).  If you get the error "Primary script not found"
+then this may well be the problem.
+<p>
+popen, system, exec, passthru and other functions that run external programs do work, but <b>only</b> if the child program being run was compiled with a recent version of UnixLib (September 2001 or later). The version of UnixLib supplied with GCC pre-release 3 is too old.
+Additionally, they will only work when running under WebJames or (probably) Netplex 1.62 or later.
+<p>
 Any updates to the RISC OS port should be available from
-http://www.ecs.soton.ac.uk/~ajw498/
-
-General information about PHP can be found at http://www.php.net/
-
-
-
-Alex Waugh   mailto:ajw498@ecs.soton.ac.uk
+<a href="http://www.php.alexwaugh.com/">http://www.php.alexwaugh.com/</a>
+<p>
+Please report any bugs to me in the first instance.
+<p>
+<a href="mailto:alex@alexwaugh.com">Alex Waugh</a>
 
