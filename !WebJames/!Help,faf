@@ -86,15 +86,43 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  <p>
  <h5>Installing this version from scratch</h5>
 
-  Copy WebJames to a suitable location on your harddisc or wherever you
- may want to install it. Edit the <a href="#config">config file</a> and
- the <a href="#attr"> attributes file</a> and start WebJames by
- double-clicking on its icon.
+  To get things up and running, you will need to have an internet stack
+ running. If you use the ANT suite, then you will need to ensure that
+ local loopback is enabled. If it is not, then in the ANT configuration
+ program, tick the LAN icon, then open the LAN setup window. Select
+ <code>Loopback</code>
+ from the driver list. Host name should be <code>localhost</code> and
+ IP address <code>127.0.0.1</code> IP Mask <code>255.255.255.0</code> and
+ leave Name server blank.
  <p>
- Usually, the <a href="#config">config file</a> and the <a href="#attr">
- attributes file</a> need only be edited if the server is accessible from
- other hosts in a network. For testing a site, the default configuration
- is usually OK.
+  The Acorn stack has loopback configured on by default.
+ <p>
+  You will also need the MimeMap module version 0.10 or later. If you
+ don't have this then download it from <a href="http://www.movspclr.co.uk">
+ http://www.movspclr.co.uk</a> and put it in !System.310.Modules.Network
+ <p>
+  Copy WebJames to a suitable location on your harddisc or wherever you
+ may want to install it. Start WebJames by double-clicking on its icon.
+ No icon will apear on the iconbar, but you can check that it is running
+ by seeing if it is listed in the Task manager.
+ <p>
+  Check that your web browser is not set up to use a proxy server. If it is,
+ then you will have to turn it off, or add localhost to the list of domains
+ to exclude. You will not be able to run !WebServe on the same machine unless
+ you set WebServe or WebJames to use different ports from each other. 
+ <p>
+  In your web browser, enter the URL <a href="http://localhost/">
+ http://localhost/<a>, and you should get a page saying that WebJames
+ is working.
+ <p>
+  You can now put your web pages in the directory <code>!WebJames.site</code>
+ or edit the <a href="#config">config file</a> to give the location of the pages.
+ You should also change the webmaster email address and if possible server ip
+ address in the <a href="#config">config file</a>.
+ <p>
+  The rest of the <a href="#config">config file</a>, and the <a href="#attr">
+ attributes file</a> can be edited to suit your requirements, but the default
+ values should be suitable to start with.  
 
 
  <p>
