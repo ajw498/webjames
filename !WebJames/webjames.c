@@ -21,6 +21,7 @@
 #include "attributes.h"
 #include "resolve.h"
 #include "handler.h"
+#include "content.h"
 
 
 /* configuration */
@@ -91,6 +92,9 @@ int webjames_init(char *config) {
 
 	/* create/reset cache */
 	init_cache(NULL);
+
+	/* initialise content negotiation*/
+	content_init();
 
 	/* slowdown is a delay (in cs) that is adjusted when the bandwidth */
 	/* exceeds the max allowed bandwidth */

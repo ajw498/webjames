@@ -1,4 +1,4 @@
-
+int check_case(char *filename);
 void pollwrite(int cn);
 void select_writing(int cn);
 void send_file(struct connection *conn);

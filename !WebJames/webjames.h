@@ -77,7 +77,7 @@ typedef struct connection {
 	} flags;
 
 	/* various header-lines, all malloc()'ed */
-	char *uri, *accept, *type, *referer, *useragent;
+	char *uri, *accept, *acceptlanguage, *acceptcharset, *acceptencoding, *type, *referer, *useragent;
 	char *authorization, *requestline, *cookie;
 	char *requesturi;           /* only for PUT and DELETE methods */
 

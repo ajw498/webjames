@@ -26,7 +26,7 @@ struct connection *create_conn(void) {
 	conn->used = conn->fileinfo.size = conn->fileused = 0;
 	conn->if_modified_since.tm_year = -1;
 	/* various header lines */
-	conn->uri = conn->body = conn->accept = conn->header = NULL;
+	conn->uri = conn->body = conn->accept = conn->acceptcharset = conn->acceptencoding = conn->acceptlanguage = conn->header = NULL;
 	conn->requestline = conn->type = conn->authorization = NULL;
 	conn->useragent = conn->referer = conn->cookie = NULL;
 	conn->requesturi = NULL;
@@ -172,14 +172,17 @@ void close(int cn, int force) {
 #endif
 
 	/* close/release/reset everything that isn't needed for the clf-log */
-	if (conn->header)        free(conn->header);
-	if (conn->body)          free(conn->body);
-	if (conn->type)          free(conn->type);
-	if (conn->accept)        free(conn->accept);
-	if (conn->uri)           free(conn->uri);
-	if (conn->cookie)        free(conn->cookie);
-	if (conn->requesturi)    free(conn->requesturi);
-	if (conn->authorization) free(conn->authorization);
+	if (conn->header)         free(conn->header);
+	if (conn->body)           free(conn->body);
+	if (conn->type)           free(conn->type);
+	if (conn->accept)         free(conn->accept);
+	if (conn->acceptlanguage) free(conn->acceptlanguage);
+	if (conn->acceptcharset)  free(conn->acceptcharset);
+	if (conn->acceptencoding) free(conn->acceptencoding);
+	if (conn->uri)            free(conn->uri);
+	if (conn->cookie)         free(conn->cookie);
+	if (conn->requesturi)     free(conn->requesturi);
+	if (conn->authorization)  free(conn->authorization);
 	if ((conn->filebuffer) && (conn->flags.releasefilebuffer)) free(conn->filebuffer);
 	conn->filebuffer = conn->body = conn->header = NULL;
 	conn->type = conn->accept =  conn->uri =  conn->requesturi = conn->cookie = NULL;

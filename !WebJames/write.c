@@ -18,6 +18,7 @@
 #include "write.h"
 #include "mimemap.h"
 #include "handler.h"
+#include "content.h"
 
 
 #define FILE_DOESNT_EXIST  -1
@@ -174,6 +175,11 @@ void send_file(struct connection *conn) {
 	conn->pwd = check_access(conn, conn->authorization);
 	if (conn->pwd == ACCESS_FAILED)  return;
 
+	/* Content negotiation */
+	content_negotiate(conn);
+	{
+		int fixme; /*what about index.html as it is tested above for a file existing before content has been negotiated?*/
+	}
 	/* check if object exist and get the filetype/mimetype at the same time */
 	conn->fileinfo.filetype = get_file_info(conn->filename, conn->fileinfo.mimetype, &conn->fileinfo.date, &conn->fileinfo.size,1);
 	if (conn->fileinfo.filetype == FILE_DOESNT_EXIST) {
@@ -332,7 +338,7 @@ int check_access(struct connection *conn, char *authorization) {
 	return ACCESS_FAILED;
 }
 
-static int check_case(char *filename)
+int check_case(char *filename)
 /* Check that the given filename matches (case sensitive) with an actual file */
 /* It is a bit inefficient, but the only way I can think of */
 /* If only osfscontrol_canonicalise_path returned the correct case... */
