@@ -1,5 +1,5 @@
 /*
-	$Id: main.c,v 1.4 2003/11/01 13:31:37 ajw Exp $
+	$Id$
 	main() function, wimp polling loop
 */
 
@@ -10,7 +10,7 @@
 #include <stdlib.h>
 
 #if defined(__GNUC__) && !defined(__TARGET_SCL__)
-#include <unixlib/features.h>
+#include <unixlib/local.h>
 #endif
 
 #include "kernel.h"
