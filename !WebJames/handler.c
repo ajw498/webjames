@@ -75,22 +75,22 @@ int handler_poll(struct connection *conn,int maxbytes)
 
 void add_handler(char *name, char *command)
 {
-	struct handler *new;
+	struct handler *newhandler;
 	int ffound;
 	char *percent;
 
-	new = malloc(sizeof(struct handler));
-	if (new == NULL) return;
+	newhandler = malloc(sizeof(struct handler));
+	if (newhandler == NULL) return;
 
-	new->name = malloc(strlen(name)+1);
-	if (new->name == NULL) return;
-	strcpy(new->name,name);
-	new->command = malloc(strlen(command)+1);
-	if (new->command == NULL) return;
-	strcpy(new->command,command);
-	new->unix = 0;
-	new->cache = 0;
-	percent = strchr(new->command,'%');
+	newhandler->name = malloc(strlen(name)+1);
+	if (newhandler->name == NULL) return;
+	strcpy(newhandler->name,name);
+	newhandler->command = malloc(strlen(command)+1);
+	if (newhandler->command == NULL) return;
+	strcpy(newhandler->command,command);
+	newhandler->unix = 0;
+	newhandler->cache = 0;
+	percent = strchr(newhandler->command,'%');
 	ffound = 0;
 	while (percent) {
 		switch (percent[1]) {
@@ -108,7 +108,7 @@ void add_handler(char *name, char *command)
 				/* %u should always be at the end of the line */
 				percent[0] = '\0';
 				percent[1] = '\0';
-				new->unix = 1;
+				newhandler->unix = 1;
 				break;
 			default:
 				/* an illegal % sequence, so ignore the handler */
@@ -117,10 +117,10 @@ void add_handler(char *name, char *command)
 		}
 		percent = strchr(percent+1,'%');
 	}
-	new->startfn = cgiscript_start;
-	new->pollfn = staticcontent_poll;
-	new->next = handlerslist;
-	handlerslist = new;
+	newhandler->startfn = cgiscript_start;
+	newhandler->pollfn = staticcontent_poll;
+	newhandler->next = handlerslist;
+	handlerslist = newhandler;
 }
 
 struct handler *get_handler(char *name)
@@ -141,19 +141,19 @@ void init_handlers(void)
 	int i=0;
 
 	while (handlers[i].name != NULL) {
-		struct handler *new;
+		struct handler *newhandler;
 	
-		new = malloc(sizeof(struct handler));
-		if (new == NULL) return;
+		newhandler = malloc(sizeof(struct handler));
+		if (newhandler == NULL) return;
 	
-		new->name = handlers[i].name;
-		new->command = NULL;
-		new->unix = 0;
-		new->cache = handlers[i].cache;
-		new->startfn = handlers[i].startfn;
-		new->pollfn = handlers[i].pollfn;
-		new->next = handlerslist;
-		handlerslist = new;
+		newhandler->name = handlers[i].name;
+		newhandler->command = NULL;
+		newhandler->unix = 0;
+		newhandler->cache = handlers[i].cache;
+		newhandler->startfn = handlers[i].startfn;
+		newhandler->pollfn = handlers[i].pollfn;
+		newhandler->next = handlerslist;
+		handlerslist = newhandler;
 		if (handlers[i].initfn) handlers[i].initfn();
 		i++;
 	}

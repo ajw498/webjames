@@ -28,7 +28,7 @@ struct config configuration;
 
 /* connection */
 struct serverinfo servers[8];
-int readcount, writecount, dnscount, slowdown, reversedns;
+int readcount, writecount, dnscount, slowdown;
 int activeconnections, maxrequestsize;
 static quitwhenidle;
 struct connection *connections[MAXCONNECTIONS];
@@ -56,7 +56,7 @@ int webjames_init(char *config) {
 
 	configuration.timeout = 200;
 	configuration.bandwidth = 0;
-	reversedns = -1;
+	configuration.reversedns = -1;
 	configuration.casesensitive=0;
 	*clflog = *weblog = *configuration.webmaster = *configuration.site = *configuration.serverip = *configuration.cgi_in = *configuration.cgi_out = '\0';
 	*configuration.put_script = *configuration.delete_script = *configuration.htaccessfile = '\0';

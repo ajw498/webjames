@@ -384,7 +384,7 @@ int get_file_info(char *filename, char *mimetype, struct tm *date, int *size, in
 		if (check_case(buffer) == 0) return FILE_DOESNT_EXIST;
 	}
 
-	if ((objtype & 2) == 2)  return OBJECT_IS_DIRECTORY; /* or an image file treated as a directory */
+	if (objtype == 2)  return OBJECT_IS_DIRECTORY;
 	if (!(attr &1))  return FILE_LOCKED;
 	if (filetype == -1)  return FILE_NO_MIMETYPE;
 

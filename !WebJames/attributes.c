@@ -651,15 +651,17 @@ static struct attributes *read_attributes_file(char *filename, char *base) {
 					int size;
 					char *buffer = value;
 
-					if (section == section_LOCATION && attr->uri[attr->urilen-1] == '/') continue;
+					if (section == section_LOCATION && attr->uri[attr->urilen-1] != '/') continue;
 					/* define where on the harddisc the directory is stored */
 					if (attr->homedir)  free(attr->homedir);
 
 					if (!configuration.casesensitive) lower_case(value);
 					/* canonicalise the path, so <WebJames$Dir> etc are expanded, otherwise they can cause problems */
 					if (xosfscontrol_canonicalise_path(value,NULL,NULL,NULL,0,&size) == NULL) {
-						buffer = malloc(-size);
-						if (xosfscontrol_canonicalise_path(value,buffer,NULL,NULL,-size,&size) != NULL) {
+						buffer = malloc(1-size);
+						if (buffer == NULL) {
+							buffer = value;
+						} else if (xosfscontrol_canonicalise_path(value,buffer,NULL,NULL,1-size,&size) != NULL) {
 							free(buffer);
 							buffer = value;
 						}

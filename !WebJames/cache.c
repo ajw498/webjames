@@ -1,4 +1,6 @@
+#ifdef MemCheck_MEMCHECK
 #include "MemCheck:MemCheck.h"
+#endif
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -191,7 +193,9 @@ void init_cache(char *list) {
 		if (xwimp_slot_size(curr, -1, &curr, &next, &freeslot))  return;
 		cachestart = malloc(cachesize);
 	} else {
+#ifdef MemCheck_MEMCHECK
 		MemCheck_RegisterMiscBlock(cachestart,cachesize);
+#endif
 	}
 	if (!cachestart)  return;
 

@@ -1,4 +1,6 @@
+#ifdef MemCheck_MEMCHECK
 #include "MemCheck:MemCheck.h"
+#endif
 
 #include <time.h>
 #include <ctype.h>
@@ -65,11 +67,15 @@ void poll() {
 			if (flags &2) {                   /* 'long' message */
 				char *ptr;
 				ptr = (char *)wimp[6];
+#ifdef MemCheck_MEMCHECK
 				MemCheck_RegisterMiscBlock((void *)wimp[6],256); /* The size of the block may not actually be 256 bytes, but we have no way of telling */
+#endif
 				while (*ptr >= ' ')  ptr++;
 				*ptr = '\0';
 				webjames_command((char *)wimp[6], flags &4);
+#ifdef MemCheck_MEMCHECK
 				MemCheck_UnRegisterMiscBlock((void *)wimp[6]);
+#endif
 			} else {                          /* normal message */
 				char cmd[200], *ptr1, *ptr2;
 				ptr1 = (char *)&wimp[6];
@@ -96,12 +102,14 @@ void closedown() {
 int main(int argc, char *argv[]) {
 /* first argument should be the configuration file */
 
+#ifdef MemCheck_MEMCHECK
 	MemCheck_Init();
 	MemCheck_RegisterArgs(argc,argv);
 	MemCheck_InterceptSCLStringFunctions();
 	MemCheck_SetStoreMallocFunctions(1);
 	MemCheck_SetAutoOutputBlocksInfo(0);
 	MemCheck_SetWriteQuitting(0);
+#endif
 
 	if (argc != 2)  return 0;
 

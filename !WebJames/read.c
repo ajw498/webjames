@@ -111,6 +111,7 @@ void pollread_header(struct connection *conn, int bytes) {
 
 	/* read some bytes from the socket */
 	bytes = ip_read(conn->socket, conn->buffer+conn->used, bytes);
+/*fwrite(conn->buffer+conn->used,bytes,1,stderr);*/
 	conn->used += bytes;
 
 	do {
@@ -305,7 +306,7 @@ void pollread_header(struct connection *conn, int bytes) {
 			strcpy(conn->accept, upper+8);
 
 		} else if (strncmp(upper, "CONTENT-LENGTH: ", 16) == 0) {
-			conn->bodysize = atoi(upper+16);
+			conn->bodysize = (int)strtol(upper+16,NULL,10);  /* was atoi()*/
 			if (conn->bodysize < 0) {
 				read_report(conn);
 				report_badrequest(conn, "negative request-body size");
@@ -390,9 +391,10 @@ void pollread_header(struct connection *conn, int bytes) {
 				}
 				if (conn->used > conn->bodysize) {
 					/* HELP! We've already read more than we should! */
-					read_report(conn);
+				conn->used = conn->bodysize;
+/*					read_report(conn);
 					report_badrequest(conn, "request body overflow");
-					return;
+					return;*/
 				}
 				conn->status = WJ_STATUS_BODY;
 				if (conn->used) {

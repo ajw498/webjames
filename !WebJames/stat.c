@@ -3,28 +3,29 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifdef SYSLOG
+#include "swis.h"
+#endif
+
 #include "oslib/os.h"
 
 #include "webjames.h"
 #include "stat.h"
 #include "ip.h"
-#include "kernel.h"
 
-#ifdef SYSLOG
-#include "swis.h"
-#endif
+
 
 
 struct stats statistics;
 char weblog[256], clflog[256], rename_cmd[256];
-static char logclock[32];
 int loglevel = 5;
 int log_close_delay = 90;               /* seconds */
+int log_max_age, log_max_size;
+int log_max_copies = 0;
 
 
 #ifndef SYSLOG
-int log_max_age, log_max_size;
-int log_max_copies = 0;
+static char logclock[32];
 static int logupdatetime, logrotatetime;       /* clock()/100 values */
 static FILE *logfile = NULL;
 #endif
@@ -113,7 +114,7 @@ void writelog(int level, char *string) {
 	level = (level<<8)/LOGLEVEL_NEVER;
 	if (level > 255)  level = 255;
 
-	_swix(SysLog_Message, _IN(0)|_IN(1)|_IN(2), "WebJames", string, level);
+	_swix(SysLog_LogMessage, _IN(0)|_IN(1)|_IN(2), "WebJames", string, level);
 
 #else
 	int newclock;

@@ -158,6 +158,7 @@ typedef struct config {
 	char htaccessfile[256];
 	int xheaders;
 	int casesensitive;
+	int reversedns;
 } config;
 
 extern struct config configuration;
@@ -165,7 +166,7 @@ extern struct config configuration;
 extern struct serverinfo servers[8];
 
 extern int readcount, writecount, dnscount, slowdown;
-extern int reversedns, activeconnections;
+extern int activeconnections;
 extern char select_read[32], select_write[32], select_except[32];
 extern int cachesize, maxcachefilesize;
 extern int readaheadbuffer, maxrequestsize;

@@ -88,12 +88,18 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
   To get things up and running, you will need to have an internet stack
  running. If you use the ANT suite, then you will need to ensure that
- local loopback is enabled. If it is not, then in the ANT configuration
+ local loopback is enabled.
+ <p>
+  If you have a driver for a network card already enabled then this should
+ include loopback and so the loopback driver does not need to be explicitly
+ selected.
+  If it is not, then in the ANT configuration
  program, tick the LAN icon, then open the LAN setup window. Select
  <code>Loopback</code>
  from the driver list. Host name should be <code>localhost</code> and
  IP address <code>127.0.0.1</code> IP Mask <code>255.255.255.0</code> and
  leave Name server blank.
+ <p>
  <p>
   The Acorn stack has loopback configured on by default.
  <p>

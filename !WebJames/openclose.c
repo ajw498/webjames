@@ -110,7 +110,7 @@ void open_connection(int socket, char *host, int port) {
 
 	/* default name of the remote host is the ip-address */
 	sprintf(conn->host, "%d.%d.%d.%d", host[4], host[5], host[6], host[7]);
-	if (reversedns >= 0) {
+	if (configuration.reversedns >= 0) {
 		conn->dnsstatus = DNS_TRYING;
 		conn->dnsendtime = 0x7fffffff;      /* indefinately! */
 		dnscount++;
@@ -214,7 +214,7 @@ void close(int cn, int force) {
 		} else {
 			/* do only reverse dns */
 			conn->status = WJ_STATUS_DNS;
-			conn->dnsendtime = clk + 100*reversedns;
+			conn->dnsendtime = clk + 100*configuration.reversedns;
 			return;
 		}
 	}

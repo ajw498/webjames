@@ -1,3 +1,7 @@
+#ifdef MemCheck_MEMCHECK
+#include "MemCheck:MemCheck.h"
+#endif
+
 #include <string.h>
 #include <stdio.h>
 #include <time.h>
@@ -26,11 +30,19 @@ void resolver_poll(struct connection *conn) {
 		if (clock() > conn->dnsendtime)  abort_reverse_dns(conn, DNS_FAILED);
 	} else {
 		/* lookup successfully completed */
+#ifdef MemCheck_MEMCHECK
+		MemCheck_RegisterMiscBlock_Ptr(ip);
+		MemCheck_RegisterMiscBlock_String(ip[0]);
+#endif
 #ifdef LOG
 		sprintf(temp, "DNS %s is %s", conn->host, ip[0]);
 		writelog(LOGLEVEL_DNS, temp);
 #endif
 		strncpy(conn->host, ip[0], 127);
+#ifdef MemCheck_MEMCHECK
+		MemCheck_UnRegisterMiscBlock(ip[0]);
+		MemCheck_UnRegisterMiscBlock(ip);
+#endif
 		abort_reverse_dns(conn, DNS_OK);
 	}
 #else

@@ -1,4 +1,6 @@
+#ifdef MemCheck_MEMCHECK
 #include "MemCheck:MemCheck.h"
+#endif
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -38,7 +40,9 @@ void webjamesscript_start(struct connection *conn)
 		return;
 	}
 	
+#ifdef MemCheck_MEMCHECK
 	MemCheck_RegisterMiscBlock(ptr,size+16);
+#endif
 
 	memcpy(ptr, conn->header, conn->headersize);
 	if (conn->bodysize > 0)
@@ -76,7 +80,9 @@ void webjamesscript_start(struct connection *conn)
 		return;
 	}
 
+#ifdef MemCheck_MEMCHECK
 	MemCheck_UnRegisterMiscBlock(ptr);
+#endif
 
 	/* cgi-script started ok, so let the cgi-script close the socket */
 	if (fd_is_set(select_read, conn->socket)) {

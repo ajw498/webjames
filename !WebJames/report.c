@@ -558,6 +558,7 @@ void report_badrequest(struct connection *conn, char *info) {
 	subs[0].value = conn->uri;
 
 	report(conn, HTTP_BADREQUEST, 1, 0);
+
 }
 
 

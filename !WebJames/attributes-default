@@ -76,6 +76,10 @@ AddHandler send-as-is .asis
 AddHandler webjames-script
 </location>
 
+<location /ou/>
+homedir=IDEFS::4.$.TEST
+</location>
+
 # define which directory holds cgi-scripts using redirection
 <location /cgi-bin2/>
 AddHandler cgi-script
