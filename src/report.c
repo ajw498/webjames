@@ -1,5 +1,5 @@
 /*
-	$Id: report.c,v 1.1 2002/02/17 22:50:10 ajw Exp $
+	$Id: report.c,v 1.2 2002/10/20 15:40:31 ajw Exp $
 	Error reporting functions
 */
 
@@ -73,7 +73,7 @@ void report_flushcache() {
 
 
 
-static char *report_substitute(struct reportcache *report, struct substitute subs[], int num, int *size) {
+static char *report_substitute(struct reportcache *report, struct substitute subs[], int num, int *size, struct connection *conn) {
 /* substitutes all occurences of specific strings */
 
 /* report           cached report-html-file */
@@ -89,7 +89,7 @@ static char *report_substitute(struct reportcache *report, struct substitute sub
 
 	/* add the webmaster-email entry to the list of strings to substitute */
 	subs[num].name = "%EMAIL%";
-	subs[num].value = configuration.webmaster;
+	subs[num].value = conn->vhost->serveradmin;
 	num++;
 
 	/* calculate the length of all the entries */
@@ -461,7 +461,7 @@ void report(struct connection *conn, int code, int subno, int headerlines, char 
 		}
 
 		/* attempt to substitute the keywords with their values */
-		buffer = report_substitute(report, subs, subno, &size);
+		buffer = report_substitute(report, subs, subno, &size, conn);
 		if (!buffer) {
 			report_quickanddirty(conn, code);
 			conn->close(conn, 0);
@@ -513,8 +513,8 @@ void report_moved(struct connection *conn, char *newurl) {
 	char url[MAX_FILENAME];
 	size_t len;
 
-	if (*configuration.serverip)
-		snprintf(url, MAX_FILENAME, "http://%s%s", configuration.serverip, newurl);
+	if (conn->vhost->domain[0])
+		snprintf(url, MAX_FILENAME, "http://%s%s", conn->vhost->domain, newurl);
 	else
 		wjstrncpy(url, newurl, MAX_FILENAME);
 
@@ -537,8 +537,8 @@ void report_movedtemporarily(struct connection *conn, char *newurl) {
 	char url[MAX_FILENAME];
 	size_t len;
 
-	if (*configuration.serverip)
-		snprintf(url, MAX_FILENAME, "http://%s%s", configuration.serverip, newurl);
+	if (conn->vhost->domain[0])
+		snprintf(url, MAX_FILENAME, "http://%s%s", conn->vhost->domain, newurl);
 	else
 		wjstrncpy(url, newurl, MAX_FILENAME);
 

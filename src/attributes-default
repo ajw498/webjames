@@ -4,8 +4,22 @@
 #
 # URIs and filenames are case-insensitive in WebJames, unless the casesensitive option is set in the config file
 
+# The directory holding the site
+DocumentRoot <WebJames$Dir>.^.Site
+
+# ServerName - the ip-address (eg. 192.168.1.100) or full domain name
+# (eg. www.myserver.com) of the server; if not known, leave empty; if
+# possible, use the full domain name
+ServerName
+
+# ServerAdmin - the emailaddress of the webmaster; this is used to replace
+# %EMAIL% in reports; the SERVER_ADMIN enviromentvariable (used by
+# 'redirect' cgi-scripts) is set to this value
+ServerAdmin i.havent@changed.the.emailaddress.com
+
+
 # global atttributes
-<location />
+<Location />
 defaultfile index.php index.html index.shtml index
 </location>
 
@@ -34,7 +48,7 @@ AddFiletypeHandler webjames-script ALL
 </location>
 
 # define which directory holds cgi-scripts using redirection
-<location /cgi-bin2/>
+<Location /cgi-bin2/>
 AddFiletypeHandler cgi-script
 </location>
 

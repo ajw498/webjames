@@ -1,7 +1,7 @@
 #ifndef WEBJAMES_H
 #define WEBJAMES_H
 
-#define WEBJAMES_H_REVISION "$Revision: 1.6 $"
+#define WEBJAMES_H_REVISION "$Revision: 1.7 $"
 
 #define WEBJAMES_VERSION "0.37-dev"
 #define WEBJAMES_DATE "22/7/02"
@@ -82,6 +82,7 @@ typedef struct listeninfo {
 typedef struct vhostdetails {
 	char *domain;
 	char *homedir;
+	char *serveradmin;
 	struct hashentry *hash;
 	int hashsize;
 	int hashentries;

@@ -1,5 +1,5 @@
 /*
-	$Id: attributes.c,v 1.3 2002/10/20 11:22:37 ajw Exp $
+	$Id: attributes.c,v 1.4 2002/10/20 15:40:31 ajw Exp $
 	Reading and using attributes files
 */
 
@@ -45,6 +45,25 @@ typedef struct handlerlist {
 static struct vhostdetails defaultvhost;
 
 static struct vhostdetails *vhostlist = NULL;
+
+static struct vhostdetails *init_vhost(struct vhostdetails *vhost)
+{
+	int i;
+	vhost->domain = configuration.serverip;
+	vhost->homedir = configuration.site;
+	vhost->serveradmin = configuration.webmaster;
+	vhost->globalfiles = NULL;
+	vhost->globallocations = NULL;
+	vhost->globaldirectories = NULL;
+	vhost->globalhandlers = NULL;
+	vhost->next = NULL;
+	vhost->hashsize = HASHINCREMENT; /* Init hash table */
+	vhost->hashentries = 0;
+	vhost->hash = EM(malloc(vhost->hashsize*sizeof(struct hashentry)));
+	if (vhost->hash == NULL) return NULL;
+	for (i=0; i<vhost->hashsize; i++) vhost->hash[i].uri = NULL;
+	return vhost;
+}
 
 static int generate_key(char *uri, int size) {
 /* generate a hash table key for given uri */
@@ -386,13 +405,13 @@ static struct attributes *read_attributes_file(char *filename, char *base, struc
 				/* find end of type, and start of URI/filename */
 				while (*ptr!='\0' && !isspace(*ptr) && *ptr != '>') ptr++;
 				*ptr = '\0';
+				lower_case(type);
 			}
 
 			ptr++;
 			len = strlen(ptr);
 
 			if (strcmp(type,"virtualhost") == 0) {
-				int i;
 				struct vhostdetails *newvhost;
 
 				if (section != section_NONE) {
@@ -413,21 +432,10 @@ static struct attributes *read_attributes_file(char *filename, char *base, struc
 					return NULL;
 				}
 
-				newvhost->domain = NULL;
-				newvhost->globalfiles = NULL;
-				newvhost->globallocations = NULL;
-				newvhost->globaldirectories = NULL;
-				newvhost->globalhandlers = NULL;
-				newvhost->next = NULL;
-				newvhost->hashsize = HASHINCREMENT; /* Init hash table */
-				newvhost->hashentries = 0;
-				newvhost->hash = EM(malloc(newvhost->hashsize*sizeof(struct hashentry)));
-				if (newvhost->hash == NULL) {
+				if (init_vhost(newvhost) == NULL) {
 					fclose(file);
 					return NULL;
 				}
-				for (i=0; i<newvhost->hashsize; i++) newvhost->hash[i].uri = NULL;
-
 				vhost->next = newvhost;
 				vhost = newvhost;
 
@@ -713,9 +721,17 @@ static struct attributes *read_attributes_file(char *filename, char *base, struc
 				
 
 			} else if (strcmp(attribute, "servername") == 0) {
-				lower_case(value);
+				if (value) {
+					lower_case(value);
 
-				vhost->domain = value;
+					vhost->domain = value;
+				} else {
+					vhost->domain = "";
+				}
+				
+			} else if (strcmp(attribute, "serveradmin") == 0) {
+
+				vhost->serveradmin = value;
 				
 			} else if (attribute[0] == '#' || attribute[0] == '\0') {
 				/* Ignore comments and blank lines */
@@ -728,7 +744,7 @@ static struct attributes *read_attributes_file(char *filename, char *base, struc
 
 				if (section == section_LOCATION && attr->uri[attr->urilen-1] != '/') continue;
 
-				if (attr && attr->homedir)  free(attr->homedir);
+				/* Don't free it as it is probably pointing to the configuration structure */
 
 				if (!configuration.casesensitive) lower_case(value);
 				/* canonicalise the path, so <WebJames$Dir> etc are expanded, otherwise they can cause problems */
@@ -1312,25 +1328,12 @@ void get_attributes(char *uri, struct connection *conn)
 /* filename         pointer to the name of the attributes file */
 void init_attributes(char *filename)
 {
-	int i;
-
 	/* Reset stack */
 	stack(section_NONE,-1);
 
 	vhostlist = &defaultvhost;
 	/* Initialise default vhost */
-	vhostlist->domain = NULL;
-	vhostlist->homedir = configuration.site;
-	vhostlist->globalfiles = NULL;
-	vhostlist->globallocations = NULL;
-	vhostlist->globaldirectories = NULL;
-	vhostlist->globalhandlers = NULL;
-	vhostlist->next = NULL;
-	vhostlist->hashsize = HASHINCREMENT; /* Init hash table */
-	vhostlist->hashentries = 0;
-	vhostlist->hash = EM(malloc(vhostlist->hashsize*sizeof(struct hashentry)));
-	if (vhostlist->hash == NULL) return;
-	for (i=0; i<vhostlist->hashsize; i++) vhostlist->hash[i].uri = NULL;
+	if (init_vhost(vhostlist) == NULL) return;
 
 	read_attributes_file(filename, "", vhostlist);   /* read attributes in to the hash table */
 }

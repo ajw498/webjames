@@ -1,5 +1,5 @@
 /*
-	$Id: webjames.c,v 1.3 2002/10/19 16:05:24 ajw Exp $
+	$Id: webjames.c,v 1.4 2002/10/20 15:40:31 ajw Exp $
 	General functions for WebJames
 */
 
@@ -92,7 +92,7 @@ int webjames_init(char *config)
 	/* create out directory in !Scrap (or wherever) */
 	EV(xosfile_create_dir(configuration.cgi_dir,0));
 
-	if ((*configuration.site == '\0') || (serverinfo.serverscount == 0) || (configuration.timeout < 0))
+	if ((serverinfo.serverscount == 0) || (configuration.timeout < 0))
 		return 0;
 
 	/* reset everything */

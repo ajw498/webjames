@@ -1,5 +1,5 @@
 /*
-	$Id: cgiscript.c,v 1.3 2002/10/20 11:22:37 ajw Exp $
+	$Id: cgiscript.c,v 1.4 2002/10/20 15:40:31 ajw Exp $
 	CGI script handler
 */
 
@@ -35,8 +35,8 @@ void cgiscript_setvars(struct connection *conn)
 	char buffer[SETVARSBUFSIZE];
 	if (configuration.server[0])  set_var_val("SERVER_SOFTWARE", configuration.server);
 	set_var_val("SERVER_PROTOCOL", conn->protocol);
-	if (configuration.serverip[0])  set_var_val("SERVER_NAME", configuration.serverip);
-	set_var_val("SERVER_ADMIN", configuration.webmaster);
+	if (conn->vhost->domain[0])  set_var_val("SERVER_NAME", conn->vhost->domain);
+	set_var_val("SERVER_ADMIN", conn->vhost->serveradmin);
 
 	set_var_val("DOCUMENT_ROOT", conn->vhost->homedir);
 

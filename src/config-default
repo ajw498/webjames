@@ -1,20 +1,9 @@
 #  WebJames configuration file
 #
-#  empty lines and lines starting with # are ignored; no leading/trailing
-# spaces are allowed; spaces on either side of the '=' are not allowed
+#  empty lines and lines starting with # are ignored
 
 # the site
 # --------
-
-# webmaster - the emailaddress of the webmaster; this is used to replace
-# %EMAIL% in reports; the SERVER_ADMIN enviromentvariable (used by
-# 'redirect' cgi-scripts) is set to this value
-webmaster=i.havent@changed.the.emailaddress.com
-
-# serverip - the ip-address (eg. 192.168.1.100) or full domain name
-# (eg. www.myserver.com) of the server; if not known, leave empty; if
-# possible, use the full domain name
-serverip=
 
 # server - included in the Server: fields when replying
 # if unset, the default is WebJames/x.xx
@@ -25,9 +14,6 @@ serverip=
 # Webjames can accept connections on up to 8 ports simultaneously - simply
 # specify a commaseperated list of portnumbers, eg.:   port=80,8080
 port=80
-
-# homedir - directory holding the files
-homedir=<WebJames$Dir>.^.Site
 
 # attributes - name of attributes file
 attributes=<WebJames$Dir>.attributes
