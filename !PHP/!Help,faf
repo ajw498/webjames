@@ -7,13 +7,13 @@
 <table bgcolor="#aaaaaa" width="99%"><tr>
 <td><center>
 <h1>
-PHP 4.3.0
+PHP 4.3.2
 </h1>
 </center>
 </td></tr>
 <tr>
 <td><center><h5>
-RISC OS version 2.15 ported by <a href="mailto:alex@alexwaugh.com">Alex Waugh</a>
+RISC OS version 2.16 ported by <a href="mailto:alex@alexwaugh.com">Alex Waugh</a>
 </h5></center>
 </td>
 </tr></table>
@@ -291,12 +291,6 @@ let me know.
 <p>
 Some functions will not work as they do not have any meaning under RISC OS,
 eg. Symbolic links and file ownership.
-<p>
-Due to the way the filename translation works, there are certain situations
-where a file cannot be found even though it exists, eg index/php when there is
-also a directory called index. In general, try to avoid using directory names
-that match any of your filenames (either the part before the extension,
-or the extension itself).
 <p>
 popen, system, exec, passthru and other functions that run external programs do work, but <b>only</b>
 if the child program being run was compiled with a recent version of UnixLib (September 2001 or later).
