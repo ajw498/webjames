@@ -115,7 +115,7 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  http://localhost/<a>, and you should get a page saying that WebJames
  is working.
  <p>
-  You can now put your web pages in the directory <code>!WebJames.site</code>
+  You can now put your web pages in the <code>Site</code> directory
  or edit the <a href="#config">config file</a> to give the location of the pages.
  You should also change the webmaster email address and if possible server ip
  address in the <a href="#config">config file</a>.
@@ -188,8 +188,8 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
  <p>
   The filepaths in incoming request will use unix-syntax instead of RISC OS
- syntax, so WebJames will switch / and . so the URI <code>/pics/1.gif</code>
- will refer to the file <code>pics.1/gif</code>.
+ syntax, so WebJames will switch / and . so the URI <code>/pics/file.gif</code>
+ will refer to the file <code>pics.file/gif</code>.
 
  <p>
   If a request for a directory is received, WebJames will append
@@ -254,14 +254,15 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  attributes defined elsewhere in the attributes file.
 
  <p>
-  An attributes file consists of a number of URI-sections - each URI-section
- defines attributes for URI (a file or directory); the start of an
- URI-section is marked by a line containing the URI encapsulated in
- <code>[ ]</code>, eg. <code>[/cgi-bin/]</code>.
+  An attributes file consists of a number of sections, each section defines
+ attributes for a file or directory.
+ A section starts with <code>&lt;location /uri/&gt;</code> and finished with
+ <code>&lt;/location&gt;</code>.
 
  <p>
   If the URI ends in a <code>/</code>, it refers to a directory and all the
- files inside the directory; otherwise it refers to a file.
+ files inside the directory; otherwise it refers to a file. The URI <b>must</b>
+ start with a <code>/</code>.
 
  <p>
   The following fragment of an attributes file password-protects the
@@ -276,36 +277,43 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
  <pre>
  # select the cgi-bin directory
- [/cgi-bin/]
+ &lt;location /cgi-bin/&gt;
  is-cgi
+ &lt;/location&gt;
 
  # password-protect (almost) everything in /private/
- [/private/]
+ &lt;location /private/&gt;
  userandpwd=myname:mypassword
  realm=privateparts
+ &lt;/location&gt;
  # don't password-protect /private/busy.html, so just
  # set the password to &lt;empty&gt;
- [/private/busy.html]
+ &lt;location /private/busy.html&gt;
  userandpwd=
+ &lt;/location&gt;
 
  # redirect /linux.html requests to www.linuxberg.com
- [/linux.html]
+ &lt;location /linux.html&gt;
  moved=http://www.linuxberg.com/
+ &lt;/location&gt;
 
  # move /~xyz/ requests to the RAM disc, and don't
  # cache the contents of the RAM disc...
- [/~xyz/]
+ &lt;location /~xyz/&gt;
  homedir=RAM:$.WebSite
  notcacheable
+ &lt;/location&gt;
 
  # enable PUT-requests for the cgi-script that handles
  # PUT-requests
- #[/cgi-bin/PUT]
+ #&lt;location /cgi-bin/PUT&gt;
  #methods="PUT"
+ #&lt;/location&gt;
 
  # make private directory for 192.168.1.100
- [/private/johndoe/]
+ &lt;location /private/johndoe/&gt;
  allowed-hosts=192.168.1.100
+ &lt;/location&gt;
  </pre>
 
  <p>
@@ -313,6 +321,17 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  <em>directories</em> - NOT for files (eg. for <code>/~xyz/</code> but
  not for <code>/~xyz/pi.gif</code>).
 
+ <p>
+  You can also create sections for specific directories using
+ <code>&lt;directory ADFS::4.$.Dir&gt;</code> and <code>&lt;/directory&gt;</code>
+ The attributes within such a section will apply to anything fetched from
+ that directory, whatever the URI was.
+ <p>
+  Attributes in a <code>&lt;directory&gt;</code> section take precedence over
+ those in a <code>&lt;location&gt;</code> section.
+
+ <p>
+  Old style [/uri/] sections still work.
 
  <p>
 
@@ -465,10 +484,11 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
  <tr>
  <td><code>defaultfile</code></td>
- <td>this attribute sets the name of the file to return when the remote
-     host requests a directory, eg. <code>GET / HTTP/1.0</code>; this
-     attribute can only be set for directories, not files!!<br>
-     example: <code>defaultfile=index.html</code>
+ <td>this attribute lists the names of the files to look for if the remote
+     host requests a directory, eg. <code>GET / HTTP/1.0</code>; the list is
+     searched from left to right, and the first matching file found is returned;
+     this attribute can only be set for directories, not files!!<br>
+     example: <code>defaultfile=index.php,index.html</code>
      </td>
  </tr>
 
@@ -509,6 +529,21 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
      example: <code>forbidden-filetypes=FAF,FFF,695,C85</code></td>
  </tr>
 
+ <tr>
+ <td><code>errordocument</code></td>
+ <td>this attribute allows error messages to be customised for individual directories.
+     the first parameter is the http status code that the error message refers to. the second
+     parameter is either a <code>&quot;</code> character followed by the text to send, or
+     a URI to redirect to.
+     you may have multiple <code>errordocument</code> lines for an URI, provided
+     their status codes are different<br>
+     example: <code>errordocument 404 &quot;&lt;HTML&gt;&lt;BODY&gt;Sorry, this file was not found&lt;/BODY&gt;&lt;HTML&gt;</code><br>
+     example: <code>errordocument 403 /forbidden.html</code><br>
+     example: <code>errordocument 500 http://www.somewhere.com/</code><br>
+
+     </td>
+ </tr>
+
  </table>
 
 
@@ -528,10 +563,13 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
  <pre>
  # main attributes file
- [/~joe/]
+ &lt;location /~joe/&gt;
  more-attributes=&lt;WebJames$Dir&gt;.sites.joe.~attributs
- [/~bob/]
+ &lt;/location&gt
+
+ &lt;location /~bob/&gt;
  more-attributes=&lt;WebJames$Dir&gt;.sites.bob.~attributs
+ &lt;/location&gt
  </pre>
 
  The attributes-file (<code>&lt;WebJames$Dir&gt;.sites.joe.~attributs</code>)
@@ -539,15 +577,17 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
  <pre>
  # attributes file for joe
- # all URIs in [] are relative to /~joe/
+ # all URIs in &lt;location&gt; are relative to /~joe/
 
  # set the base-directory for joe's site
- [/]
+ &lt;location /&gt;
  homedir=&lt;WebJames$Dir&gt;.sites.joe
+ &lt;/location&gt
 
  # hide the attributes file for joe's site
- [/~attributs]
+ &lt;location /~attributs&gt;
  hidden
+ &lt;/location&gt
  </pre>
 
   All requests for URIs starting with <code>/~joe/</code> would then access
@@ -559,7 +599,21 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  <p>
  Notice - you should not nest attribute-files in more than 3 levels.
 
+ <h5>htaccess files</h5>
 
+  You can also specify attributes for a directory by putting them in an
+ <code>htaccess</code> file within the directory. The name of the <code>htaccess</code>
+ file is specified in the <a href="#config">config file</a>, and is by default
+ <code>/htaccess</code>
+
+ <p>
+  The <code>htaccess</code> files are in the same format as the attributes file,
+ but act as if the whole file was surrounded by a <code>&lt;directory dirname&gt;</code>
+ section, where dirname is the directory the <code>htaccess</code> file is in.
+
+ <p>
+  Please note that the <code>htaccess</code> files are cached, so if you alter one,
+ then it may not take effect until you restart WebJames.
 
 <p>
 <h3>
@@ -1275,6 +1329,23 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 </td></tr></table>
 </h3>
 
+<i>0.26 (6/10/2000)</i>
+
+<ul>
+  <li>attribute <code>defaultfile</code> can now take a list of files to look for
+  <li>added support for the <code>SCRIPT_NAME</code>
+      enviroment-variable when using 'redirected' cgi-scripts.
+      This allows the <code>$PHP_SELF</code> variable to work in PHP scripts.
+  <li>bugfix in leap year calculation
+  <li>moved the site directory outside of !WebJames (perhaps the config and attributes need to move to Choices:?)
+  <li>attributes can now be attr (space) value as well as attr = value
+  <li>added support for <code>&lt;location&gt;</code> and <code>&lt;directory&gt;</code> sections in <a href="#attr">attributes</a> file
+      (<code>&lt;files&gt;</code> to follow shortly)
+  <li>added support for htaccess files
+  <li>a new <a href="#attr">attribute</a> has been defined <code>errordocument</code>
+</ul>
+
+
 <i>0.25 (31/08/2000)</i>
 
 <ul>
@@ -1582,18 +1653,10 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 </td></tr></table>
 </h3>
 
-<h5>PHP3</h5>
+<h5>PHP</h5>
 
-  WebJames works with Alex Waugh's <a href="http://www.ecs.soton.ac.uk/~ajw498/php/">port of PHP3</a><br>
-  If you chage the global attributes section of the attributes file to:
-   <pre>
-    # global atttributes
-    [/]
-    is-cgi
-    cgi-api=redirect
-    allowed-filetypes=18a
-   </pre>
-  then you can put PHP scripts anywhere where you would put normal HTML.
+  WebJames works well with the <a href="http://www.ecs.soton.ac.uk/~ajw498/internet/php/">RISC OS port of PHP</a><br>
+  With the default configuration you can put PHP scripts anywhere where you would put normal HTML.
 
 <p>
 

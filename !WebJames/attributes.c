@@ -818,8 +818,8 @@ void init_attributes(char *filename) {
   struct attributes *attr;
   int i, chr, start;
 
-  uriattributeslist = NULL;
   uriattrlist = NULL;
+  uriattributeslist = NULL;
   uriattributescount = 0;
   dirattributeslist = NULL;
   dirattributescount = 0;

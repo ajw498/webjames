@@ -25,7 +25,7 @@ server=WebJames/0.26
 port=80
 
 # homedir - directory holding the files
-homedir=<WebJames$Dir>.^.Site
+homedir=<WebJames$Dir>.^.site
 
 # attributes - name of attributes file
 attributes=<WebJames$Dir>.attributes

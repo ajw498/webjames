@@ -1,9 +1,9 @@
 # WebJames attributes file
 #
 #  this file defines various attributes for URIs; an entry
-# starts with an URI enclosed in [], the following lines
-# (until next entry starts or until the end of the file)
-# define the attributes
+# starts with an <location /URI/> or <directory dir>,
+# the following lines define the attributes, then the section
+# ends with a </location> or </directory> respectively.
 #
 #  if the URI is a directory (ie. it ends with a /), the
 # attributes will affect all files and subdirectories in
@@ -14,6 +14,11 @@
 # directory in which the file is stored, the attributes
 # defined for the file will overwrite the attributes for
 # the directory
+#
+#  if you define attributes for both a <location> AND the
+# corresponding <directory> in which the file is stored,
+# then the attributes defined for the directory will overwrite
+# the attributes for the location
 #
 #  possible attributes:
 #
@@ -40,6 +45,8 @@
 # defaultfile=filename
 # allowed-filetypes=list-of-filetypes
 # forbidden-filetypes=list-of-filetypes
+# errordocument statuscode "message
+# errordocument statuscode urltoredirectto
 #
 #  if a file/directory is password-protected, a realm MUST
 # be defined for that file/directory, otherwise it cannot
@@ -51,30 +58,41 @@
 #  URIs (like filenames) are case-insensitive in WebJames
 
 # global atttributes
-[/]
-
-# define which directory holds 'webjames-style' cgi-scripts
-[/cgi-bin/]
-is-cgi
-
-# define which directory holds cgi-scripts using redirection
-[/cgi-bin2/]
+# Allow PHP scripts to be run as cgi, all other files served normally
+<location />
 is-cgi
 cgi-api=redirect
+allowed-filetypes=18a
+</location>
+
+# define which directory holds 'webjames-style' cgi-scripts
+<location /cgi-bin/>
+is-cgi
+cgi-api=webjames
+</location>
+
+# define which directory holds cgi-scripts using redirection
+<location /cgi-bin2/>
+is-cgi
+cgi-api=redirect
+</location>
 
 # password-protect the query-cgi-script
-[/cgi-bin/query]
-userandpwd=henrik:xxxx
+<location /cgi-bin/query>
+userandpwd=webjames:wibble
 realm=the search engine
-
+</location>
 
 # password-protect the PUT script
-#[/cgi-bin/PUT]
+#<location /cgi-bin/PUT>
 #userandpwd=putuser:putpassword
 #realm='put'
 #methods="PUT"
+#</location>
+#
 # password-protect the DELETE script
-#[/cgi-bin/DELETE]
+#<location /cgi-bin/DELETE>
 #userandpwd=deleteuser:deletepassword
 #realm='delete'
 #methods="DELETE"
+#</location>

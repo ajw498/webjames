@@ -194,7 +194,10 @@ void send_file(struct connection *conn) {
   name += strlen(name);
   ptr = conn->uri + conn->homedirignore;
   // append requested URI, with . and / switched
-  if (uri_to_filename(ptr,name)) report_badrequest(conn, "filename includes illegal characters");
+  if (uri_to_filename(ptr,name)) {
+    report_badrequest(conn, "filename includes illegal characters");
+    return;
+  }
 
   get_dir_attributes(conn->filename,conn);
 
