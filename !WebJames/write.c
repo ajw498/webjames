@@ -128,7 +128,26 @@ void select_writing(int cn) {
 
 }
 
+static int uri_to_filename(char *uri, char *filename) {
+// swap '.' and '/'
+// returns non zero if illegal chars are present
+  while (*uri) {
+    if (*uri == '/')
+      *filename++ = '.';
+    else if (*uri == '.')
+      *filename++ = '/';
+    else if ((*uri == '%') || (*uri == '*') || (*uri == '^') || (*uri == '&')
+          || (*uri == '#') || (*uri == ':') || (*uri == '<') || (*uri == '>')
+          || (*uri == '$') || (*uri == '@') || (*uri == '\\') )
+      return 1;
+    else
+      *filename++ = *uri;
+    uri++;
+  }
+  *filename = '\0';
 
+  return 0;
+}
 
 void send_file(struct connection *conn) {
 // parse the header, find file, do the job etc.
@@ -174,37 +193,34 @@ void send_file(struct connection *conn) {
   // make a copy of the uri for processing
   strcpy(file, conn->uri);
 
-  // if requesting a directory (ie. the uri ends with a /) use index.html
-  if (file[len-1] == '/') {
-    if (conn->defaultfile)
-      strcpy(file+len, conn->defaultfile);
-    else
-      strcpy(file+len, "index.html");
-  }
 
   // build RISCOS filename
   name = conn->filename;
   strcpy(name, conn->homedir);
   name += strlen(name);
-  ptr = file + conn->homedirignore;
+  ptr = conn->uri + conn->homedirignore;
   // append requested URI, with . and / switched
-  while (*ptr) {
-    if (*ptr == '/')
-      *name++ = '.';
-    else if (*ptr == '.')
-      *name++ = '/';
-    else if ((*ptr == '%') || (*ptr == '*') || (*ptr == '^') || (*ptr == '&')
-          || (*ptr == '#') || (*ptr == ':') || (*ptr == '<') || (*ptr == '>')
-          || (*ptr == '$') || (*ptr == '@') || (*ptr == '\\') ) {
-      report_badrequest(conn, "filename includes illegal characters");
-      return;
-    } else
-      *name++ = *ptr;
-    ptr++;
-  }
-  *name = '\0';
+  if (uri_to_filename(ptr,name)) report_badrequest(conn, "filename includes illegal characters");
 
   get_dir_attributes(conn->filename,conn);
+
+  // if requesting a directory (ie. the uri ends with a /) use index.html
+  len = strlen(conn->filename);
+  if (conn->filename[len-1] == '.') {
+    if (conn->defaultfile) {
+      char testfile[256];
+
+      strcpy(testfile,conn->filename);
+      // for(i=0 to numdefaultfiles) {
+        uri_to_filename(conn->defaultfile, testfile+len);
+        type = get_file_info(testfile,NULL,NULL,&size);
+        //if (type != FILE_DOESNT_EXIST) break;
+      //}
+      strcpy(conn->filename,testfile);
+    } else {
+      strcpy(conn->filename+len, "index/html");
+    }
+  }
 
   // check if the file has been moved
   if (conn->moved)

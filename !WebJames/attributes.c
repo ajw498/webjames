@@ -375,12 +375,13 @@ static struct attributes *read_attributes_file(char *filename, char *base) {
       if (attr) {
 
         if (strcmp(attribute, "defaultfile") == 0) {
-          if (attr->uri[attr->urilen-1] != '/') continue;
+          if (section == section_LOCATION && attr->uri[attr->urilen-1] != '/') continue;
           if (attr->defaultfile)  free(attr->defaultfile);
           attr->defined.defaultfile = 1;
           attr->defaultfile = value;
 
-        } else if ((strcmp(attribute, "homedir") == 0) && (attr->uri[attr->urilen-1] == '/')) {
+        } else if ((strcmp(attribute, "homedir") == 0)) {
+          if (section == section_LOCATION && attr->uri[attr->urilen-1] == '/') continue;
           // define where on the harddisc the directory is stored
           if (attr->homedir)  free(attr->homedir);
           attr->defined.homedir = 1;
@@ -660,16 +661,27 @@ void get_dir_attributes(char *dir, struct connection *conn) {
   int found;
   struct attributes *test;
   char buffer[256], path[256], *ptr;
-  int spare;
+  int len, last;
 
-  if (xosfscontrol_canonicalise_path(dir,buffer,NULL,NULL,255,&spare)) strcpy(buffer,dir);
+  // remove any terminating '.'
+  strcpy(path,dir);
+  len = strlen(path);
+  if (path[len-1] == '.') path[len-1] = '\0';
+
+  if (xosfscontrol_canonicalise_path(path,buffer,NULL,NULL,255,&len)) strcpy(buffer,path);
 
 // do something a bit more efficient here to find the correct attributes structure for each directory
 // some sort of binary search?
 
   ptr = buffer;
+  last = 0;
 
-  while ((ptr = strchr(ptr+1,'.')) != NULL) {
+  do {
+    ptr = strchr(ptr+1,'.');
+    if (ptr == NULL) {
+      ptr = buffer+strlen(buffer);
+      last = 1;
+    }
     // decend through each directory till the one needed
     strncpy(path, buffer, ptr - buffer);  // copy path upto the '.' just found
     path[ptr - buffer] = '\0';
@@ -695,7 +707,7 @@ void get_dir_attributes(char *dir, struct connection *conn) {
       if (newattr) merge_attributes(conn, newattr);
     }
 
-  }
+  } while (!last);
 
   if (conn->attrflags.hidden)  conn->attrflags.accessallowed = 0;
 
