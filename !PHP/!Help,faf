@@ -24,7 +24,7 @@
 | contact core@php.net.                                                |
 +----------------------------------------------------------------------+
 
-                    PHP 3.0.14  RISC OS version 1.02
+                    PHP 3.0.15  RISC OS version 1.03
                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 What is it?
 ~~~~~~~~~~~
@@ -90,7 +90,7 @@ the Run in a task window icon.
 Using PHP with a web server
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 I have tested PHP with the Navaho server suite (2.00b24)
-http://www.navaho.co.uk/support/ and Netplex (0.22)
+http://www.navaho.co.uk/support/ and Netplex (0.22 and 1.70)
 http://www.tristone.co.uk/davespace/netplexpublic/index.html
 Other servers may work, or may need the wrapper to be altered (see below).
 Double click on !PHP, then select the Run as a CGI program icon, then
@@ -190,7 +190,6 @@ Symbolic and hard links won't work as RISC OS doesn't support them.
 The uniqid function may give the same value if called twice in close
 succession.
 Not all of the dbm functions work correctly.
-
 
 
 Any updates to the RISC OS port should be available from
