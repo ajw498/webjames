@@ -17,9 +17,12 @@
 <i>0.37-dev (??/??/2002)</i>
 
 <ul>
-  <li>Fixed problem with serving imagefs files in UnixLib builds
-  <li>Fixed bug that could cause a crash when logging some header lines that contained a % character
-  <li>Added an extra option to the syslog config variable to specify use syslog if present, internal logging otherwise. This is now the default. 
+  <li>Fixed corruption when serving some imagefs files in UnixLib builds.
+  <li>Fixed bug that could cause a crash when logging some header lines that contained a % character.
+  <li>Added an extra option to the syslog config variable to specify use syslog if present, internal logging otherwise. This is now the default.
+  <li>Added support for name based virtual hosts.
+  <li>Added DocumentRoot attribute as an alias for homedir.
+  <li>Added ServerName and ServerAdmin attributes, to replace serverip and webmaster config options for virtual hosts.
 
 </ul>
 
