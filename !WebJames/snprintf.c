@@ -53,6 +53,7 @@
  * <panos@alumni.cs.colorado.edu> for xinetd.
  */
 
+#if !defined(__GNUC__) || defined(__TARGET_SCL__)
 #if !defined(HAVE_SNPRINTF) || !defined(HAVE_VSNPRINTF)
 
 #include <stdio.h>
@@ -184,7 +185,7 @@ static char *
 {
 	int sign, decpt;
 	register char *p1, *p2;
-	register i;
+	register int i;
 
 	p1 = ap_php_ecvt(number, ndigit, &decpt, &sign);
 	p2 = buf;
@@ -930,3 +931,4 @@ int vsnprintf(char *buf, size_t len, const char *format, va_list ap)
 }
 
 #endif							/* HAVE_SNPRINTF */
+#endif

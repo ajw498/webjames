@@ -1,5 +1,5 @@
 /*
-	$Id: cache.c,v 1.16 2001/09/05 09:39:18 AJW Exp $
+	$Id: cache.c,v 1.17 2001/09/18 21:05:45 AJW Exp $
 	Cache management functions
 */
 
@@ -185,7 +185,7 @@ void init_cache(char *list) {
 	if (configuration.maxcachefilesize > configuration.cachesize/2)  configuration.maxcachefilesize = configuration.cachesize/2;
 	for (i = 0; i < MAXCACHEFILES; i++)  cachedfiles[i] = NULL;
 
-	if (xosdynamicarea_create((os_dynamic_area_no)-1, configuration.cachesize, (byte *)-1, 128, configuration.cachesize, 0, 0, "WebJames cache", &cachedynamicarea, &cachestart, &limit)) {
+	if (xosdynamicarea_create(os_DYNAMIC_AREA_APPLICATION_SPACE, configuration.cachesize, (byte *)-1, 128, configuration.cachesize, 0, 0, "WebJames cache", &cachedynamicarea, &cachestart, &limit)) {
 		if (E(xwimp_slot_size(-1, -1, &curr, &next, &freeslot)))  return;
 		curr += configuration.cachesize;
 		if (E(xwimp_slot_size(curr, -1, &curr, &next, &freeslot)))  return;
