@@ -123,6 +123,24 @@
   <code>&lt;files&gt;</code> sections can be nested within a <code>&lt;directory&gt;</code> section, and then they
  will only apply to files within that directory.
  <p>
+  Sections of the attributes file can be executed conditionally, depending if a
+ particular handler is present, using an <code>&lt;ifhandler&gt;</code> section.
+ If the hander name is preceded by a ! then the section is only executed if the
+ handler is <i>not</i> present. <code>&lt;ifhandler&gt;</code> sections can be nested.<p>
+ <pre>
+ &lt;ifhandler cgi-script&gt;
+ # This bit is ignored if the cgi-script handler is not compiled in
+ &lt;location /cgi-bin/&gt;
+ AddFiletypeHandler cgi-script
+ &lt;/location&gt;
+ &lt;/ifhandler&gt;
+
+ &lt;ifhandler !php-script&gt;
+ # This bit is ignored if the php-script handler is compiled in
+ Action php-script php %f %u
+ &lt;/ifhandler&gt;
+ </pre>
+ <p>
   Old style [/uri/] sections still work (they are treated as <code>&lt;location&gt;</code> sections), but their use is deprecated.
 
  <p>
@@ -186,56 +204,56 @@
 
  <tr>
  <td><code>NotCacheable</code></td>
- <td>makes a file (or the contents of a directory) non-cacheable</td>
+ <td>Makes a file (or the contents of a directory) non-cacheable</td>
  </tr>
 
  <tr>
  <td><code>Cacheable</code></td>
- <td>makes a file/directory cacheable (default) </td>
+ <td>Makes a file/directory cacheable (default) </td>
  </tr>
 
  <tr>
  <td><code>DocumentRoot</code></td>
- <td>sets the path to the directory where part of the website is stored<br>
+ <td>Sets the path to the directory where part of the website is stored<br>
      example: <code>DocumentRoot RAM:$.oftenused</code></td>
  </tr>
 
  <tr>
  <td><code>HomeDir</code></td>
- <td>an alias for DocumentRoot</td>
+ <td>An alias for DocumentRoot</td>
  </tr>
 
  <tr>
  <td><code>UserAndPwd</code></td>
- <td>sets the username and password for a file or directory - the format
+ <td>Sets the username and password for a file or directory - the format
      is <code>username:password</code><br>
      example: <code>userandpwd=henrik:mypassword</code></td>
  </tr>
 
  <tr>
  <td><code>AccessFile</code></td>
- <td>the file holds a list of username:password pairs<br>
+ <td>The file holds a list of username:password pairs<br>
      example: <code>accessfile=&lt;WebJames$Dir&gt;.cgi-res.access0</code>
      </td>
  </tr>
 
  <tr>
  <td><code>Realm</code></td>
- <td>sets the name of the realm to which a password-protected
+ <td>Sets the name of the realm to which a password-protected
      file/directory belongs<br>
      example: <code>realm='search engine'</code></td>
  </tr>
 
  <tr>
  <td><code>Moved</code></td>
- <td>requests for the URI will result in a respons which redirects the
+ <td>Requests for the URI will result in a respons which redirects the
      requesting browser to the new URI<br>
      example: <code>moved=http://www.xyz.com/</code></td>
  </tr>
 
  <tr>
  <td><code>TempMoved</code></td>
- <td>requests for the URI will result in a respons which redirects the
+ <td>Requests for the URI will result in a respons which redirects the
      requesting browser to the new URI - should be used if the file has
      only been moved temporarily<br>
      example: <code>moved=http://www.xyz.com/</code></td>
@@ -243,7 +261,7 @@
 
  <tr>
  <td><code>Methods</code></td>
- <td>this attribute tells WebJames which request-methods are allowed for
+ <td>This attribute tells WebJames which request-methods are allowed for
      the URI - the value is a comma-seperated list of the allowed methods,
      default is 
      <code>&quot;GET&quot;,&quot;HEAD&quot;,&quot;POST&quot;</code>,
@@ -254,7 +272,7 @@
 
  <tr>
  <td><code>Port</code></td>
- <td>this attribute tells WebJames which portnumber requests for the
+ <td>This attribute tells WebJames which portnumber requests for the
      URI may be accepted on; if WebJames is configured to listen on
      multiple ports, this attribute can be used to hide the URI from
      incoming requests on all ports except one<br>
@@ -263,7 +281,7 @@
 
  <tr>
  <td><code>Allowed-Hosts</code></td>
- <td>this attribute lists the ip-addresses of all the hosts that are
+ <td>This attribute lists the ip-addresses of all the hosts that are
      allowed to access the URI; the value is a comma-seperated list of
      ip-addresses - you may have multiple <code>allowed-hosts</code>-lines
      for an URI; default is everybody<br>
@@ -272,31 +290,32 @@
 
  <tr>
  <td><code>Forbidden-Hosts</code></td>
- <td>this attribute lists the ip-addresses of all the hosts that aren't
+ <td>This attribute lists the ip-addresses of all the hosts that aren't
      allowed to access the URI; default is nobody</td>
  </tr>
 
  <tr>
  <td><code>Priority</code></td>
- <td>this attribute controls how fast the respons will be returned to the
+ <td>This attribute controls how fast the respons will be returned to the
      requesting browser; the first value is the priority level - from 0
      (lowest priority) to 100 (highst priority), the second value is
      optional - if present it sets the max no. of bytes per second to
      transmit when replying, 0 means no limit; default values are 100 and
-     0; the <code>priority</code>-attribute may be ignored by WebJames<br>
+     0; the <code>priority</code>-attribute may be (and currently is) ignored by WebJames<br>
      example: <code>priority=25,10000</code></td>
  </tr>
 
  <tr>
  <td><code>Ram-Faster</code></td>
- <td>when this attribute is set for a cgi-script, WebJames is <i>allowed</i>
+ <td>When this attribute is set for a cgi-script, WebJames is <i>allowed</i>
      to move the cgi-script to/from a faster filing-system (eg. RAM disc)
-     whenever it is considered beneficial</td>
+     whenever it is considered beneficial. (Not currently implemented)
+     </td>
  </tr>
 
  <tr>
  <td><code>More-Attributes</code></td>
- <td>this attribute specifies the name of a file containing additional
+ <td>This attribute specifies the name of a file containing additional
      attributes; if the <code>more-attributes</code> appears inside an
      URI-section, the URIs in the file are considered relative to the
      URI for the section in parent-file<br>
@@ -306,7 +325,7 @@
 
  <tr>
  <td><code>DefaultFile</code></td>
- <td>this attribute lists the names of the files to look for if the remote
+ <td>This attribute lists the names of the files to look for if the remote
      host requests a directory, eg. <code>GET / HTTP/1.0</code>; the list is
      searched from left to right, and the first matching file found is returned;
      this attribute can only be set for directories, not files!!<br>
@@ -316,25 +335,27 @@
 
  <tr>
  <td><code>Hidden</code></td>
- <td>when set, the file (or the contents of the directory) cannot be
-     accessed</td>
+ <td>When set, the file (or the contents of the directory) cannot be
+     accessed.
+     </td>
  </tr>
 
  <tr>
  <td><code>NotHidden</code></td>
- <td>when set, the file (or the contents of the directory) <em>can</em>
+ <td>When set, the file (or the contents of the directory) <em>can</em>
      be accessed; this attribute is mainly useful for enabling access to
      files that are stored in a directory which has the <code>hidden</code>
-     attribute set</td>
+     attribute set.
+     </td>
  </tr>
 
  <tr>
  <td><code>ErrorDocument</code></td>
- <td>this attribute allows error messages to be customised for individual directories.
-     the first parameter is the http status code that the error message refers to. the second
+ <td>This attribute allows error messages to be customised for individual directories.
+     The first parameter is the http status code that the error message refers to. The second
      parameter is either a <code>&quot;</code> character followed by the text to send, or
      a URI to redirect to.
-     you may have multiple <code>errordocument</code> lines for an URI, provided
+     You may have multiple <code>errordocument</code> lines for an URI, provided
      their status codes are different<br>
      example: <code>errordocument 404 &quot;&lt;HTML&gt;&lt;BODY&gt;Sorry, this file was not found&lt;/BODY&gt;&lt;HTML&gt;</code><br>
      example: <code>errordocument 403 /forbidden.html</code><br>
@@ -345,42 +366,59 @@
 
  <tr>
  <td><code>StripExtensions</code></td>
- <td>this attribute strips the filename extensions from URIs before looking for the file.
-     this includes the default files if a directory is requested, and any errordocument files as well.<br>
-     example: a request of <code>/wibble.html</code> would return the file <code>wibble</code>
+ <td>This attribute strips the filename extensions from URIs before looking for the file.
+     This includes the default files if a directory is requested, and any errordocument files as well.<br>
+     Example: a request of <code>/wibble.html</code> would return the file <code>wibble</code>.
      </td>
  </tr>
 
  <tr>
  <td><code>MultiViews</code></td>
- <td>this attribute enables <a href="content#multiviews">MultiViews</a>. It can be considered as the
+ <td>This attribute enables <a href="content#multiviews">MultiViews</a>. It can be considered as the
      opposite of <code>stripextensions</code>, and thus both should not be enabled within the
      same directory.
      </td>
  </tr>
 
  <tr>
- <td><code>Setcsd</code></td>
- <td>when set, the currently selected directory (CSD) will be set to the directory containing
-     the CGI script before running the script
+ <td><code>SetCSD</code></td>
+ <td>When set, the currently selected directory (CSD) will be set to the directory containing
+     the CGI script before running the script.
      </td>
  </tr>
 
  <tr>
  <td><code>Action</code></td>
- <td>see the section on <a href="handlers#handlers">handlers</a> for more details
+ <td>See the section on <a href="handlers#handlers">handlers</a> for more details.
      </td>
  </tr>
 
  <tr>
  <td><code>AddFiletypeHandler</code></td>
- <td>see the section on <a href="handlers#handlers">handlers</a> for more details
+ <td>See the section on <a href="handlers#handlers">handlers</a> for more details.
      </td>
  </tr>
 
  <tr>
  <td><code>AddHandler</code></td>
- <td>see the section on <a href="handlers#handlers">handlers</a> for more details
+ <td>See the section on <a href="handlers#handlers">handlers</a> for more details.
+     </td>
+ </tr>
+
+ <tr>
+ <td><code>ServerName</code></td>
+ <td>Sets the hostname of the server. Can only be at the top level or in a virtualhost
+     section. If at the top level it can contain a hostname, and IP address or be blank.
+     If in a virtualhost section it <i>must</i> specify a hostname. See
+     <a href="vhosts">virtual hosts</a> for more details.
+     </td>
+ </tr>
+
+ <tr>
+ <td><code>ServerAdmin</code></td>
+ <td>Specifies the email address of the server admin. Used when generating error reports
+     and passed to CGI scripts in the SERVER_ADMIN variable. Can be at the top level or
+     in a virtualhost section.
      </td>
  </tr>
 

@@ -1,6 +1,6 @@
 # Makefile for WebJames the web server
 #
-# $Id: common,v 1.10 2002/02/24 12:37:26 ajw Exp $
+# $Id: common,v 1.11 2002/10/20 19:00:02 ajw Exp $
 #
 # Parts common to all builds
 
@@ -76,10 +76,10 @@ $(WJRUN): run-default
 
 
 $(WJATTRIBUTES): attributes-default
-	sed -e "s/dummy/dummy/" -e "s/$(REMOVE_ATTRIBUTE)//" attributes-default > $@
+	cp attributes-default $@
 
 $(WJCONFIG): config-default
-	sed -e "s/dummy/dummy/" -e "s/$(REMOVE_CONFIG)//" config-default > $@
+	cp config-default $@
 
 $(PHPSETRUNTYPE): setruntype-default
 	cp setruntype-default $@

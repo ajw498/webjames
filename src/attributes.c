@@ -1,5 +1,5 @@
 /*
-	$Id: attributes.c,v 1.4 2002/10/20 15:40:31 ajw Exp $
+	$Id: attributes.c,v 1.5 2002/10/20 19:00:02 ajw Exp $
 	Reading and using attributes files
 */
 
@@ -19,7 +19,7 @@
 
 #include "oslib/osfscontrol.h"
 
-#define STACKSIZE 10
+#define STACKSIZE 50
 #define HASHINCREMENT 20
 
 typedef enum sectiontype {
@@ -342,6 +342,7 @@ static struct attributes *read_attributes_file(char *filename, char *base, struc
 	int i;
 	struct attributes *attr;
 	enum sectiontype section;
+	int active = 1; /* Is the file active at this point, ie not in a failed <ifhandler> */
 
 	attr = NULL;
 
@@ -390,6 +391,13 @@ static struct attributes *read_attributes_file(char *filename, char *base, struc
 					if (attr->regex == NULL) insert_attributes(attr, vhost);
 				}
 				attr = NULL;
+
+				lower_case(ptr);
+
+				/* Only pop if we're active or it's the end of an if section */
+				if (!active && strncmp(ptr,"</ifhandler",10) != 0) continue;
+
+				active = stack(section_NONE,0);
 				vhost = (struct vhostdetails*)stack(section_NONE,0);
 				if (vhost == NULL) vhost = vhostlist;
 				section = (sectiontype)stack(section_NONE,0);
@@ -411,6 +419,30 @@ static struct attributes *read_attributes_file(char *filename, char *base, struc
 			ptr++;
 			len = strlen(ptr);
 
+			if (strcmp(type,"ifhandler") == 0) {
+				int sense;
+
+				/* Remove the trailing > */
+				ptr[--len] = '\0';
+
+				/* Remove any trailling spaces */
+				while (isspace(ptr[len-1]) && len > 0) len--;
+
+				if (ptr[0] == '!') {
+					sense = 1;
+					ptr++;
+				} else {
+					sense = 0;
+				}
+				stack(section,1);
+				stack((int)vhost,1);
+				stack(active,1);
+				if (active) active = sense ^ (get_handler(ptr) != NULL);
+				continue;
+			}
+
+			if (!active) continue;
+
 			if (strcmp(type,"virtualhost") == 0) {
 				struct vhostdetails *newvhost;
 
@@ -422,6 +454,7 @@ static struct attributes *read_attributes_file(char *filename, char *base, struc
 
 				stack(section,1);
 				stack((int)vhost,1);
+				stack(active,1);
 
 				/* Find end of vhostlist */
 				vhost = vhostlist;
@@ -450,6 +483,7 @@ static struct attributes *read_attributes_file(char *filename, char *base, struc
 
 				stack(section,1);
 				stack((int)vhost,1);
+				stack(active,1);
 				section = section_LOCATION;
 				/* Remove the trailing > */
 				ptr[len-1] = '\0';
@@ -507,6 +541,7 @@ static struct attributes *read_attributes_file(char *filename, char *base, struc
 
 				stack(section,1);
 				stack((int)vhost,1);
+				stack(active,1);
 				section = section_DIRECTORY;
 				/* Remove the trailing > */
 				ptr[len-1] = '\0';
@@ -573,6 +608,7 @@ static struct attributes *read_attributes_file(char *filename, char *base, struc
 				stack((int)attr,1);
 				stack(section,1);
 				stack((int)vhost,1);
+				stack(active,1);
 				section = section_FILES;
 				/* Remove the trailing > */
 				ptr[len-1] = '\0';
@@ -611,12 +647,13 @@ static struct attributes *read_attributes_file(char *filename, char *base, struc
 						attr->regex = NULL;
 					}
 				}
-
 			}
 
 		/* **** or an attribute and value */
 		} else {
 			char *value = NULL;
+
+			if (!active) continue;
 
 			ptr = attribute;
 			/* find end of attribute */

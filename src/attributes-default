@@ -25,32 +25,42 @@ defaultfile index.php index.html index.shtml index
 
 # Set up some handlers for specific filetypes
 Action perl-script perl %f %u
+<IfHandler !php-script>
 Action php-script php %f %u
+</IfHandler>
 
 # These allow all PHP and Perl files to be run as cgi scripts, wherever they are, unless specifically overridden
 AddFiletypeHandler php-script PHP
 AddFiletypeHandler perl-script Perl
 
+<IfHandler server-parsed>
 # Treat all files with an .shtml extension as SSI files
 AddHandler server-parsed .shtml
+</IfHandler>
 
+<IfHandler send-as-is>
 # send all files with an asis extension without adding any headers
 # the file should contain appropriate headers
 AddHandler send-as-is .asis
+</IfHandler>
 
 # define files with a .var extension to hold a type-map for content negotiation
 AddHandler type-map .var
 
+<IfHandler webjames-script>
 # define which directory holds 'webjames-style' cgi-scripts
 # Using AddHandler or AddFiletypeHandler with no filetype or extension means apply it to all files
 <location /cgi-bin/>
 AddFiletypeHandler webjames-script ALL
 </location>
+</IfHandler>
 
+<IfHandler cgi-script>
 # define which directory holds cgi-scripts using redirection
 <Location /cgi-bin2/>
 AddFiletypeHandler cgi-script
 </location>
+</IfHandler>
 
 # protect .htaccess files
 <files .htaccess>
