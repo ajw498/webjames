@@ -2,5 +2,5 @@ Echo Creating zip...
 Dir <Obey$Dir>
 Remove <Obey$Dir>.webjames/zip
 copy C:regex <Obey$Dir>.!WebJames.regex A~C~DF~L~N~P~QRS~T~V
-zip -r -9 <Obey$Dir>.webjames/zip !WebJames Site Licence -x */o/* o/* *CVS* *Debug* *zip* !WebJames/log !WebJames/clf *regex/main !WebJames/conf
+zip -r -9 <Obey$Dir>.webjames/zip !WebJames Site Licence -x */o/* o/* *CVS* *Debug* *zip* *stderr* !WebJames/log !WebJames/clf *regex/main !WebJames/conf/*
 wipe <Obey$Dir>.!WebJames.regex ~CFR~V
