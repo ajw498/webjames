@@ -1,6 +1,6 @@
 # Makefile for WebJames the web server
 #
-# $Id: cross,v 1.8 2002/10/05 16:18:47 ajw Exp $
+# $Id: cross,v 1.9 2002/12/03 21:44:18 ajw Exp $
 #
 # Settings for the gcc/unixlib build using the gccsdk cross compiler
 
@@ -26,7 +26,7 @@ DEPEND =
 WARNINGS = -Wall -Wundef -Wpointer-arith -Wmissing-prototypes
 OPTIMISATION = -O2
 DEBUG = 
-INCLUDE = -I$(LIBDIR)
+INCLUDE = -I$(LIBDIR)/include -L$(LIBDIR)/lib
 GCCINCLUDE = $(INCLUDE)
 
 #Linker flags
