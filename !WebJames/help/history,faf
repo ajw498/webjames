@@ -14,6 +14,13 @@
 </td></tr></table>
 </h3>
 
+<i>0.42 (18/1/2004)</i>
+
+<ul>
+  <li>%20 escape sequences in URIs now map to a hard space rather than a normal space.
+  <li>Fixed a bug that could occasionally cause a served file to get truncated.
+</ul>
+
 <i>0.41 (1/11/2003)</i>
 
 <ul>
