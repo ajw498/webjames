@@ -11,9 +11,9 @@ Unset Test
 
 config
 make cvsclean
-zip -r9 webjames-source/zip * -x *CVS* *cvsignore scripts* WJ-PHP* !System* Site/Test*
+zip -r9 webjames-source/zip * -x */svn* *cvsignore scripts* WJ-PHP* !System* Site/Test*
 
 config --build=normal
 make
-zip -r9 webjames/zip !WebJames Licences Site -x *CVS* *cvsignore Site/Test Licences/PHP
+zip -r9 webjames/zip !WebJames Licences Site -x */svn* *cvsignore Site/Test Licences/PHP
 
