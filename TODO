@@ -1,4 +1,5 @@
  - Give a more visible error if unable to create socket to listen on
+ - Directory indexes
  - Icon bar icon?
  - GUI for choices or a web configuration frontend
  - Act as a proxy / cache
