@@ -3,3 +3,4 @@ PHP_LIBS = -llibphp4 -lC:zlib.zlib -lC:GD13.libgd
 PHP_LDFLAGS = -L.
 PHP_CFLAGS = -DPHP
 WIMPSLOT = $(WIMPSLOT_PHP)
+REMOVE_ATTRIBUTE=Action php-script.*
