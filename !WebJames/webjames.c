@@ -1,5 +1,5 @@
 /*
-	$Id: webjames.c,v 1.21 2001/09/03 14:10:46 AJW Exp $
+	$Id: webjames.c,v 1.22 2001/09/03 22:04:07 AJW Exp $
 	General functions for WebJames
 */
 
@@ -442,7 +442,7 @@ void *webjames_writelog(int level, char *fmt, ...)
 {
 #ifdef LOG
 	va_list ap;
-	char temp[256];
+	char temp[TEMPBUFFERSIZE];
 
 	va_start(ap,fmt);
 	vsnprintf(temp,TEMPBUFFERSIZE,fmt,ap);

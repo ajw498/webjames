@@ -1,5 +1,5 @@
 /*
-	$Id: read.c,v 1.17 2001/09/03 14:10:38 AJW Exp $
+	$Id: read.c,v 1.18 2001/09/03 22:04:06 AJW Exp $
 	Reading requests
 */
 
@@ -112,6 +112,12 @@ void pollread_header(struct connection *conn, int bytes)
 	/* calculate the number of bytes left in the temp buffer */
 	if (bytes + conn->used > HTTPBUFFERSIZE)
 		bytes = HTTPBUFFERSIZE - conn->used;
+
+	if (bytes <= 0) {
+		read_report(conn);
+		report_badrequest(conn, "Request is too big for this server");
+		return;
+	}
 
 	/* read some bytes from the socket */
 	if ((bytes = webjames_readbuffer(conn, conn->buffer+conn->used, bytes))<0) return;
@@ -267,15 +273,16 @@ void pollread_header(struct connection *conn, int bytes)
 				}
 				conn->method = METHOD_DELETE;
 				conn->methodstr="DELETE";
-				conn->requesturi = conn->uri;
-				ptr = malloc(strlen(configuration.delete_script)+1);
+				len=strlen(configuration.delete_script)+1;
+				ptr = malloc(len);
 				if (!ptr) {
 					read_report(conn);
 					report_busy(conn, "Memory low");
 					return;
 				}
+				if (conn->uri) free(conn->uri);
 				conn->uri = ptr;
-				wjstrncpy(conn->uri, configuration.delete_script,MAX_FILENAME);
+				memcpy(conn->uri, configuration.delete_script,len);
 
 				if (!configuration.casesensitive) {
 					for (i = 0; conn->uri[i]; i++) conn->uri[i] = tolower(conn->uri[i]);  /* must be lowercase */
@@ -289,7 +296,6 @@ void pollread_header(struct connection *conn, int bytes)
 				}
 				conn->method = METHOD_PUT;
 				conn->methodstr="PUT";
-				conn->requesturi = conn->uri;
 				len=strlen(configuration.put_script)+1;
 				ptr = malloc(len);
 				if (!ptr) {
@@ -297,6 +303,7 @@ void pollread_header(struct connection *conn, int bytes)
 					report_busy(conn, "Memory low");
 					return;
 				}
+				if (conn->uri) free(conn->uri);
 				conn->uri = ptr;
 				memcpy(conn->uri, configuration.put_script,len);
 

@@ -150,7 +150,7 @@ logbuffersize=4096
 # opening/closing the log files repeatedly
 # if logbuffersize is nonzero  - write any data still in the buffer out
 # to disc after this many seconds of inactivity
-keep-log-open=10
+keep-log-open=1
 
 # log-rotate - prevents the logfiles from getting too big
 # first number is the maximum age (in hours)

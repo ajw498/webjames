@@ -1,5 +1,5 @@
 /*
-	$Id: wjstring.c,v 1.1 2001/09/03 14:10:49 AJW Exp $
+	$Id: wjstring.c,v 1.2 2001/09/03 22:04:09 AJW Exp $
 	String handling functions for WebJames
 	Warning: These are subtly different from their ANSI equivalents
 */
@@ -11,8 +11,11 @@
 /*Do not include webjames.h*/
 #include "wjstring.h"
 
+#include <time.h>
+
+#include "stat.h"
 /*temporary*/
-/*int snprintf(char *buf, size_t len, const char *format,...)
+int snprintf(char *buf, size_t len, const char *format,...)
 {
 	va_list ap;
 	int ret;
@@ -20,14 +23,18 @@
 	va_start(ap, format);
 	ret=vsprintf(buf, format, ap);
 	va_end(ap);
+	if (ret>len) writelog(0,"snprintf should have failed");
 	return ret;
 }
 
 
 int vsnprintf(char *buf, size_t len, const char *format, va_list ap)
 {
-	return vsprintf(buf,format,ap);
-} */
+	int ret;
+	ret=vsprintf(buf,format,ap);
+	if (ret>len) writelog(0,"vsnprintf should have failed");
+	return ret;
+}
 
 char *wjstrncpy(char *dest, const char *src, const size_t n)
 /*copy at most n characters from src to dest, and ensure that dest is 0 terminated (even if the string gets truncated)*/
