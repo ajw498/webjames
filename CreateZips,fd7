@@ -1,4 +1,4 @@
 Echo Creating zip...
 Dir <Obey$Dir>
 Remove <Obey$Dir>.webjames/zip
-zip -r -9 <Obey$Dir>.webjames/zip * -x */o/* o/* *CVS* CreateZip *zip*
+zip -r -9 <Obey$Dir>.webjames/zip * -x */o/* o/* *CVS* CreateZip *zip* Apache/* New!WebJames/* rfc/* TODO webjames2apache location
