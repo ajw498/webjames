@@ -1,30 +1,5 @@
 
-+----------------------------------------------------------------------+
-| PHP HTML Embedded Scripting Language Version 3.0                     |
-+----------------------------------------------------------------------+
-| Copyright (c) 1997-2000 PHP Development Team (See Credits file)      |
-+----------------------------------------------------------------------+
-| This program is free software; you can redistribute it and/or modify |
-| it under the terms of one of the following licenses:                 |
-|                                                                      |
-|  A) the GNU General Public License as published by the Free Software |
-|     Foundation; either version 2 of the License, or (at your option) |
-|     any later version.                                               |
-|                                                                      |
-|  B) the PHP License as published by the PHP Development Team and     |
-|     included in the distribution in the file: LICENSE                |
-|                                                                      |
-| This program is distributed in the hope that it will be useful,      |
-| but WITHOUT ANY WARRANTY; without even the implied warranty of       |
-| MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the        |
-| GNU General Public License for more details.                         |
-|                                                                      |
-| You should have received a copy of both licenses referred to here.   |
-| If you did not, or have any questions about PHP licensing, please    |
-| contact core@php.net.                                                |
-+----------------------------------------------------------------------+
-
-                    PHP 3.0.16  RISC OS version 1.06
+                    PHP 4.0.2  RISC OS version 2.00
                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 What is it?
 ~~~~~~~~~~~
@@ -93,17 +68,32 @@ work correctly when running under a web server.
 
 Using PHP with a web server
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
-I have tested PHP with the Navaho server suite (2.00b24)
-http://www.navaho.co.uk/support/ and Netplex (0.22 and 1.70)
-http://www.tristone.co.uk/davespace/netplexpublic/index.html and the ANT
-server suite X.XX
-Other servers may work, or may need the wrapper to be altered (see
-below). Double click on !PHP, then select the Run as a CGI program icon, then
+
+I have succesfully tested PHP with the following servers
+Navaho server suite (2.00b24) http://www.navaho.co.uk/support/
+Netplex (0.22 and 1.70) http://www.warmsilence.demon.co.uk/products.html#Netplex
+ANT server suite 1.32 http://www.argonet.co.uk/ant/
+WebJames (0.24 and 0.25) http://www.ecs.soton.ac.uk/~ajw498/index.php3#webjames
+
+PHP does not work with DeltaNet or WebServe
+
+Other servers may work, or may need the CGIWrapper to be altered (see
+below).
+Double click on !PHP, then select the Run as a CGI program icon, then
 click on Save.
 
-To use with Navaho, simply create you script as above, make sure that
+To use with Navaho, simply create your script as above, make sure that
 it's filetype is PHP, then put the script into Navaho's cgi-bin
 directory.
+
+If you use WebJames then put your script into the cgi-bin2 directory, or,
+if you have version 0.25 or later then adding the following to your
+attributes file will allow you to put PHP scripts in any directory
+    # global atttributes
+    [/]
+    is-cgi
+    cgi-api=redirect
+    allowed-filetypes=18a
 
 To use with the unregistered version of Netplex, or the ANT server, it
 is slightly more complicated, as they will only run certain filetypes as
@@ -121,13 +111,16 @@ file and change the line PerlFiletype:&102 to PerlFiletype:&18A (This
 will mean that you can't run Perl scripts though). Thanks to Nik Gare
 for pointing this out.
 
+The commercial version of Netplex (2.0x) shouldn't need either of the
+above modifications, but I don't have a copy so haven't tested this.
+
 Errors
 ~~~~~~
 If you get the following error then it is usually because you are
 running PHP from a web server, but have not selected the web server icon
 in !PHP.
 
-X-Powered-By: PHP/3.0.14 Content-type: text/html
+X-Powered-By: PHP/X.X.XX Content-type: text/html
 Fatal error: Unable to open -f in - on line 0
 No input file specified.
 
@@ -144,13 +137,13 @@ using Unix format filenames in your scripts, so that they are more
 portable. Note that if you use RISC OS filenames, they should be full
 pathnames (such as ADFS::4.$.File or <PHP$Dir>.File) otherwise they may
 be interpreted as Unix filenames. Under Unix, all PHP scripts should
-have the filename extension php3, but this is not necessary for RISC OS,
+have the filename extension php, but this is not necessary for RISC OS,
 although doing so might help portability.
 
 
 Memory
 ~~~~~~
-PHP needs at least a megabyte of free memory to run a simple script, and
+PHP needs around 1.6Mb of free memory to run a simple script, and
 complex scripts will need more. By default PHP is set up to use dynamic
 areas. If you don't want it to, or you have RISC OS 3.11 or earlier, you
 can disable their use by editing the !PHP.!Boot file.
@@ -171,7 +164,7 @@ Configuration
 Whether to run as a CGI program or not can be configured by double
 clicking on !PHP. There are some other options that can be configured,
 although the defaults should be fine for most people. To configure the
-other options, copy the file php3/ini into your !Boot.Choices directory,
+other options, copy the file php/ini into your !Boot.Choices directory,
 and then load it into a text editor and make any alterations. Many of
 the options are not relevant to the RISC OS port. More information on
 the options can be found in the PHP manual. You may find changing the
@@ -183,37 +176,37 @@ StrongEd
 I have included a basic PHP modefile for StrongEd, which you may find useful.
 
 
-Additional Libraries
-~~~~~~~~~~~~~~~~~~~~
-Currently PHP is linked with the PCRE library (Perl compatible regular
-expressions) and the GD library (for creating/manipulating GIF
-files).
-If there are other libraries that you would like added then let me know
+Extension modules
+~~~~~~~~~~~~~~~~~
+The following extensions have been included with PHP:
+standard  Various common functions
+pcre      Perl compatible regular expressions
+calendar  Date related functions
+ftp       FTP client
+gd        Create/manipulate GIF images
+sockets   Functions for using sockets
+session   Tracking site visitors
+zlib      Compression functions
+
+If there are other extensions that you would like added then let me know
 and I will take a look at them.
 
 
-Known Problems
-~~~~~~~~~~~~~~
+Problems
+~~~~~~~~
 There are many functions in PHP, and I am not able to test every single
 one of them, so if you come across something that doesn't work, please
 let me know.
 
-Symbolic and hard links won't work as RISC OS doesn't support them.
-The uniqid function may give the same value if called twice in close
-succession.
-Not all of the dbm functions work correctly.
-
+Some functions will not work as they do not have any meaning under RISC OS,
+eg. Symbolic links and file ownership.
 
 Any updates to the RISC OS port should be available from
 http://www.ecs.soton.ac.uk/~ajw498/
 
 General information about PHP can be found at http://www.php.net/
 
-If people find PHP useful, then let me know, then I might be persuaded
-to port PHP 4.
 
-
-4/2/00
 
 Alex Waugh   mailto:ajw498@ecs.soton.ac.uk
 

@@ -4,9 +4,9 @@ Set File$Type_18A PHP
 Set Alias$PHP Run <PHP$Dir>.PHP %%*0
 
 |Disable the following line if you don't want PHP to use a dynamic area
-|You will probable need to increase the number in the wimpslot below to about 1200k or more
+|You will probably need to increase the number in the wimpslot below as well
 Set PHP$Heap ""
 
-SetMacro Alias$@RunType_18A  WimpSlot -Min 1024k -Max 1024k |M If "<PHP$CGI>"="Yes" Then  Run <PHP$Dir>.CGIWrapper %%*0 Else If "<PHP$TaskWindow>"="Yes" Then TaskWindow "Run <PHP$Dir>.NoCGI %%*0" -wimpslot 1024K -name "PHP script" -quit Else Run <PHP$Dir>.NoCGI %%*0
+SetMacro Alias$@RunType_18A  WimpSlot -Min 1200k -Max 1200k |M If "<PHP$CGI>"="Yes" Then  Run <PHP$Dir>.CGIWrapper %%*0 Else If "<PHP$TaskWindow>"="Yes" Then TaskWindow "Run <PHP$Dir>.NoCGI %%*0" -wimpslot 1200K -name "PHP script" -quit Else Run <PHP$Dir>.NoCGI %%*0
 
 Obey <PHP$Dir>.Config

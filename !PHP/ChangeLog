@@ -1,3 +1,7 @@
+v2.00 7-Sep-00
+Updated to PHP 4.0.2
+Changed PHP filetype icon to RISC OS 4 style
+
 v1.06 17-May-00
 Fixed bug in CGI wrapper that had been introduced with the previous bug fix.
 Added support for ANT server suite.
