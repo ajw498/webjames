@@ -8,18 +8,15 @@ MemCheck = MemCheck.cc
 # ANTRESOLVER     use the ANT resolver module API for reverse DNS
 # LOG             enable logging
 # SYSLOG          use SysLog instead of internal log
-# CASESENSITIVE   use case-sensitive filename matching
 
-#CCFlags       = -c -throwback -IC: -IOSLib: -DANTRESOLVER -DLOG -DSYSLOG -Otime
-#CCFlags       = -c -throwback -IC: -fah -IOSLib: -DLOG -DSYSLOG -Otime
-#CCFlags       = -c -throwback -IC: -fah -IOSLib: -DLOG -Otime
+#CCFlags       = -c -throwback -depend !Depend -IC: -IOSLib: -DANTRESOLVER -DLOG -DSYSLOG -Otime
+#CCFlags       = -c -throwback -depend !Depend -IC: -fah -IOSLib: -DLOG -DSYSLOG -Otime
+#CCFlags       = -c -throwback -depend !Depend -IC: -fah -IOSLib: -DLOG -Otime
 CCFlags       = -c -throwback -depend !Depend -IC: -g -fah -IOSLib: -DLOG
 LinkFlags     = -o $@
 
 Libs          = OSLib:o.OSLib C:o.Stubs C:o.socklib MemCheck:o.MC
-Objects       = main.o webjames.o ip.o stat.o report.o write.o openclose.o \
-                read.o cache.o coding.o mimemap.o attributes.o cgi.o \
-                resolve.o cacheheap.o
+Objects       = main.o webjames.o ip.o stat.o report.o write.o openclose.o read.o cache.o coding.o mimemap.o attributes.o cgi.o resolve.o cacheheap.o
 
 !RunImage:    $(Objects)
               DrLink -d $(Linkflags) $(Objects) $(Libs)
@@ -30,11 +27,6 @@ Objects       = main.o webjames.o ip.o stat.o report.o write.o openclose.o \
 	$(MemCheck) $(CC) $(CCFlags) $< -o $@
 
 # Dynamic dependencies:
-o.cacheheap:	c.cacheheap
-o.cacheheap:	C:h.stdio
-o.cacheheap:	C:h.swis
-o.cacheheap:	C:h.kernel
-o.cacheheap:	h.cacheheap
 o.ip:	c.ip
 o.ip:	C:h.stdio
 o.ip:	C:h.string
@@ -48,104 +40,11 @@ o.coding:	h.coding
 o.mimemap:	c.mimemap
 o.mimemap:	h.mimemap
 o.mimemap:	C:h.kernel
-o.cgi:	c.cgi
-o.cgi:	MemCheck:h.MemCheck
-o.cgi:	C:h.stddef
-o.cgi:	C:h.stdio
-o.cgi:	C:h.stdarg
-o.cgi:	C:h.stdio
-o.cgi:	C:h.stdlib
-o.cgi:	C:h.string
-o.cgi:	C:h.ctype
-o.cgi:	C:h.time
-o.cgi:	OSLib:h.os
-o.cgi:	OSLib:h.types
-o.cgi:	OSLib:h.osfile
-o.cgi:	OSLib:h.fileswitch
-o.cgi:	OSLib:h.osmodule
-o.cgi:	OSLib:h.wimp
-o.cgi:	OSLib:h.osspriteop
-o.cgi:	OSLib:h.font
-o.cgi:	h.webjames
-o.cgi:	h.cgi
-o.cgi:	h.openclose
-o.cgi:	h.report
-o.cgi:	h.stat
-o.cgi:	h.ip
-o.cgi:	h.write
-o.resolve:	c.resolve
-o.resolve:	C:h.string
-o.resolve:	C:h.stdio
-o.resolve:	C:h.time
-o.resolve:	h.stat
-o.resolve:	h.webjames
-o.resolve:	h.resolve
-o.resolve:	h.ip
-o.openclose:	c.openclose
-o.openclose:	C:h.stdio
-o.openclose:	C:h.stdlib
-o.openclose:	C:h.string
-o.openclose:	C:h.ctype
-o.openclose:	C:h.time
-o.openclose:	h.cache
-o.openclose:	h.webjames
-o.openclose:	h.ip
-o.openclose:	h.cgi
-o.openclose:	h.stat
-o.openclose:	h.openclose
-o.openclose:	h.resolve
-o.read:	c.read
-o.read:	C:h.stdio
-o.read:	C:h.stdlib
-o.read:	C:h.string
-o.read:	C:h.ctype
-o.read:	C:h.time
-o.read:	h.webjames
-o.read:	h.cgi
-o.read:	h.attributes
-o.read:	h.stat
-o.read:	h.ip
-o.read:	h.read
-o.read:	h.report
-o.read:	h.write
-o.read:	h.coding
-o.cache:	c.cache
-o.cache:	MemCheck:h.MemCheck
-o.cache:	C:h.stddef
-o.cache:	C:h.stdio
-o.cache:	C:h.stdarg
-o.cache:	C:h.stdio
-o.cache:	C:h.stdlib
-o.cache:	C:h.string
-o.cache:	C:h.time
-o.cache:	OSLib:h.os
-o.cache:	OSLib:h.types
-o.cache:	OSLib:h.wimp
-o.cache:	OSLib:h.osspriteop
-o.cache:	OSLib:h.font
-o.cache:	OSLib:h.fileswitch
-o.cache:	OSLib:h.osfile
-o.cache:	OSLib:h.osfscontrol
-o.cache:	h.webjames
-o.cache:	h.cache
-o.cache:	h.write
-o.cache:	h.cacheheap
-o.cache:	h.stat
-o.cache:	h.mimemap
-o.attributes:	c.attributes
-o.attributes:	C:h.stdio
-o.attributes:	C:h.stdlib
-o.attributes:	C:h.string
-o.attributes:	C:h.ctype
-o.attributes:	C:h.time
-o.attributes:	h.webjames
-o.attributes:	h.attributes
-o.attributes:	h.stat
-o.attributes:	h.cgi
-o.attributes:	OSLib:h.osfscontrol
-o.attributes:	OSLib:h.types
-o.attributes:	OSLib:h.os
-o.attributes:	OSLib:h.fileswitch
+o.cacheheap:	c.cacheheap
+o.cacheheap:	C:h.stdio
+o.cacheheap:	C:h.swis
+o.cacheheap:	C:h.kernel
+o.cacheheap:	h.cacheheap
 o.main:	c.main
 o.main:	MemCheck:h.MemCheck
 o.main:	C:h.stddef
@@ -233,3 +132,102 @@ o.write:	h.attributes
 o.write:	h.report
 o.write:	h.write
 o.write:	h.mimemap
+o.openclose:	c.openclose
+o.openclose:	C:h.stdio
+o.openclose:	C:h.stdlib
+o.openclose:	C:h.string
+o.openclose:	C:h.ctype
+o.openclose:	C:h.time
+o.openclose:	h.cache
+o.openclose:	h.webjames
+o.openclose:	h.ip
+o.openclose:	h.cgi
+o.openclose:	h.stat
+o.openclose:	h.openclose
+o.openclose:	h.resolve
+o.read:	c.read
+o.read:	C:h.stdio
+o.read:	C:h.stdlib
+o.read:	C:h.string
+o.read:	C:h.ctype
+o.read:	C:h.time
+o.read:	h.webjames
+o.read:	h.cgi
+o.read:	h.attributes
+o.read:	h.stat
+o.read:	h.ip
+o.read:	h.read
+o.read:	h.report
+o.read:	h.write
+o.read:	h.coding
+o.cache:	c.cache
+o.cache:	MemCheck:h.MemCheck
+o.cache:	C:h.stddef
+o.cache:	C:h.stdio
+o.cache:	C:h.stdarg
+o.cache:	C:h.stdio
+o.cache:	C:h.stdlib
+o.cache:	C:h.string
+o.cache:	C:h.time
+o.cache:	OSLib:h.os
+o.cache:	OSLib:h.types
+o.cache:	OSLib:h.wimp
+o.cache:	OSLib:h.osspriteop
+o.cache:	OSLib:h.font
+o.cache:	OSLib:h.fileswitch
+o.cache:	OSLib:h.osfile
+o.cache:	OSLib:h.osfscontrol
+o.cache:	h.webjames
+o.cache:	h.cache
+o.cache:	h.write
+o.cache:	h.cacheheap
+o.cache:	h.stat
+o.cache:	h.mimemap
+o.attributes:	c.attributes
+o.attributes:	C:h.stdio
+o.attributes:	C:h.stdlib
+o.attributes:	C:h.string
+o.attributes:	C:h.ctype
+o.attributes:	C:h.time
+o.attributes:	h.webjames
+o.attributes:	h.write
+o.attributes:	h.attributes
+o.attributes:	h.stat
+o.attributes:	h.cgi
+o.attributes:	OSLib:h.osfscontrol
+o.attributes:	OSLib:h.types
+o.attributes:	OSLib:h.os
+o.attributes:	OSLib:h.fileswitch
+o.cgi:	c.cgi
+o.cgi:	MemCheck:h.MemCheck
+o.cgi:	C:h.stddef
+o.cgi:	C:h.stdio
+o.cgi:	C:h.stdarg
+o.cgi:	C:h.stdio
+o.cgi:	C:h.stdlib
+o.cgi:	C:h.string
+o.cgi:	C:h.ctype
+o.cgi:	C:h.time
+o.cgi:	OSLib:h.os
+o.cgi:	OSLib:h.types
+o.cgi:	OSLib:h.osfile
+o.cgi:	OSLib:h.fileswitch
+o.cgi:	OSLib:h.osmodule
+o.cgi:	OSLib:h.wimp
+o.cgi:	OSLib:h.osspriteop
+o.cgi:	OSLib:h.font
+o.cgi:	h.webjames
+o.cgi:	h.cgi
+o.cgi:	h.openclose
+o.cgi:	h.report
+o.cgi:	h.stat
+o.cgi:	h.ip
+o.cgi:	h.write
+o.resolve:	c.resolve
+o.resolve:	C:h.string
+o.resolve:	C:h.stdio
+o.resolve:	C:h.time
+o.resolve:	h.stat
+o.resolve:	h.webjames
+o.resolve:	h.resolve
+o.resolve:	h.ip

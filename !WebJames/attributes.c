@@ -5,6 +5,7 @@
 #include <time.h>
 
 #include "webjames.h"
+#include "write.h"
 #include "attributes.h"
 #include "stat.h"
 #include "cgi.h"
@@ -28,6 +29,8 @@ typedef struct hashentry {
 
 static struct hashentry *hash=NULL;
 static int hashsize, hashentries;
+
+static struct attributes *globalfiles=NULL;
 
 static int generate_key(char *uri, int size) {
 /* generate a hash table key for given uri */
@@ -237,7 +240,7 @@ static struct attributes *create_attribute_structure(char *uri) {
 	attr->homedir = attr->moved = attr->tempmoved = NULL;
 	attr->defaultfiles = NULL;
 	attr->defaultfilescount = 0;
-	attr->next = attr->previous = NULL;
+	attr->next = NULL;
 	attr->forbiddenhosts = attr->allowedhosts = NULL;
 	attr->forbiddenhostscount = attr->allowedhostscount = 0;
 	attr->forbiddenfiletypes = attr->allowedfiletypes = NULL;
@@ -263,10 +266,10 @@ static struct attributes *create_attribute_structure(char *uri) {
 	return attr;
 }
 
-static enum sectiontype stack(enum sectiontype type, int push) {
+static int stack(int value, int push) {
 /* if push!=0 then push type onto the stack, else pop a value and return it */
 /* reset the stack if push == -1 */
-	static enum sectiontype stack[STACKSIZE];
+	static int stack[STACKSIZE];
 	static int size;
 
 	switch (push) {
@@ -281,7 +284,7 @@ static enum sectiontype stack(enum sectiontype type, int push) {
 		default:
 			/* push value to the stack */
 			if (size >= STACKSIZE) break;
-			stack[size++] = type;
+			stack[size++] = value;
 	}
 	return section_NONE;
 }
@@ -337,11 +340,12 @@ static struct attributes *read_attributes_file(char *filename, char *base) {
 			int len;
 
 			if ((ptr[0] == '[') || (ptr[0] == '<' && ptr[1] == '/')) {
+				sectiontype oldsection;
 				/* end of a section */
-				if (attr) {
-					insert_attributes(attr);
-					section = stack(section_NONE,0);
-				}
+				oldsection = section;
+				if (section != section_FILES && attr) insert_attributes(attr);
+				section = (sectiontype)stack(section_NONE,0);
+				if (oldsection == section_FILES) attr = (struct attributes*)stack(section_NONE,0);
 				if (ptr[0] == '<') continue; /* end of section, but not the start of a new one */
 			}
 
@@ -386,8 +390,14 @@ static struct attributes *read_attributes_file(char *filename, char *base) {
 
 				stack(section,1);
 				section = section_DIRECTORY;
+				/* Remove the trailing > */
 				ptr[len-1] = '\0';
 				len--;
+
+				if (!configuration.casesensitive) {
+					/* filenames are case-insensitive */
+					for (i = 0; i < len; i++)  ptr[i] = tolower(ptr[i]);
+				}
 
 				sprintf(uri, "%s%s", base, ptr);
 
@@ -398,8 +408,34 @@ static struct attributes *read_attributes_file(char *filename, char *base) {
 					fclose(file);
 					return NULL;
 				}
+			} else if (strcmp(type,"files") == 0) {
+				struct attributes **fileslist;
+
+				if (section != section_NONE && section != section_DIRECTORY) continue; /* cannot have a files inside a location or another files section */
+
+				if (attr) {
+					fileslist = &(attr->next);
+				} else {
+					fileslist = &globalfiles;
+				}
+				stack((int)attr,1);
+				stack(section,1);
+				section = section_FILES;
+				/* Remove the trailing > */
+				ptr[len-1] = '\0';
+				len--;
+
+				if (!configuration.casesensitive) for (i = 0; i < len; i++)  ptr[i] = tolower(ptr[i]);
+
+				attr = create_attribute_structure(ptr);
+				if (!attr) {
+					fclose(file);
+					return NULL;
+				}
+				attr->next = *fileslist;
+				*fileslist = attr;
 			} else {
-				/* must be a <files> (not supported yet) */
+				/* an unknown section type */
 			}
 
 		/* **** or an attribute and value */
@@ -713,7 +749,7 @@ void get_attributes(char *uri, struct connection *conn) {
 /* dir              pointer to the directory to match */
 /* conn             structure to fill in */
 	int found;
-	char buffer[256], path[256], *ptr, splitchar;
+	char buffer[256], path[256], *ptr, splitchar, *leafname, leafnamebuffer[256];
 	int len, last, first, key;
 
 	if (uri[0] != '/') {
@@ -722,14 +758,38 @@ void get_attributes(char *uri, struct connection *conn) {
 		/* remove any terminating '.' */
 		strcpy(path,uri);
 		len = strlen(path);
-		if (path[len-1] == '.') path[len-1] = '\0';
+		if (path[len-1] == '.') {
+			path[--len] = '\0';
+			leafname = (char *)1;
+		} else {
+			leafname = NULL;
+		}
+
+		if (!configuration.casesensitive) {
+			int i;
+
+			for (i = 0; i < len; i++)  path[i] = tolower(path[i]);
+		}
 
 		/* make sure we can't have two different pathnames refering to the same directory */
 		if (xosfscontrol_canonicalise_path(path,buffer,NULL,NULL,255,&len)) strcpy(buffer,path);
 		splitchar = '.';
+		if (leafname) {
+			leafname = NULL;
+		} else {
+			leafname = strrchr(buffer,splitchar) + 1;
+			if (leafname) {
+				if (uri_to_filename(leafname,leafnamebuffer,0)) {
+					leafname = NULL;
+				} else {
+					leafname = leafnamebuffer;
+				}
+			}
+		}
 	} else {
 		strcpy(buffer,uri);
 		splitchar = '/';
+		leafname = NULL;
 	}
 
 	ptr = buffer;
@@ -759,6 +819,15 @@ void get_attributes(char *uri, struct connection *conn) {
 			if (strcmp(hash[key].uri,path) == 0) {
 				found = 1;
 				merge_attributes(conn,hash[key].attr);
+				if (leafname) {
+					/* Check to see if the leafname matches any <files> sections within this directory */
+					struct attributes *filesattr;
+					filesattr = hash[key].attr->next;
+					while (filesattr != NULL) {
+						if (strcmp(filesattr->uri,leafname) == 0) merge_attributes(conn,filesattr);
+						filesattr = filesattr->next;
+					}
+				}
 			}
 			key++;
 			if (key>=hashsize) key = 0;
@@ -780,6 +849,17 @@ void get_attributes(char *uri, struct connection *conn) {
 		}
 
 	} while (!last);
+
+	if (leafname) {
+		/* Check to see if the leafname matches any global <files> sections */
+		struct attributes *filesattr;
+
+		filesattr = globalfiles;
+		while (filesattr != NULL) {
+			if (strcmp(filesattr->uri,leafname) == 0) merge_attributes(conn,filesattr);
+			filesattr = filesattr->next;
+		}
+	}
 
 	if (conn->attrflags.hidden)  conn->attrflags.accessallowed = 0;
 

@@ -77,7 +77,7 @@ typedef struct attributes {
 		unsigned int forbiddenfiletypes : 1;
 	} defined;
 
-	struct attributes *next, *previous;
+	struct attributes *next;
 } attributes;
 
 

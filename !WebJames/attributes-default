@@ -60,11 +60,24 @@
 
 # global atttributes
 # Allow PHP scripts to be run as cgi, all other files served normally
-<location />
-is-cgi
+#<location />
+#is-cgi
+#cgi-api=redirect
+#allowed-filetypes=18a
+#</location>
+
+<directory <WebJames$Dir>.^.Site>
 cgi-api=redirect
 allowed-filetypes=18a
-</location>
+</directory>
+
+
+
+<files web.php>
+is-cgi
+
+</files>
+
 
 # define which directory holds 'webjames-style' cgi-scripts
 <location /cgi-bin/>
