@@ -732,7 +732,7 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
   When WebJames receives a request for a file, it decides what to do with the file
  (send it as it is, run it as a cgi script, etc.) according to any handlers set up
  in the attributes file.
- There are three handlers currently defined by WebJames (static-content, cgi-script and
+ There are four handlers currently defined by WebJames (static-content, send-as-is, cgi-script and
  webjames-script), and more can be added with the <a href="#action">action</a>
  attribute.
  <p>
@@ -765,6 +765,15 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
   This is the default handler, it simply sends the contents of the file
  requested.
+ <p>
+
+ <h6>send-as-is</h6>
+
+  This is similar to static-content, but WebJames does not add any headers beforehand.
+ This means that all headers (including the HTTP status line) must be at the beggining
+ of the file. See the file moved/asis in the site directory as an example. Note that the
+ header lines should be terminated with a CRLF not just an LF. There should be a blank line
+ between the headers and the rest of the file. 
  <p>
 
  <h6>cgi-script</h6>
@@ -1499,6 +1508,7 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
   <li>redirect cgi environment variables are now removed after the script has finished executing
   <li>introduced handlers, <code>AddHandler</code>, <code>AddFiletypeHandler</code> and
       <code>Action</code>
+  <li>added send-as-is handler
 </ul>
 
 <i>0.26 (19/10/2000)</i>

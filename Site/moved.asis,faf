@@ -1,0 +1,19 @@
+HTTP/1.0 301 This file has moved
+Location: http://localhost/examples.html
+Content-Type: text/html
+
+<html>
+<head>
+<title>Wibble</title>
+</head>
+
+<body bgcolor="#ffffff">
+
+<center>
+<h1>This file has moved</h1>
+
+<p>This file is now at http://localhost/examples.html
+
+
+</body>
+</html>

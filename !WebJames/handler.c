@@ -7,6 +7,7 @@
 #include "handler.h"
 
 #include "staticcontent.h"
+#include "sendasis.h"
 #include "cgiscript.h"
 #include "webjamesscript.h"
 
@@ -25,6 +26,14 @@ static struct handlerentry handlers[] = {
 		NULL,
 		webjamesscript_start,
 		NULL,
+		NULL
+	},
+	{
+		"send-as-is",
+		1,
+		NULL,
+		sendasis_start,
+		staticcontent_poll,
 		NULL
 	},
 	{

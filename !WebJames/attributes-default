@@ -67,6 +67,9 @@ Action php-script  php %f %u
 AddFiletypeHandler php-script  PHP
 AddFiletypeHandler perl-script Perl
 
+# send all files with an asis extension without adding any headers
+# the file should contain appropriate headers
+AddHandler send-as-is .asis
 
 # define which directory holds 'webjames-style' cgi-scripts
 # Using AddHandler or AddFiletypeHandler with no filetype or extension means apply it to all files
