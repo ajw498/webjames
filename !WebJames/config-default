@@ -17,7 +17,7 @@ webmaster=i.havent@changed.the.emailaddress.com
 serverip=
 
 # server - included in the Server: fields when replying
-server=WebJames/0.27
+server=WebJames/0.28
 
 # port - http port number
 # Webjames can accept connections on up to 8 ports simultaneously - simply

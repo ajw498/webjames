@@ -247,8 +247,12 @@ void send_file(struct connection *conn) {
 		find_handler(conn);
 	}
 
+	if (conn->handler == NULL) {
+		report_nocontent(conn);
+		return;
+	}
 	/* don't cache CGI scripts if the handler can't cope with it */
-	if (conn->handler != NULL) if (conn->handler->cache == 0) conn->flags.cacheable = 0;
+	if (conn->handler->cache == 0) conn->flags.cacheable = 0;
 
 	/* check if object is cached */
 	if (conn->flags.cacheable) {

@@ -591,7 +591,7 @@ static struct attributes *read_attributes_file(char *filename, char *base) {
 
 			} else if (strcmp(attribute, "addhandler") == 0 || strcmp(attribute, "addfiletypehandler") == 0) {
 				char *filetypetext;
-				int filetype = filetype_NONE, filetypehandler = 0;
+				int filetype = filetype_NONE, filetypehandler = 0, notfound = 0;
 				struct handlerlist *newhandler;
 
 				if (attribute[10] != '\0') filetypehandler = 1;
@@ -607,31 +607,35 @@ static struct attributes *read_attributes_file(char *filename, char *base) {
 				lower_case(value);
 
 				if (filetypehandler) {
-					if (xosfscontrol_file_type_from_string(filetypetext,(bits*)&filetype)) filetype = filetype_NONE;
+					if (filetypetext[0] != '\0') {
+						if (xosfscontrol_file_type_from_string(filetypetext,(bits*)&filetype)) notfound = 1;
+					}
 				} else if (!configuration.casesensitive) {
 					/* change file extension to lowercase */
 					lower_case(filetypetext);
 				}
 
-				newhandler = malloc(sizeof(struct handlerlist));
-				if (newhandler == NULL) {
-					fclose(file);
-					return NULL;
-				}
-
-				/* fill in details */
-				newhandler->filetype = filetype;
-				if (filetypetext[0] == '\0') filetypetext = NULL;
-				if (filetypehandler) newhandler->extension = NULL; else newhandler->extension = filetypetext;
-				newhandler->handler = get_handler(value);
-
-				/* add to linked list */
-				if (attr) {
-					newhandler->attrnext = attr->handlers;
-					attr->handlers = newhandler;
-				} else {
-					newhandler->attrnext = globalhandlers;
-					globalhandlers = newhandler;
+				if (notfound == 0) {
+					newhandler = malloc(sizeof(struct handlerlist));
+					if (newhandler == NULL) {
+						fclose(file);
+						return NULL;
+					}
+	
+					/* fill in details */
+					newhandler->filetype = filetype;
+					if (filetypetext[0] == '\0') filetypetext = NULL;
+					if (filetypehandler) newhandler->extension = NULL; else newhandler->extension = filetypetext;
+					newhandler->handler = get_handler(value);
+	
+					/* add to linked list */
+					if (attr) {
+						newhandler->attrnext = attr->handlers;
+						attr->handlers = newhandler;
+					} else {
+						newhandler->attrnext = globalhandlers;
+						globalhandlers = newhandler;
+					}
 				}
 				
 

@@ -13,7 +13,7 @@ WebJames - the web server
 </td></tr>
 <tr>
 <td><center><h5>
-Version 0.27
+Version 0.28
 </h5></center>
 </td>
 </tr></table>
@@ -1494,6 +1494,16 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 <a name="history">History</a>
 </td></tr></table>
 </h3>
+
+<i>0.28 (1/1/2001)</i>
+
+<ul>
+  fixed a couple of bugs:
+  <li>when an AddFiletypeHandler is used with an unknown filetype, it is now ignored, rather than being
+      applied to all filetypes.
+  <li>if an unknown handler is specified for a file, it now sends a no content report rather than leaving
+      the socket open and not sending anything.
+</ul>
 
 <i>0.27 (27/12/2000)</i>
 

@@ -63,7 +63,7 @@ Action perl-script perl %f %u
 Action php-script php %f %u
 
 # These allow all PHP and Perl files to be run as cgi scripts, wherever they are, unless specifically overridden
-AddFiletypeHandler php-script  PHP
+AddFiletypeHandler php-script PHP
 AddFiletypeHandler perl-script Perl
 
 # send all files with an asis extension without adding any headers

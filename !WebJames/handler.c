@@ -5,6 +5,7 @@
 
 #include "webjames.h"
 #include "handler.h"
+#include "report.h"
 
 #include "staticcontent.h"
 #include "sendasis.h"
@@ -58,7 +59,12 @@ static handler *handlerslist=NULL;
 
 void handler_start(struct connection *conn)
 {
-	if (conn->handler != NULL) if (conn->handler->startfn != NULL) conn->handler->startfn(conn);
+	if (conn->handler->startfn != NULL) {
+		conn->handler->startfn(conn);
+	} else {
+		if (conn->handler->pollfn == NULL) report_nocontent(conn);
+	}
+
 }
 
 int handler_poll(struct connection *conn,int maxbytes)
