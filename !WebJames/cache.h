@@ -1,22 +1,22 @@
 
-// max no. of files to cache - the more, the slower the cache-scan
+/* max no. of files to cache - the more, the slower the cache-scan */
 #define MAXCACHEFILES         30
 
 
 typedef struct cache {
-  char filename[256];
-  char name[256];
-  int size;
-  int namelen, checksum;                // namelen and checksum are used
-                                        // to speed up the cache-scanning
-  struct tm date;
-  char mimetype[128];
+	char filename[256];
+	char name[256];
+	int size;
+	int namelen, checksum;	/* namelen and checksum are used */
+							/* to speed up the cache-scanning */
+	struct tm date;
+	char mimetype[128];
 
-  char *buffer;
+	char *buffer;
 
-  int removewhenidle;
-  int timeoflastaccess;                 // clock()/100 values
-  int accesses, totalaccesses;
+	int removewhenidle;
+	int timeoflastaccess;                 /* clock()/100 values */
+	int accesses, totalaccesses;
 } cache;
 
 

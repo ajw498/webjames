@@ -1,26 +1,26 @@
 
 typedef struct homedirobject {
-  char *username;
-  int usernamelen;
-  char *dir;
-  struct homedirobject *next;
+	char *username;
+	int usernamelen;
+	char *dir;
+	struct homedirobject *next;
 } homedirobject;
 
 typedef struct movedobject {
-  char *path;
-  char *url;
-  int pathlen;
-  int temporarily;
-  struct movedobject *next;
+	char *path;
+	char *url;
+	int pathlen;
+	int temporarily;
+	struct movedobject *next;
 } movedobject;
 
 typedef struct accessobject {
-  char *path;
-  char *realm;
-  char *userpwd;
-  int isfile;
-  int pathlen;
-  struct accessobject *next;
+	char *path;
+	char *realm;
+	char *userpwd;
+	int isfile;
+	int pathlen;
+	struct accessobject *next;
 } accessobject;
 
 void pollwrite(int cn);

@@ -38,109 +38,109 @@
 #define ERRORDOC
 
 typedef struct errordoc {
-	int status; // http status code
-	char *report; // text to use, or url to redirect to
-	struct errordoc *next; // only used in conn structures, not in attrributes strcutures
+	int status; /* http status code */
+	char *report; /* text to use, or url to redirect to */
+	struct errordoc *next; /* only used in conn structures, not in attrributes strcutures */
 } errordoc;
 
 #endif
 
 
 typedef struct serverinfo {
-  int port;
-  int socket;
+	int port;
+	int socket;
 } serverinfo;
 
 
 typedef struct connection {
 
-  int socket, port;
-  int status;                 // unused/header/body/write/dns
-  char index;                 // index in connections[]
-  char method;                // 0 GET  1=POST  2=HEAD
-  int httpminor;
-  int httpmajor;
-  int statuscode;             // code returned to the user
+	int socket, port;
+	int status;                 /* unused/header/body/write/dns */
+	char index;                 /* index in connections[] */
+	char method;                /* 0 GET  1=POST  2=HEAD */
+	int httpminor;
+	int httpmajor;
+	int statuscode;             /* code returned to the user */
 
-  char dnsstatus;             // DNS_FAILED, DNS_TRYING or DNS_OK
-  char host[128];             // a.b.c.d or name
-  char ipaddr[4];
-  int dnsendtime;             // clock() value
+	char dnsstatus;             /* DNS_FAILED, DNS_TRYING or DNS_OK */
+	char host[128];             /* a.b.c.d or name */
+	char ipaddr[4];
+	int dnsendtime;             /* clock() value */
 
-  struct {
-    unsigned int releasefilebuffer : 1;  // release filebuffer when done
-    unsigned int deletefile        : 1;  // delete file when done
-    unsigned int cacheable         : 1;
-    unsigned int is_cgi            : 1;
-  } flags;
+	struct {
+		unsigned int releasefilebuffer : 1;  /* release filebuffer when done */
+		unsigned int deletefile        : 1;  /* delete file when done */
+		unsigned int cacheable         : 1;
+		unsigned int is_cgi            : 1;
+	} flags;
 
-  // various header-lines, all malloc()'ed
-  char *uri, *accept, *type, *referer, *useragent;
-  char *authorization, *requestline, *cookie;
-  char *requesturi;           // only for PUT and DELETE methods
+	/* various header-lines, all malloc()'ed */
+	char *uri, *accept, *type, *referer, *useragent;
+	char *authorization, *requestline, *cookie;
+	char *requesturi;           /* only for PUT and DELETE methods */
 
-  int bodysize;               // body (if POST)
-  char *body;                 // malloc()-ed
+	int bodysize;               /* body (if POST) */
+	char *body;                 /* malloc()-ed */
 
-  // attributes - from the attributes file
-  char *homedir;              // path to the site on server
-  int homedirignore;
-  char *userandpwd;           // username:password or NULL
-  char *accessfile;           // NULL for no accessfile
-  char *realm;                // NULL if not password protected
-  char *moved;                // new URI
-  char *tempmoved;            // new URI
-  char **defaultfiles;        // usually 'index.html'
-  int defaultfilescount;
-  int *allowedfiletypes;      // filetypes that are allowed to be run as cgi scripts
-  int allowedfiletypescount;
-  int *forbiddenfiletypes;    // filetypes that are forbidden to be run as cgi scripts
-  int forbiddenfiletypescount;
-  struct {
-    unsigned int accessallowed : 1;
-    unsigned int hidden : 1;
-  } attrflags;
-  char cgi_api;
+	/* attributes - from the attributes file */
+	char *homedir;              /* path to the site on server */
+	int homedirignore;
+	char *userandpwd;           /* username:password or NULL */
+	char *accessfile;           /* NULL for no accessfile */
+	char *realm;                /* NULL if not password protected */
+	char *moved;                /* new URI */
+	char *tempmoved;            /* new URI */
+	char **defaultfiles;        /* usually 'index.html' */
+	int defaultfilescount;
+	int *allowedfiletypes;      /* filetypes that are allowed to be run as cgi scripts */
+	int allowedfiletypescount;
+	int *forbiddenfiletypes;    /* filetypes that are forbidden to be run as cgi scripts */
+	int forbiddenfiletypescount;
+	struct {
+		unsigned int accessallowed : 1;
+		unsigned int hidden : 1;
+	} attrflags;
+	char cgi_api;
 
-  struct cache *cache;        // pointer to cache entry or NULL
+	struct cache *cache;        /* pointer to cache entry or NULL */
 
-  int headersize, headerallocated;
-  char *header;               // malloc()'ed
+	int headersize, headerallocated;
+	char *header;               /* malloc()'ed */
 
-  FILE *file;                 // if file != NULL, data will be read
-                              // directly from the file
-  char *filebuffer;           // if file == NULL, data will be read from
-                              // the filebuffer (typically the cached file)
-  char filename[256];
-  int filesize;               // no. of bytes to write
-  int fileused;               // no. of bytes left
-  int leftinbuffer;           // no. of bytes left in temp buffer (if
-                              //  file == NULL)
-  int positioninbuffer;       // next unused byte in read-ahead buffer
+	FILE *file;                 /* if file != NULL, data will be read */
+								/* directly from the file */
+	char *filebuffer;           /* if file == NULL, data will be read from */
+								/* the filebuffer (typically the cached file) */
+	char filename[256];
+	int filesize;               /* no. of bytes to write */
+	int fileused;               /* no. of bytes left */
+	int leftinbuffer;           /* no. of bytes left in temp buffer (if */
+								/*  file == NULL) */
+	int positioninbuffer;       /* next unused byte in read-ahead buffer */
 
-  struct tm if_modified_since;
+	struct tm if_modified_since;
 
-  int timeoflastactivity;     // clock() value - set when reading/writing
-  int starttime;              // clock() value when request was received
+	int timeoflastactivity;     /* clock() value - set when reading/writing */
+	int starttime;              /* clock() value when request was received */
 
-  int used;                   // bytes used in the buffer
-  char buffer[HTTPBUFFERSIZE+4];
+	int used;                   /* bytes used in the buffer */
+	char buffer[HTTPBUFFERSIZE+4];
 
-  struct errordoc *errordocs;    // linked list used to hold custom error reports
+	struct errordoc *errordocs;    /* linked list used to hold custom error reports */
 
 } connection;
 
 
 extern struct connection *connections[MAXCONNECTIONS];
 
-// configuration
+/* configuration */
 typedef struct config {
-  int timeout, bandwidth;
-  char server[128], panic[504], *xheader[17], webmaster[256];
-  char delete_script[256], put_script[256], site[256];
-  char attributesfile[256], serverip[256], cgi_in[256], cgi_out[256];
-  char htaccessfile[256];
-  int xheaders;
+	int timeout, bandwidth;
+	char server[128], panic[504], *xheader[17], webmaster[256];
+	char delete_script[256], put_script[256], site[256];
+	char attributesfile[256], serverip[256], cgi_in[256], cgi_out[256];
+	char htaccessfile[256];
+	int xheaders;
 } config;
 
 extern struct config configuration;

@@ -1,6 +1,6 @@
 
-// number of report files to cache - this should probably be about
-// 50% of the total number of report files in <WebJames$Dir>.Reports
+/* number of report files to cache - this should probably be about */
+/* 50% of the total number of report files in <WebJames$Dir>.Reports */
 #define REPORTCACHECOUNT  8
 
 #define REPORT_SUBSTITUTE_NOT_TESTED    0
@@ -9,18 +9,18 @@
 
 
 typedef struct reportcache {
-  char *buffer;
-  int size;                   // size of the cached file
-  int report;                 // report no. or -1
-  int time;                   // clock() value of last access
-  char substitute;            // 0 = not tested, 1 = none, 2 = some
-  char reload;                // set to 1 to force reload at next access
+	char *buffer;
+	int size;                   /* size of the cached file */
+	int report;                 /* report no. or -1 */
+	int time;                   /* clock() value of last access */
+	char substitute;            /* 0 = not tested, 1 = none, 2 = some */
+	char reload;                /* set to 1 to force reload at next access */
 } reportcache;
 
 typedef struct substitute {
-  char *name;
-  char *value;
-  int namelen, valuelen;
+	char *name;
+	char *value;
+	int namelen, valuelen;
 } substitute;
 
 extern struct reportcache reports[REPORTCACHECOUNT];

@@ -1,5 +1,5 @@
 
-// loglevel for various log entries
+/* loglevel for various log entries */
 #define LOGLEVEL_OPEN         4
 #define LOGLEVEL_CMD          4
 #define LOGLEVEL_DNS          6
@@ -18,10 +18,10 @@
 
 
 typedef struct stats {
-  time_t starttime;
-  int time, currenttime, adjusttime;
-  int written, access;
-  int written2, access2;
+	time_t starttime;
+	int time, currenttime, adjusttime;
+	int written, access;
+	int written2, access2;
 } stats;
 
 extern struct stats statistics;
