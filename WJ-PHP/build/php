@@ -1,6 +1,0 @@
-# Definitions needed for linking PHP with WebJames
-PHP_LIBS = -llibphp4 -lC:zlib.libz -lC:GD-184.libgd -lC:libjpeg.libjpeg -lC:libpng.libpng
-PHP_LDFLAGS = -L.
-PHP_CFLAGS = -DPHP
-WIMPSLOT = $(WIMPSLOT_PHP)
-REMOVE_ATTRIBUTE=Action php-script.*
