@@ -3,6 +3,10 @@ IconSprites <PHP$Dir>.!Sprites
 Set File$Type_18A PHP
 Set Alias$PHP Run <PHP$Dir>.PHP %%*0
 
-SetMacro Alias$@RunType_18A If "<PHP$CGI>"="Yes" Then Run <PHP$Dir>.CGIWrapper %%*0 Else Run <PHP$Dir>.NoCGI %%*0
+|Disable the following line if you don't want PHP to use a dynamic area
+|You will probable need to increase the number in the wimpslot below to about 1200k or more
+Set PHP$Heap ""
+
+SetMacro Alias$@RunType_18A WimpSlot -Min 800k -Max 800k |M If "<PHP$CGI>"="Yes" Then Run <PHP$Dir>.CGIWrapper %%*0 Else Run <PHP$Dir>.NoCGI %%*0
 
 Obey <PHP$Dir>.Config

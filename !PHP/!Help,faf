@@ -121,6 +121,14 @@ have the filename extension php3, but this is not necessary for RISC OS,
 although doing so might help portability.
 
 
+Memory
+~~~~~~
+PHP needs about a megabyte of free memory to run a simple script, and
+complex scripts will need more. By default PHP is set up to use dynamic
+areas. If you don't want it to, or you have RISC OS 3.11 or earlier, you
+can disable their use by editing the !PHP.!Boot file.
+
+
 CGIWrapper
 ~~~~~~~~~~
 The file !PHP.CGIWrapper exists to isolate the actual PHP binary from
