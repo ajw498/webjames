@@ -18,7 +18,7 @@
 #include "write.h"
 
 
-int script_start(int scripttype, struct connection *conn, char *script, int pwd, char *args) {
+void script_start(int scripttype, struct connection *conn, char *script, int pwd, char *args) {
 // start a script
 //
 // scripttype       currently always SCRIPT_CGI
@@ -26,45 +26,13 @@ int script_start(int scripttype, struct connection *conn, char *script, int pwd,
 // script           script filename
 // pwd              0 if not password-protected, 1 if password-protected
 // args             pointer to arguments-part of the URI (eg. 'arg=value')
-//
-// returns 0 if object should not be treated as a cgi script, 1 if dealt with
-
-  int size;
-  fileswitch_object_type objtype;
-  bits load, exec, filetype;
-  fileswitch_attr attr;
-
-  // check if cgi-script program exists
-  xosfile_read_stamped_no_path(script, &objtype, &load, &exec, &size,
-                   &attr, &filetype);
-  if (objtype != 1) {
-    report_notfound(conn);
-    return 1;
-  }
-
-  if (conn->forbiddenfiletypescount) {
-    int i, forbidden = 0;
-  	for (i = 0; i < conn->forbiddenfiletypescount; i++) {
-    	if (conn->forbiddenfiletypes[i] == filetype) forbidden = 1;
-    }
-    if (forbidden) return 0;
-  }
-
-  if (conn->allowedfiletypescount) {
-    int i, allowed = 0;
-
-    for (i = 0; i < conn->allowedfiletypescount; i++) {
-    	if (conn->allowedfiletypes[i] == filetype) allowed = 1;
-    }
-    if (!allowed) return 0;
-  }
 
   if (conn->cgi_api == CGI_API_REDIRECT)
     script_start_redirect(script, conn, args, pwd);
   else if (conn->cgi_api == CGI_API_WEBJAMES)
     script_start_webjames(scripttype, conn, script, pwd);
 
-  return 1;
+  return;
 }
 
 
