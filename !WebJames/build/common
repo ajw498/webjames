@@ -71,7 +71,7 @@ attributes: attributes-default
 config: config-default
 	sed -e "s/dummy/dummy/" -e "s/$(REMOVE_CONFIG)//" config-default > $@
 
-dist:
+dist: all
 	cd ..
 	-rm webjames.zip
 	-rm source.zip
@@ -79,7 +79,7 @@ dist:
 	-rm libs.zip
 	zip -r -9 webjames/zip !WebJames Site Licence -x */o/* *CVS* *stderr *log *clf *build* *Makefile */c/* */h/* *-default
 	zip -r -9 source/zip !WebJames Site Licence -x */o/* *CVS* *stderr *log *clf *!Run *!RunImage *attributes *config
-	zip -r -9 -j libs/zip C:regex.a.libregex C:libpng.libpng C:zlib.zlib C:libjpeg.libjpeg C:gd-1/8/4.libgd
+	zip -r -9 -j libs/zip PHP/ReadMe-Libs C:regex.libregex C:libpng.libpng C:zlib.libz C:libjpeg.libjpeg C:gd-1/8/4.libgd
 	cd PHP
 	zip -r -9 libphp/zip build h libphp4 ReadMe -x */o/* *CVS*
 	cd ../!WebJames
