@@ -1,5 +1,5 @@
 /*
-	$Id: read.c,v 1.5 2003/06/25 21:54:50 ajw Exp $
+	$Id: read.c,v 1.6 2003/06/25 22:14:17 ajw Exp $
 	Reading requests
 */
 
@@ -452,7 +452,7 @@ void pollread_header(struct connection *conn, int bytes)
 				report_busy(conn, "Memory low");
 				return;
 			}
-			memcpy(conn->host, line+6,len);
+			for (i = 0; i < len; i++) conn->host[i] = tolower(line[i+6]);
 			webjames_writelog(LOGLEVEL_FROM, "%s", line);
 
 		} else if (strncmp(upper, "AUTHORIZATION: ", 15) == 0) {
