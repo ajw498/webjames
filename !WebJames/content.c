@@ -160,11 +160,12 @@ static int content_updatescores(struct varmap *map,char *line,enum field field)
 			switch (accept->wild) {
 				case normal:
 					if (field==field_language) {
-						size_t len=strlen(accept->type);
 						if (map->language) {
-							if (strncmp(map->language,accept->type,len)==0) {
-								/*allow "en" to match "en" or "en-gb" */
-								if (map->language[len]=='\0' || map->language[len]=='-') {
+							size_t tlen=strlen(accept->type);
+							size_t mlen=strlen(map->language);
+							if (strncmp(map->language,accept->type,tlen)==0 || strncmp(map->language,accept->type,mlen)==0) {
+								/*allow "en" to match "en" or "en-gb" and vice-versa*/
+								if (tlen<mlen ? (map->language[tlen]=='\0' || map->language[tlen]=='-') : (accept->type[mlen]=='\0' || accept->type[mlen]=='-')) {
 									match=1;
 									map->score*=1 * (accept->q);
 								}
