@@ -1,4 +1,7 @@
 
+v1.02
+Fixed bug with taskwindow icon - when !PHP loaded it set it to the opposite of what it should be
+
 v1.01
 Enabled and linked with GD library
 Added option to run standalone in a task window

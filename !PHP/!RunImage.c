@@ -128,7 +128,7 @@ int main(void)
 	Desk_Event_Claim(Desk_event_CLICK,window,icon_CGI,ShadeTaskWindow,NULL);
 	Desk_Event_Claim(Desk_event_CLICK,window,icon_STANDALONE,UnShadeTaskWindow,NULL);
 	Desk_Icon_SetRadios(window,icon_STANDALONE,icon_CGI,Desk_stricmp(getenv("PHP$CGI"),"Yes") ? icon_STANDALONE : icon_CGI);
-	Desk_Icon_SetSelect(window,icon_TASKWINDOW,Desk_stricmp(getenv("PHP$TaskWindow"),"Yes"));
+	Desk_Icon_SetSelect(window,icon_TASKWINDOW,!Desk_stricmp(getenv("PHP$TaskWindow"),"Yes"));
 	if (Desk_Icon_GetSelect(window,icon_CGI)) ShadeTaskWindow(NULL,NULL);
 	while (Desk_TRUE) Desk_Event_Poll();
 	return 0;
