@@ -1,5 +1,5 @@
 /*
-	$Id: serverparsed.c,v 1.3 2002/10/05 16:52:10 ajw Exp $
+	$Id: serverparsed.c,v 1.4 2002/10/20 11:22:37 ajw Exp $
 	Support for Server Side Includes (SSI)
 */
 
@@ -685,11 +685,12 @@ static void serverparsed_includevirtual(struct connection *conn,char *reluri)
 	COPY(socket);
 	COPY(port);
 	COPY(index);
+	COPY(vhost);
 	COPY(method);
 	COPY(methodstr);
 	COPY(httpminor);
 	COPY(httpmajor);
-	STRNCOPY(host,MAX_HOSTNAME);
+	STRNCOPY(remotehost,MAX_HOSTNAME);
 	COPY(ipaddr[0]);
 	COPY(ipaddr[1]);
 	COPY(ipaddr[2]);
@@ -704,6 +705,7 @@ static void serverparsed_includevirtual(struct connection *conn,char *reluri)
 	MEMCOPY(requestline);
 	MEMCOPY(cookie);
 	MEMCOPY(requesturi);
+	MEMCOPY(host);
 	COPY(bodysize);
 	MEMCOPY(body);
 	MEMCOPY(type);
@@ -740,6 +742,7 @@ static char *serverparsed_virtualtofilename(struct connection *conn,char *virt)
 	uri=serverparsed_reltouri(conn->uri,virt); /*convert to an absolute uri*/
 	newconn=create_conn();
 
+	newconn->vhost = conn->vhost;
 	get_attributes(uri,newconn);
 
 	/* build RISCOS filename */
@@ -851,6 +854,7 @@ static void serverparsed_execcommand(struct connection *conn,char *cmd)
 	newconn->flags.setcsd=conn->flags.setcsd;
 	newconn->method=METHOD_GET;
 	MEMCOPY(uri);
+	COPY(vhost);
 
 	newconn->socket=conn->socket;
 
@@ -1020,6 +1024,7 @@ static void serverparsed_command(struct connection *conn,char *command,char *arg
 					wjstrncpy(newconn->filename,filename,MAX_FILENAME);
 					newconn->method=METHOD_GET;
 					MEMCOPY(uri);
+					COPY(vhost);
 
 					newconn->socket=conn->socket;
 

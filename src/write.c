@@ -1,5 +1,5 @@
 /*
-	$Id: write.c,v 1.1 2002/02/17 22:50:10 ajw Exp $
+	$Id: write.c,v 1.2 2002/10/20 11:22:37 ajw Exp $
 	Get attributes for each request the send the file
 */
 
@@ -104,6 +104,8 @@ void send_file(struct connection *conn) {
 		return;
 	}
 
+	get_vhost(conn);
+	
 	get_attributes(conn->uri, conn);
 
 	/* RISC OS filename limit - really should be removed... */

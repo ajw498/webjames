@@ -1,7 +1,7 @@
 #ifndef WEBJAMES_H
 #define WEBJAMES_H
 
-#define WEBJAMES_H_REVISION "$Revision: 1.5 $"
+#define WEBJAMES_H_REVISION "$Revision: 1.6 $"
 
 #define WEBJAMES_VERSION "0.37-dev"
 #define WEBJAMES_DATE "22/7/02"
@@ -77,6 +77,21 @@ typedef struct listeninfo {
 	socket_s socket;
 } listeninfo;
 
+
+/* Details of a virtual host, used mainly in attributes.c */
+typedef struct vhostdetails {
+	char *domain;
+	char *homedir;
+	struct hashentry *hash;
+	int hashsize;
+	int hashentries;
+	struct attributes *globalfiles;
+	struct attributes *globallocations;
+	struct attributes *globaldirectories;
+	struct handlerlist *globalhandlers;
+	struct vhostdetails *next;
+} vhostdetails;
+
 typedef struct connection {
 
 	struct connection *parent; /*the parent connection structure if this was #included from an SSI doc*/
@@ -91,9 +106,10 @@ typedef struct connection {
 	int httpmajor;
 	char *protocol;				/*protocol used to reply currently always "HTTP/1.0"*/
 	int statuscode;             /* code returned to the user */
+	struct vhostdetails *vhost; /* vhost this connection is associated with */
 
 	char dnsstatus;             /* DNS_FAILED, DNS_TRYING or DNS_OK */
-	char host[MAX_HOSTNAME];             /* a.b.c.d or name */
+	char remotehost[MAX_HOSTNAME];             /* a.b.c.d or name */
 	char ipaddr[4];
 	int dnsendtime;             /* clock() value */
 
@@ -110,7 +126,7 @@ typedef struct connection {
 
 	/* various header-lines, all malloc()'ed */
 	char *uri, *accept, *acceptlanguage, *acceptcharset, *acceptencoding, *type, *referer, *useragent;
-	char *authorization, *requestline, *cookie;
+	char *authorization, *requestline, *cookie, *host;
 	char *requesturi;           /* only for PUT and DELETE methods */
 
 	int bodysize;               /* body (if POST) */

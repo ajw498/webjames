@@ -1,5 +1,5 @@
 /*
-	$Id: openclose.c,v 1.1 2002/02/17 22:50:10 ajw Exp $
+	$Id: openclose.c,v 1.2 2002/10/20 11:22:37 ajw Exp $
 	Open and close connections
 */
 
@@ -35,7 +35,7 @@ struct connection *create_conn(void)
 	/* various header lines */
 	conn->uri = conn->body = conn->accept = conn->acceptcharset = conn->acceptencoding = conn->acceptlanguage = conn->header = NULL;
 	conn->requestline = conn->type = conn->authorization = NULL;
-	conn->useragent = conn->referer = conn->cookie = NULL;
+	conn->useragent = conn->referer = conn->cookie = conn->host = NULL;
 	conn->requesturi = conn->header = conn->args = NULL;
 	/* other stuff */
 	conn->filebuffer = NULL;
@@ -44,8 +44,9 @@ struct connection *create_conn(void)
 	conn->file = NULL;
 	conn->vary[0]='\0';
 	conn->contentlanguage = conn->contentlocation = NULL;
+	conn->vhost = NULL;
 	/* attributes */
-	conn->homedir = configuration.site;
+	conn->homedir = NULL;
 	conn->accessfile = conn->userandpwd = conn->realm = NULL;
 	conn->moved = conn->tempmoved = NULL;
 	conn->defaultfiles = NULL;
@@ -123,7 +124,7 @@ void open_connection(socket_s socket, char *host, int port)
 	conn->ipaddr[3] = host[7];
 
 	/* default name of the remote host is the ip-address */
-	snprintf(conn->host, MAX_HOSTNAME, "%d.%d.%d.%d", host[4], host[5], host[6], host[7]);
+	snprintf(conn->remotehost, MAX_HOSTNAME, "%d.%d.%d.%d", host[4], host[5], host[6], host[7]);
 	if (configuration.reversedns >= 0) {
 		conn->dnsstatus = DNS_TRYING;
 		conn->dnsendtime = 0x7fffffff;      /* indefinately! */
@@ -196,6 +197,7 @@ void close_connection(struct connection *conn, int force, int real) {
 	if (conn->acceptcharset)  free(conn->acceptcharset);
 	if (conn->acceptencoding) free(conn->acceptencoding);
 	if (conn->uri)            free(conn->uri);
+	if (conn->host)           free(conn->host);
 	if (conn->cookie)         free(conn->cookie);
 	if (conn->requesturi)     free(conn->requesturi);
 	if (conn->authorization)  free(conn->authorization);
@@ -204,7 +206,7 @@ void close_connection(struct connection *conn, int force, int real) {
 	if ((conn->filebuffer) && (conn->flags.releasefilebuffer)) free(conn->filebuffer);
 	conn->filebuffer = conn->body = conn->header = conn->type = NULL;
 	conn->accept = conn->acceptlanguage = conn->acceptcharset = conn->acceptencoding = NULL;
-	conn->uri =  conn->requesturi = conn->cookie = conn->authorization = NULL;
+	conn->uri = conn->host = conn->requesturi = conn->cookie = conn->authorization = NULL;
 	conn->contentlocation = conn->contentlanguage = NULL;
 
 	/* free the linked list of custom error documents */

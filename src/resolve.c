@@ -1,5 +1,5 @@
 /*
-	$Id: resolve.c,v 1.1 2002/02/17 22:50:10 ajw Exp $
+	$Id: resolve.c,v 1.2 2002/10/20 11:22:37 ajw Exp $
 	Reverse DNS
 */
 
@@ -29,7 +29,7 @@ void resolver_poll(struct connection *conn)
 	_kernel_swi_regs regs;
 
 	if (configuration.reversedns>=0) {
-		regs.r[0]=(int)conn->host;
+		regs.r[0]=(int)conn->remotehost;
 		if (E((os_error*)_kernel_swi(Resolver_GetHost, &regs, &regs))) {
 			abort_reverse_dns(conn, DNS_FAILED);
 		} else {
@@ -46,9 +46,9 @@ void resolver_poll(struct connection *conn)
 					MemCheck_RegisterMiscBlock_Ptr(ip);
 					MemCheck_RegisterMiscBlock_String(ip[0]);
 #endif
-					webjames_writelog(LOGLEVEL_DNS, "DNS %s is %s", conn->host, ip[0]);
+					webjames_writelog(LOGLEVEL_DNS, "DNS %s is %s", conn->remotehost, ip[0]);
 
-					wjstrncpy(conn->host, ip[0], 127);
+					wjstrncpy(conn->remotehost, ip[0], 127);
 #ifdef MemCheck_MEMCHECK
 					MemCheck_UnRegisterMiscBlock(ip[0]);
 					MemCheck_UnRegisterMiscBlock(ip);
@@ -56,7 +56,7 @@ void resolver_poll(struct connection *conn)
 					abort_reverse_dns(conn, DNS_OK);
 					break;
 				case -1:
-					webjames_writelog(LOGLEVEL_DNS, "DNS %s host not found", conn->host);
+					webjames_writelog(LOGLEVEL_DNS, "DNS %s host not found", conn->remotehost);
 					abort_reverse_dns(conn, DNS_FAILED);
 					break;
 				default:

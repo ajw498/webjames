@@ -1,5 +1,5 @@
 /*
-	$Id: attributes.c,v 1.2 2002/10/19 15:18:17 ajw Exp $
+	$Id: attributes.c,v 1.3 2002/10/20 11:22:37 ajw Exp $
 	Reading and using attributes files
 */
 
@@ -42,12 +42,9 @@ typedef struct handlerlist {
 	struct handlerlist *connnext; /* next entry in connection linked list */
 } handlerlist;
 
-static struct hashentry *hash=NULL;
-static int hashsize, hashentries;
+static struct vhostdetails defaultvhost;
 
-static struct attributes *globalfiles=NULL,*globallocations=NULL,*globaldirectories=NULL;
-
-static struct handlerlist *globalhandlers=NULL;
+static struct vhostdetails *vhostlist = NULL;
 
 static int generate_key(char *uri, int size) {
 /* generate a hash table key for given uri */
@@ -73,27 +70,27 @@ static void insert_into_hash(struct hashentry *hashptr, int size, char *uri, str
 	hashptr[key].attr = attr;
 }
 
-static void insert_attributes(struct attributes *attr) {
+static void insert_attributes(struct attributes *attr, struct vhostdetails *vhost) {
 /* insert an attributes structure into the hash table */
 	int i;
 
-	if (hashentries*4/3>hashsize) {
+	if (vhost->hashentries*4/3>vhost->hashsize) {
 		/* increase the size of the hash table */
 		struct hashentry *newhash;
 
-		newhash = EM(malloc((hashsize+HASHINCREMENT)*sizeof(struct hashentry)));
+		newhash = EM(malloc((vhost->hashsize+HASHINCREMENT)*sizeof(struct hashentry)));
 		if (newhash==NULL) return;
-		for (i=0; i<hashsize+HASHINCREMENT; i++) newhash[i].uri = NULL;
-		for (i=0; i<hashsize; i++) {
-			if (hash[i].uri) insert_into_hash(newhash,hashsize+HASHINCREMENT,hash[i].uri,hash[i].attr);
+		for (i=0; i<vhost->hashsize+HASHINCREMENT; i++) newhash[i].uri = NULL;
+		for (i=0; i<vhost->hashsize; i++) {
+			if (vhost->hash[i].uri) insert_into_hash(newhash,vhost->hashsize+HASHINCREMENT,vhost->hash[i].uri,vhost->hash[i].attr);
 		}
-		hashsize += HASHINCREMENT;
-		free(hash);
-		hash = newhash;
+		vhost->hashsize += HASHINCREMENT;
+		free(vhost->hash);
+		vhost->hash = newhash;
 	}
 
-	insert_into_hash(hash,hashsize,attr->uri,attr);
-	hashentries++;
+	insert_into_hash(vhost->hash,vhost->hashsize,attr->uri,attr);
+	vhost->hashentries++;
 }
 
 
@@ -316,7 +313,7 @@ void lower_case(char *str)
 	}
 }
 
-static struct attributes *read_attributes_file(char *filename, char *base) {
+static struct attributes *read_attributes_file(char *filename, char *base, struct vhostdetails *vhost) {
 /* filename - name of the attributes file */
 /* base - base uri */
 
@@ -371,9 +368,11 @@ static struct attributes *read_attributes_file(char *filename, char *base) {
 				/* end of a section */
 				oldsection = section;
 				if (section != section_FILES && attr) {
-					if (attr->regex == NULL) insert_attributes(attr);
+					if (attr->regex == NULL) insert_attributes(attr, vhost);
 				}
 				attr = NULL;
+				vhost = (struct vhostdetails*)stack(section_NONE,0);
+				if (vhost == NULL) vhost = vhostlist;
 				section = (sectiontype)stack(section_NONE,0);
 				if (oldsection == section_FILES) attr = (struct attributes*)stack(section_NONE,0);
 				if (ptr[0] == '<') continue; /* end of section, but not the start of a new one */
@@ -385,14 +384,55 @@ static struct attributes *read_attributes_file(char *filename, char *base) {
 				while (*ptr != '\0' && isspace(*ptr)) ptr++;
 				type = ptr;
 				/* find end of type, and start of URI/filename */
-				while (*ptr!='\0' && !isspace(*ptr)) ptr++;
+				while (*ptr!='\0' && !isspace(*ptr) && *ptr != '>') ptr++;
 				*ptr = '\0';
 			}
 
 			ptr++;
 			len = strlen(ptr);
 
-			if (strcmp(type,"location") == 0 || strcmp(type,"locationmatch") == 0) {
+			if (strcmp(type,"virtualhost") == 0) {
+				int i;
+				struct vhostdetails *newvhost;
+
+				if (section != section_NONE) {
+					/* cannot have a virtualhost section inside anything else */
+					webjames_writelog(LOGLEVEL_ATTRIBUTES,"Error in attributes file: virtualhost section inside another section");
+					continue;
+				}
+
+				stack(section,1);
+				stack((int)vhost,1);
+
+				/* Find end of vhostlist */
+				vhost = vhostlist;
+				while (vhost->next) vhost = vhost->next;
+				newvhost = EM(malloc(sizeof(struct vhostdetails)));
+				if (newvhost == NULL) {
+					fclose(file);
+					return NULL;
+				}
+
+				newvhost->domain = NULL;
+				newvhost->globalfiles = NULL;
+				newvhost->globallocations = NULL;
+				newvhost->globaldirectories = NULL;
+				newvhost->globalhandlers = NULL;
+				newvhost->next = NULL;
+				newvhost->hashsize = HASHINCREMENT; /* Init hash table */
+				newvhost->hashentries = 0;
+				newvhost->hash = EM(malloc(newvhost->hashsize*sizeof(struct hashentry)));
+				if (newvhost->hash == NULL) {
+					fclose(file);
+					return NULL;
+				}
+				for (i=0; i<newvhost->hashsize; i++) newvhost->hash[i].uri = NULL;
+
+				vhost->next = newvhost;
+				vhost = newvhost;
+
+
+			} else if (strcmp(type,"location") == 0 || strcmp(type,"locationmatch") == 0) {
 				int match = 0;
 
 				if (section != section_NONE && section != section_LOCATION) continue; /* cannot have a location inside anything else */
@@ -401,6 +441,7 @@ static struct attributes *read_attributes_file(char *filename, char *base) {
 				if (!match && ptr[0] != '/')  continue;        /* MUST start with a / */
 
 				stack(section,1);
+				stack((int)vhost,1);
 				section = section_LOCATION;
 				/* Remove the trailing > */
 				ptr[len-1] = '\0';
@@ -429,8 +470,8 @@ static struct attributes *read_attributes_file(char *filename, char *base) {
 					int ret;
 
 					/* Add to linked list */
-					attr->attrnext = globallocations;
-					globallocations = attr;
+					attr->attrnext = vhost->globallocations;
+					vhost->globallocations = attr;
 
 					attr->regex = EM(malloc(sizeof(regex_t)));
 					if (attr->regex == NULL) {
@@ -457,6 +498,7 @@ static struct attributes *read_attributes_file(char *filename, char *base) {
 				if (type[9] != '\0') match = 1;
 
 				stack(section,1);
+				stack((int)vhost,1);
 				section = section_DIRECTORY;
 				/* Remove the trailing > */
 				ptr[len-1] = '\0';
@@ -490,8 +532,8 @@ static struct attributes *read_attributes_file(char *filename, char *base) {
 					int ret;
 
 					/* Add to linked list */
-					attr->attrnext = globaldirectories;
-					globaldirectories = attr;
+					attr->attrnext = vhost->globaldirectories;
+					vhost->globaldirectories = attr;
 
 					attr->regex = EM(malloc(sizeof(regex_t)));
 					if (attr->regex == NULL) {
@@ -518,10 +560,11 @@ static struct attributes *read_attributes_file(char *filename, char *base) {
 				if (attr) {
 					fileslist = &(attr->attrnext);
 				} else {
-					fileslist = &globalfiles;
+					fileslist = &(vhost->globalfiles);
 				}
 				stack((int)attr,1);
 				stack(section,1);
+				stack((int)vhost,1);
 				section = section_FILES;
 				/* Remove the trailing > */
 				ptr[len-1] = '\0';
@@ -663,11 +706,54 @@ static struct attributes *read_attributes_file(char *filename, char *base) {
 						newhandler->attrnext = attr->handlers;
 						attr->handlers = newhandler;
 					} else {
-						newhandler->attrnext = globalhandlers;
-						globalhandlers = newhandler;
+						newhandler->attrnext = vhost->globalhandlers;
+						vhost->globalhandlers = newhandler;
 					}
 				}
 				
+
+			} else if (strcmp(attribute, "servername") == 0) {
+				lower_case(value);
+
+				vhost->domain = value;
+				
+			} else if (attribute[0] == '#' || attribute[0] == '\0') {
+				/* Ignore comments and blank lines */
+				if (value) free(value);
+				
+			} else if ((strcmp(attribute, "homedir") == 0 || strcmp(attribute, "documentroot") == 0)) {
+				/* define where on the harddisc the directory is stored */
+				int size;
+				char *buffer = value;
+
+				if (section == section_LOCATION && attr->uri[attr->urilen-1] != '/') continue;
+
+				if (attr && attr->homedir)  free(attr->homedir);
+
+				if (!configuration.casesensitive) lower_case(value);
+				/* canonicalise the path, so <WebJames$Dir> etc are expanded, otherwise they can cause problems */
+				if (E(xosfscontrol_canonicalise_path(value,NULL,NULL,NULL,0,&size)) == NULL) {
+					buffer = EM(malloc(1-size));
+					if (buffer == NULL) {
+						buffer = value;
+					} else if (E(xosfscontrol_canonicalise_path(value,buffer,NULL,NULL,1-size,&size)) != NULL) {
+						free(buffer);
+						buffer = value;
+					}
+				}
+				if (attr) {
+					attr->homedir = buffer;
+					attr->defined.homedir = 1;
+					if (attr->homedir) {
+						/* calc how many chars at the start of the URI will be */
+						/* replaced by the home-directory-path */
+						attr->ignore = attr->urilen-1;
+					} else {
+						attr->ignore = 0;
+					}
+				} else {
+					vhost->homedir = buffer;
+				}
 
 			} else if (attr) {
 				/* **** either inside a section */
@@ -676,34 +762,6 @@ static struct attributes *read_attributes_file(char *filename, char *base) {
 					if (section == section_LOCATION && attr->uri[attr->urilen-1] != '/') continue;
 					scan_defaultfiles_list(value,attr);
 					if (value) free(value);
-
-				} else if ((strcmp(attribute, "homedir") == 0)) {
-					int size;
-					char *buffer = value;
-
-					if (section == section_LOCATION && attr->uri[attr->urilen-1] != '/') continue;
-					/* define where on the harddisc the directory is stored */
-					if (attr->homedir)  free(attr->homedir);
-
-					if (!configuration.casesensitive) lower_case(value);
-					/* canonicalise the path, so <WebJames$Dir> etc are expanded, otherwise they can cause problems */
-					if (E(xosfscontrol_canonicalise_path(value,NULL,NULL,NULL,0,&size)) == NULL) {
-						buffer = EM(malloc(1-size));
-						if (buffer == NULL) {
-							buffer = value;
-						} else if (E(xosfscontrol_canonicalise_path(value,buffer,NULL,NULL,1-size,&size)) != NULL) {
-							free(buffer);
-							buffer = value;
-						}
-					}
-					attr->homedir = buffer;
-					attr->defined.homedir = 1;
-					if (attr->homedir)
-						/* calc how many chars at the start of the URI will be */
-						/* replaced by the home-directory-path */
-						attr->ignore = attr->urilen-1;
-					else
-						attr->ignore = 0;
 
 				} else if (strcmp(attribute, "moved") == 0) {
 					/* URI has been changed */
@@ -840,7 +898,7 @@ static struct attributes *read_attributes_file(char *filename, char *base) {
 						if (attr->uri[attr->urilen-1] == '/') {
 							wjstrncpy(uri, attr->uri, MAX_FILENAME);
 							uri[attr->urilen-1] = '\0';         /* remove the terminating / */
-							read_attributes_file(value, uri);
+							read_attributes_file(value, uri, vhost);
 						}
 						free(value);
 					}
@@ -875,20 +933,23 @@ static struct attributes *read_attributes_file(char *filename, char *base) {
 					}
 
 				} else {
+					webjames_writelog(LOGLEVEL_ATTRIBUTES, "Unknown attribute: %s", attribute);
 					if (value)  free(value);
 				}
 
 			/* **** or outside all sections */
 			} else {
 				if (strcmp(attribute, "more-attributes") == 0) {
-					if (value) read_attributes_file(value, base);
+					if (value) read_attributes_file(value, base, vhost);
+				} else {
+					webjames_writelog(LOGLEVEL_ATTRIBUTES, "Unknown attribute: %s", attribute);
 				}
 				if (value) free(value);
 			}
 		}
 	}
 	if (attr) {
-		insert_attributes(attr);
+		insert_attributes(attr, vhost);
 	}
 
 	fclose(file);
@@ -1077,14 +1138,41 @@ static void check_regex(struct attributes *attr, char *match, struct connection 
 	}
 }
 
-void get_attributes(char *uri, struct connection *conn) {
+/* Set the vhost field in the conn struct to the appropriate vhost struct */
+/* Also sets default homedir */
+void get_vhost(struct connection *conn)
+{
+	struct vhostdetails *vhost = vhostlist;
+
+	if (conn->host) {
+		while (vhost) {
+			/* This would be quicker with a hash table or something */
+			if (vhost->domain && strcmp(vhost->domain, conn->host) == 0) {
+				conn->vhost = vhost;
+				conn->homedir = vhost->homedir;
+				return;
+			}
+			vhost = vhost->next;
+		}
+	}
+	/* No vhost matched, so use the first in the list */
+	conn->vhost = vhostlist;
+	conn->homedir = vhostlist->homedir;
+}
+
 /* merge all attributes-structures that matches the directory */
 /* dir              pointer to the directory to match */
 /* conn             structure to fill in */
+void get_attributes(char *uri, struct connection *conn)
+{
 	int found;
 	char buffer[MAX_FILENAME], path[MAX_FILENAME], *ptr, splitchar, *leafname, leafnamebuffer[MAX_FILENAME];
 	int len, last, first, key;
 	struct attributes *filesattrstart = NULL, *filesattrend = NULL;
+	struct vhostdetails *vhost;
+
+	if (conn->vhost == NULL) get_vhost(conn); /* Shouldn't happen */
+	vhost = conn->vhost;
 
 	if (uri[0] != '/') {
 		/* must be a directory */
@@ -1134,7 +1222,7 @@ void get_attributes(char *uri, struct connection *conn) {
 		leafname = NULL;
 
 		/* Add any global handlers to the beginning of the list */
-		merge_handlers(globalhandlers,conn);
+		merge_handlers(vhost->globalhandlers,conn);
 	}
 
 	ptr = buffer;
@@ -1159,24 +1247,24 @@ void get_attributes(char *uri, struct connection *conn) {
 
 		found = 0;
 
-		key = generate_key(path,hashsize);
-		while (hash[key].uri && !found) {
-			if (strcmp(hash[key].uri,path) == 0) {
+		key = generate_key(path,vhost->hashsize);
+		while (vhost->hash[key].uri && !found) {
+			if (strcmp(vhost->hash[key].uri,path) == 0) {
 				found = 1;
-				merge_attributes(conn,hash[key].attr);
+				merge_attributes(conn,vhost->hash[key].attr);
 				if (leafname) {
 					/* Add attr to end of linked list */
 					if (filesattrend == NULL) {
-						filesattrstart = hash[key].attr;
+						filesattrstart = vhost->hash[key].attr;
 					} else {
-						filesattrend->connnext = hash[key].attr;
+						filesattrend->connnext = vhost->hash[key].attr;
 					}
-					hash[key].attr->connnext = NULL;
-					filesattrend = hash[key].attr;
+					vhost->hash[key].attr->connnext = NULL;
+					filesattrend = vhost->hash[key].attr;
 				}
 			}
 			key++;
-			if (key>=hashsize) key = 0;
+			if (key>=vhost->hashsize) key = 0;
 		}
 
 		if (!found && uri[0] != '/' && *configuration.htaccessfile && strchr(path,'$')) {
@@ -1184,13 +1272,13 @@ void get_attributes(char *uri, struct connection *conn) {
 			char htaccessfile[MAX_FILENAME];
 
 			snprintf(htaccessfile,MAX_FILENAME,"%s.%s",path,configuration.htaccessfile);
-			newattr=read_attributes_file(htaccessfile, path);
+			newattr=read_attributes_file(htaccessfile, path, vhost);
 			if (newattr) {
 				merge_attributes(conn, newattr);
 			} else {
 				/* an error occoured (probably couldn't find the file), so create a blank structure for this dir */
 				newattr=create_attribute_structure(path);
-				if (newattr) insert_attributes(newattr);
+				if (newattr) insert_attributes(newattr, vhost);
 			}
 		}
 
@@ -1198,14 +1286,14 @@ void get_attributes(char *uri, struct connection *conn) {
 
 	if (uri[0] == '/') {
 		/* Check to see if the uri matches any <locationmatch> sections */
-		check_regex(globallocations,buffer,conn);
+		check_regex(vhost->globallocations,buffer,conn);
 	} else {
 		/* Check to see if the filename matches any <directorymatch> sections */
-		check_regex(globaldirectories,buffer,conn);
+		check_regex(vhost->globaldirectories,buffer,conn);
 	
 		if (leafname) {
 			/* Check to see if the leafname matches any global <files> sections */
-			check_regex(globalfiles,leafname,conn);
+			check_regex(vhost->globalfiles,leafname,conn);
 
 			/* Check each attributes section in the linked list created whilst scanning through the directories */
 			while (filesattrstart != NULL) {
@@ -1220,21 +1308,30 @@ void get_attributes(char *uri, struct connection *conn) {
 
 }
 
-void init_attributes(char *filename) {
 /* reads the attributes file */
-
 /* filename         pointer to the name of the attributes file */
-
+void init_attributes(char *filename)
+{
 	int i;
 
-	stack(section_NONE,-1);   /* reset stack */
+	/* Reset stack */
+	stack(section_NONE,-1);
 
-	hashsize = HASHINCREMENT; /* init hash table */
-	hashentries = 0;
-	hash = EM(malloc(hashsize*sizeof(struct hashentry)));
-	if (!hash) return;
-	for (i=0; i<hashsize; i++) hash[i].uri = NULL;
+	vhostlist = &defaultvhost;
+	/* Initialise default vhost */
+	vhostlist->domain = NULL;
+	vhostlist->homedir = configuration.site;
+	vhostlist->globalfiles = NULL;
+	vhostlist->globallocations = NULL;
+	vhostlist->globaldirectories = NULL;
+	vhostlist->globalhandlers = NULL;
+	vhostlist->next = NULL;
+	vhostlist->hashsize = HASHINCREMENT; /* Init hash table */
+	vhostlist->hashentries = 0;
+	vhostlist->hash = EM(malloc(vhostlist->hashsize*sizeof(struct hashentry)));
+	if (vhostlist->hash == NULL) return;
+	for (i=0; i<vhostlist->hashsize; i++) vhostlist->hash[i].uri = NULL;
 
-	read_attributes_file(filename, "");   /* read attributes in to the hash table */
+	read_attributes_file(filename, "", vhostlist);   /* read attributes in to the hash table */
 }
 

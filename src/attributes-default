@@ -56,7 +56,7 @@
 
 # global atttributes
 <location />
-defaultfile index.php index.html index
+defaultfile index.php index.html index.shtml index
 </location>
 
 # Set up some handlers for specific filetypes
@@ -122,3 +122,14 @@ realm=the search engine
 #realm='delete'
 #methods="DELETE"
 #</location>
+
+# Example vitualhost section
+#<virtualhost>
+#servername www
+#homedir=idefs::toffee.$.internet.www
+#
+#<location />
+#defaultfile index.php
+#</location>
+#
+#</virtualhost>

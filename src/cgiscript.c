@@ -1,5 +1,5 @@
 /*
-	$Id: cgiscript.c,v 1.2 2002/10/19 15:18:17 ajw Exp $
+	$Id: cgiscript.c,v 1.3 2002/10/20 11:22:37 ajw Exp $
 	CGI script handler
 */
 
@@ -38,7 +38,7 @@ void cgiscript_setvars(struct connection *conn)
 	if (configuration.serverip[0])  set_var_val("SERVER_NAME", configuration.serverip);
 	set_var_val("SERVER_ADMIN", configuration.webmaster);
 
-	set_var_val("DOCUMENT_ROOT", configuration.site);
+	set_var_val("DOCUMENT_ROOT", conn->vhost->homedir);
 
 	set_var_val("GATEWAY_INTERFACE", "CGI/1.1");
 	if (conn->requesturi) set_var_val("REQUEST_URI", conn->requesturi);
@@ -50,7 +50,7 @@ void cgiscript_setvars(struct connection *conn)
 
 	snprintf(buffer, SETVARSBUFSIZE, "%d.%d.%d.%d", conn->ipaddr[0], conn->ipaddr[1], conn->ipaddr[2], conn->ipaddr[3]);
 	set_var_val("REMOTE_ADDR", buffer);
-	if (conn->dnsstatus == DNS_OK)  set_var_val("REMOTE_HOST", conn->host);
+	if (conn->dnsstatus == DNS_OK)  set_var_val("REMOTE_HOST", conn->remotehost);
 
 	set_var_val("REQUEST_METHOD", conn->methodstr);
 

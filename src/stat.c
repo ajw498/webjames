@@ -1,5 +1,5 @@
 /*
-	$Id: stat.c,v 1.3 2002/10/19 16:05:24 ajw Exp $
+	$Id: stat.c,v 1.4 2002/10/20 11:22:37 ajw Exp $
 	Statistics and logging functions
 */
 
@@ -335,7 +335,7 @@ void clf_connection_closed(int cn)
 	rightnow = time(NULL);
 	strftime(clk, 100, "%d/%b/%Y:%H:%M:%S", localtime(&rightnow));
 	snprintf(temp, TEMPBUFFERSIZE, "%s - - [%s +0000] \"%s\" %d %d \"%s\" \"%s\"",
-			conn->host, clk, conn->requestline, conn->statuscode,
+			conn->remotehost, clk, conn->requestline, conn->statuscode,
 			conn->fileinfo.size, referer, useragent);
 	writeclf(temp);
 #endif
