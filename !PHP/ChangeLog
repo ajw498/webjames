@@ -1,3 +1,6 @@
+v2.18 3-Jan-05
+Updated to PHP 4.3.10
+
 v2.17 21-Nov-04
 Updated to PHP 4.3.9
 Fixed DOCUMENT_ROOT value in WebJames handler version.
