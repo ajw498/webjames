@@ -23,7 +23,7 @@
 #include "write.h"
 
 
-
+#ifdef WEBJAMESSCRIPT
 
 void webjamesscript_start(struct connection *conn)
 /* start a 'webjames-style' cgi-script */
@@ -96,3 +96,4 @@ void webjamesscript_start(struct connection *conn)
 	conn->close(conn, 0);
 }
 
+#endif

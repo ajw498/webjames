@@ -139,7 +139,7 @@ void send_file(struct connection *conn) {
 			int type, size;
 
 			uri_to_filename(conn->defaultfiles[i], testfile+len, conn->flags.stripextensions);
-			type = get_file_info(testfile,NULL,NULL,&size,1);
+			type = get_file_info(testfile,NULL,NULL,NULL,&size,1);
 			if (type != FILE_DOESNT_EXIST) break;
 		}
 		strcpy(conn->filename,testfile);
@@ -160,7 +160,7 @@ void send_file(struct connection *conn) {
 	if (content_negotiate(conn)) return;
 
 	/* check if object exist and get the filetype/mimetype at the same time */
-	conn->fileinfo.filetype = get_file_info(conn->filename, conn->fileinfo.mimetype, &conn->fileinfo.date, &conn->fileinfo.size,1);
+	conn->fileinfo.filetype = get_file_info(conn->filename, conn->fileinfo.mimetype, &conn->fileinfo.date, NULL, &conn->fileinfo.size,1);
 	if (conn->fileinfo.filetype == FILE_DOESNT_EXIST) {
 		report_notfound(conn);
 		return;
@@ -346,49 +346,47 @@ int check_case(char *filename)
 	}
 }
 
-int get_file_info(char *filename, char *mimetype, struct tm *date, int *size, int checkcase) {
+int get_file_info(char *filename, char *mimetype, struct tm *date, os_date_and_time *utcdate, int *size, int checkcase)
 /* return filetype or error-code, fill in date (secs since 1990) and mimetype */
-
+{
 	os_date_and_time utc;
 	char typename[128];
 	char buffer[256];
 	fileswitch_object_type objtype;
-	bits load, exec, filetype;
+	bits load, exec;
+	int filetype;
 	fileswitch_attr attr;
 
 	if (xosfile_read_no_path(filename, &objtype, &load, &exec, size,&attr))  return FILE_ERROR;
-	if (objtype == 0)  return FILE_DOESNT_EXIST;
+	if (objtype == fileswitch_NOT_FOUND)  return FILE_DOESNT_EXIST;
 
 	if (checkcase && configuration.casesensitive) {
 		if (xosfscontrol_canonicalise_path(filename,buffer,0,0,256,NULL)) return FILE_ERROR;
 		if (check_case(buffer) == 0) return FILE_DOESNT_EXIST;
 	}
 
-	if (objtype == 2)  return OBJECT_IS_DIRECTORY;
+	if (objtype == fileswitch_IS_DIR) return OBJECT_IS_DIRECTORY;
 	if (!(attr &1))  return FILE_LOCKED;
 	if ((load & 0xFFF00000) != 0xFFF00000)  return FILE_NO_MIMETYPE;
 	filetype=(load & 0x000FFF00) >> 8;
-	if (date) {
-		utc[4] = load &255;
-		utc[3] = (exec>>24) &255;
-		utc[2] = (exec>>16) &255;
-		utc[1] = (exec>>8) &255;
-		utc[0] = exec &255;
-		utc_to_time(&utc, date);
+
+	if (objtype == fileswitch_IS_IMAGE) {
+		int i;
+		for (i=0;i<configuration.numimagedirs;i++) {
+			if (configuration.imagedirs[i]==filetype_ALL || configuration.imagedirs[i]==filetype) return OBJECT_IS_DIRECTORY;
+		}
 	}
 
+	utc[4] = load &255;
+	utc[3] = (exec>>24) &255;
+	utc[2] = (exec>>16) &255;
+	utc[1] = (exec>>8) &255;
+	utc[0] = exec &255;
+	if (utcdate) memcpy(utcdate,&utc,sizeof(os_date_and_time));
+	if (date) utc_to_time(&utc, date);
+	
 	if (mimetype) {
-		char temp[256];
-		os_error *err;
-		sprintf(temp,"Filetype: %x",filetype);
-		webjames_writelog(0,temp);
-		if ((err=xmimemaptranslate_filetype_to_mime_type(filetype, typename))) {
-			sprintf(temp,"Error: %s",err->errmess);
-			webjames_writelog(0,temp);
-			return FILE_NO_MIMETYPE + filetype;
-		}
-		sprintf(temp,"MimeType: %s",typename);
-		webjames_writelog(0,temp);
+		if (xmimemaptranslate_filetype_to_mime_type(filetype, typename)) return FILE_NO_MIMETYPE + filetype;
 		strcpy(mimetype, typename);
 	}
 	return filetype;

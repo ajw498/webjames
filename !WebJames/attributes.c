@@ -16,10 +16,6 @@
 #define STACKSIZE 10
 #define HASHINCREMENT 20
 
-#define filetype_NONE -1
-#define filetype_ALL  -2
-
-
 typedef enum sectiontype {
 	section_NONE,
 	section_LOCATION,

@@ -157,6 +157,9 @@ void kill_cache() {
 	if (cachedynamicarea == -1)  return;
 	xosdynamicarea_delete(cachedynamicarea);
 	cachedynamicarea = -1;
+#ifdef MemCheck_MEMCHECK
+	MemCheck_UnRegisterMiscBlock(cachestart);
+#endif
 }
 
 

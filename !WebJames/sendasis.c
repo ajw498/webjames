@@ -8,6 +8,8 @@
 #include "cache.h"
 #include "sendasis.h"
 
+#ifdef SENDASIS
+
 void sendasis_start(struct connection *conn)
 {
 	if ((conn->method == METHOD_GET) || (conn->method == METHOD_PUT) || (conn->method == METHOD_DELETE)) {
@@ -45,3 +47,5 @@ void sendasis_start(struct connection *conn)
 		}
 	}
 }
+
+#endif

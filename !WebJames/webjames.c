@@ -8,6 +8,7 @@
 #include "oslib/os.h"
 #include "oslib/osmodule.h"
 #include "oslib/osfscontrol.h"
+#include "oslib/osfile.h"
 #include "oslib/territory.h"
 
 #include "cache.h"
@@ -59,6 +60,7 @@ int webjames_init(char *config) {
 	*configuration.clflog = *configuration.weblog = *configuration.webmaster = *configuration.site = *configuration.serverip = '\0';
 	*configuration.put_script = *configuration.delete_script = *configuration.htaccessfile = '\0';
 	*configuration.cgi_in = *configuration.cgi_out;
+	configuration.numimagedirs=0;
 	configuration.syslog=0;
 	configuration.loglevel = 5;
 	configuration.log_close_delay = 10; /* seconds */
@@ -72,13 +74,15 @@ int webjames_init(char *config) {
 	configuration.webjames_h_revision=WEBJAMES_H_REVISION; /*used by PHP module to ensure that it was compiled with the correct version of webjames.h */
 	read_config(config);
 
+	/* create out directory in !Scrap (or wherever) */
+	xosfile_create_dir("<WebJames$Scrap>",0);
 	/* Supply defaults for cgi_in/out if the user hasn't specified them */
 	/* They must be canonicalised if possible as some programs (eg Perl) don't like <foo$dir> as arguments */
 	if (*configuration.cgi_in=='\0') {
-		if (xosfscontrol_canonicalise_path("<Wimp$ScrapDir>.WebJamesI",configuration.cgi_in,NULL,NULL,256,NULL)) strcpy(configuration.cgi_in,"<Wimp$ScrapDir>.WebJamesI");
+		if (xosfscontrol_canonicalise_path("<WebJames$Scrap>.In",configuration.cgi_in,NULL,NULL,256,NULL)) strcpy(configuration.cgi_in,"<WebJames$Scrap>.In");
 	}
 	if (*configuration.cgi_out=='\0') {
-		if (xosfscontrol_canonicalise_path("<Wimp$ScrapDir>.WebJamesO",configuration.cgi_out,NULL,NULL,256,NULL)) strcpy(configuration.cgi_out,"<Wimp$ScrapDir>.WebJamesO");
+		if (xosfscontrol_canonicalise_path("<WebJames$Scrap>.Out",configuration.cgi_out,NULL,NULL,256,NULL)) strcpy(configuration.cgi_out,"<WebJames$Scrap>.Out");
 	}
 
 	if ((*configuration.site == '\0') || (serverscount == 0) || (configuration.timeout < 0))
@@ -217,7 +221,6 @@ void webjames_kill() {
 
 	quit_handlers();
 	
-	kill_cache();
 
 	/* close all open sockets */
 	for (i = 0; i < serverinfo.activeconnections; i++)
@@ -230,6 +233,8 @@ void webjames_kill() {
 		if (serverinfo.servers[i].socket >= 0)
 			ip_close(serverinfo.servers[i].socket);
 	serverscount = 0;
+
+	kill_cache();
 }
 
 
@@ -563,6 +568,28 @@ void read_config(char *config)
 					do {
 						*dest=toupper(*(src++));
 					} while (*(dest++) != '\0');
+				}
+			}
+
+			else if (strcmp(cmd, "imagedirs") == 0) {
+				char *s, *f;
+
+				s=f=val;
+				while (*s && configuration.numimagedirs<MAX_IMAGEDIRS) {
+					int notfound = 0;
+					int filetype;
+
+					while (*f && !isspace(*f) && *f!=',') f++;
+					if (*f) *f++='\0';
+					while (isspace(*f)) f++;
+
+					if (strcmp(s,"ALL") == 0) {
+						filetype = filetype_ALL;
+					} else {
+						if (xosfscontrol_file_type_from_string(s,(bits*)&filetype)) notfound = 1; /* ignore unknown filetypes */
+					}
+					if (!notfound) configuration.imagedirs[configuration.numimagedirs++] = filetype;
+					s=f;
 				}
 			}
 		}

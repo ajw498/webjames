@@ -1,6 +1,7 @@
 | Run file for WebJames
 
 Set WebJames$Dir <Obey$Dir>
+Set WebJames$Scrap <Wimp$ScrapDir>.WebJames
 
 RMEnsure MimeMap 0.10 RMLoad System:Modules.Network.MimeMap
 RMEnsure MimeMap 0.10 Error You need version 0.10 (or later) of the MimeMap module

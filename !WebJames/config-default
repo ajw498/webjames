@@ -41,6 +41,13 @@ accessfilename=/htaccess
 # this includes the homedir attribute above and any in the attributes file
 casesensitive=0
 
+# imagedirs - which image files should be treated as directories
+# a comma separated list of filetypes (textual or hex format) that should
+# be treated as directories. A filetype of ALL means treat all image files
+# as directories.
+# eg. imagedirs=Archive will treat all zip files as directories if you have SparkFS loaded
+imagedirs=fc0
+
 # connection control
 # ------------------
 

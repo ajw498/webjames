@@ -1407,9 +1407,6 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  <dl>
  <dt><code>LOG</code>
  <dd>must be defined to allow logging
- <dt><code>SYSLOG</code>
- <dd>if defined, log data will be written to <code>SysLog</code> instead
-     of to the file set in the <a href="#config">config file</a>
  </dl>
 
 
@@ -1436,6 +1433,10 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  <code>Squash</code> or <code>ZipCompress</code> to compress the file -
  log files usually compress to 25% or less of their original size.
 
+ <p>
+  Alternatively, if the syslog option in the <a href="#config">
+ config file</a> is set to 1, then both the main log and the clf log
+ will be sent to Doggysoft's SysLog module rather than the files specified.
 
 <p>
 <h3>
@@ -1829,12 +1830,26 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 </td></tr></table>
 </h3>
 
+<i>0.31 (??/9/2001)</i>
+
+<ul>
+  <li>reverse dns and syslog options are now runtime rather than compile time.
+  <li>clf log will also be sent to SysLog when the syslog option is enabled.
+  <li>split makefile into several different files, to enable different builds to be made more easilly
+  <li>a few minor changes in the code to allow compilation with gcc, and linking with UnixLib.
+  <li>added support for PHP as a built in handler.
+  <li>fixed bug that caused image files to have their Content-Type: set wrongly.
+  <li>new config option <code>imagedirs</code> that allows some image files to be treated as files, and others as directories, based on filetype.
+  <li>fixed bug that caused a crash if you forced a shutdown from the taskmanager while there were still active connections.
+
+</ul>
+
 <i>0.30 (4/8/2001)</i>
 
 <ul>
   <li>no longer converts %7E type escape characters that are in the query string.
   <li>sets more environment variables for CGI scripts: <code>REQUEST_URI, DOCUMENT_ROOT,
-  HTTP_ACCEPT, HTTP_ACCEPT_LANGUAGE, HTTP_ACCEPT_CHARSET, HTTP_ENCODING</code>.
+  HTTP_ACCEPT, HTTP_ACCEPT_LANGUAGE, HTTP_ACCEPT_CHARSET, HTTP_ACCEPT_ENCODING</code>.
   <li>added support for content negotiation and multiviews.
   <li>added the server-parsed handler for SSI files.
   <li>suports <code>Location:</code> and <code>Status:</code> headers output by CGI scripts
@@ -2232,19 +2247,10 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 <h5>Recompiling WebJames</h5>
 
   The pre-compiled version of WebJames is usually compiled with the
- <code>LOG</code> switch <i>on</i> and the <code>SYSLOG</code> and
- <code>ANTRESOLVER</code> switches <i>off</i>.
+ <code>LOG</code> switch <i>on</i>.
 
  <p>
   The <code>LOG</code> switch enables logging.
-
- <p>
-  The <code>SYSLOG</code> switch causes log information to be output to
- <code>!SysLog</code> instead of to the logfile defined in the config-file.
-
- <p>
-  The <code>ANTRESOLVER</code> switch enables reverse-DNS using the
- ANT/Acorn resolver module interface.
 
 
 </body>

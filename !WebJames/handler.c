@@ -18,6 +18,7 @@
 #endif
 
 static struct handlerentry handlers[] = {
+#ifdef CGISCRIPT
 	{
 		"cgi-script",       /* name of handler */
 		0,                  /* should the files be cached */
@@ -26,6 +27,8 @@ static struct handlerentry handlers[] = {
 		staticcontent_poll, /* called every so often to send a bit of the script output */
 		NULL                /* function to call just before WebJames quits */
 	},
+#endif
+#ifdef WEBJAMESSCRIPT
 	{
 		"webjames-script",
 		0,
@@ -34,6 +37,8 @@ static struct handlerentry handlers[] = {
 		NULL,
 		NULL
 	},
+#endif
+#ifdef SENDASIS
 	{
 		"send-as-is",
 		1,
@@ -42,6 +47,8 @@ static struct handlerentry handlers[] = {
 		staticcontent_poll,
 		NULL
 	},
+#endif
+#ifdef CONTENT
 	{
 		"type-map",
 		0,
@@ -50,6 +57,8 @@ static struct handlerentry handlers[] = {
 		NULL,
 		NULL
 	},
+#endif
+#ifdef SSI
 	{
 		"server-parsed",
 		1,
@@ -58,6 +67,7 @@ static struct handlerentry handlers[] = {
 		serverparsed_poll,
 		NULL
 	},
+#endif
 #ifdef PHP
 	{
 		"php-script",

@@ -1,15 +1,20 @@
 #ifndef WEBJAMES_H
 #define WEBJAMES_H
 
-#define WEBJAMES_H_REVISION "$Revision: 1.23 $"
+#define WEBJAMES_H_REVISION "$Revision: 1.24 $"
 
 #define WEBJAMES_VERSION "0.31"
-#define WEBJAMES_DATE "14/8/01"
+#define WEBJAMES_DATE "31/9/01"
 #define WEBJAMES_SERVER_SOFTWARE "WebJames/" WEBJAMES_VERSION
 
 #define MAXCONNECTIONS    100
 #define HTTPBUFFERSIZE    4096
 #define TEMPBUFFERSIZE    4096
+
+#define MAX_IMAGEDIRS 16
+
+#define filetype_NONE -1
+#define filetype_ALL  -2
 
 #define WJ_STATUS_HEADER  1
 #define WJ_STATUS_BODY    2
@@ -154,6 +159,8 @@ typedef struct connection {
 
 typedef	void (*closefn)(struct connection *conn, int force); /*function to call to close the connection*/
 
+#ifndef WEBJAMES_PHP_ONLY
+
 /* configuration */
 typedef struct config {
 	int timeout, bandwidth;
@@ -161,6 +168,8 @@ typedef struct config {
 	char delete_script[256], put_script[256], site[256];
 	char attributesfile[256], serverip[256], cgi_in[256], cgi_out[256];
 	char htaccessfile[256];
+	int imagedirs[MAX_IMAGEDIRS];
+	int numimagedirs;
 	int xheaders;
 	int logheaders;
 	int casesensitive;
@@ -189,7 +198,6 @@ typedef struct globalserverinfo {
 	char select_read[32], select_write[32], select_except[32];
 } globalserverinfo;
 
-#ifndef WEBJAMES_PHP_ONLY
 
 /*globals*/
 extern struct config configuration;

@@ -1,5 +1,5 @@
 /*
-	$Id: serverparsed.c,v 1.7 2001/08/31 10:48:47 AJW Exp $
+	$Id: serverparsed.c,v 1.8 2001/09/01 12:22:32 AJW Exp $
 	Support for Server Side Includes (SSI)
 */
 
@@ -10,8 +10,6 @@
 #include <time.h>
 
 #include "kernel.h"
-
-#include "oslib/osfile.h"
 
 #include "regex/regex.h"
 
@@ -36,6 +34,8 @@
 /*size of buffer for output - should be more efficient than outputting each byte separately to the socket*/
 
 /*There should be no globals in this file as the handler must be re-entrant to cope with SSI files #including other SSI files*/
+
+#ifdef SSI
 
 enum serverparsed_status {
 	status_BODY, /*In the body, not a command*/
@@ -268,33 +268,37 @@ static char *serverparsed_getvar(struct connection *conn,char *var)
 			result[49]='\0';
 		}
 	} else if (strcmp(var,"LAST_MODIFIED")==0) {
-		os_error *err;
-		fileswitch_object_type objtype;
-		bits load,exec,filetype;
+		int filetype;
+		struct tm time;
+		os_date_and_time utc;
 
-		err=xosfile_read_stamped_no_path(conn->filename,&objtype,&load,&exec,NULL,NULL,&filetype); {int fixme;/*image files?*/}
-		if (err) {
-			serverparsed_writeerror(conn,err->errmess);
-		} else if (objtype==fileswitch_NOT_FOUND) {
-			serverparsed_writeerror(conn,"File not found");
-		} else if (filetype==-1) {
-			serverparsed_writeerror(conn,"File does not have a datestamp");
-		} else {
-			struct tm time;
-			os_date_and_time utc;
+		filetype=get_file_info(conn->filename, NULL, NULL, &utc, NULL, 1);
 
-			utc[4] = load &255;
-			utc[3] = (exec>>24) &255;
-			utc[2] = (exec>>16) &255;
-			utc[1] = (exec>>8) &255;
-			utc[0] = exec &255;
-			utc_to_localtime(&utc,&time);
+		switch (filetype) {
+			case OBJECT_IS_DIRECTORY:
+				serverparsed_writeerror(conn,"Object is a directory");
+				break;
+			case FILE_DOESNT_EXIST:
+				serverparsed_writeerror(conn,"File not found");
+				break;
+			case FILE_NO_MIMETYPE:
+				serverparsed_writeerror(conn,"File does not have a datestamp");
+				break;
+			case FILE_ERROR:
+				serverparsed_writeerror(conn,"File error");
+				break;
+			case FILE_LOCKED:
+				serverparsed_writeerror(conn,"File is locked");
+				break;
+			default:
 
-			result=malloc(50);
-			if (result) {
-				if (info->timefmt==NULL) time_to_rfc(&time,result); else strftime(result,49,info->timefmt,&time);
-				result[49]='\0';
-			}
+				utc_to_localtime(&utc,&time);
+	
+				result=malloc(50);
+				if (result) {
+					if (info->timefmt==NULL) time_to_rfc(&time,result); else strftime(result,49,info->timefmt,&time);
+					result[49]='\0';
+				}
 		}
 	} else {
 		int size=-1;
@@ -737,28 +741,40 @@ static void serverparsed_fsize(struct connection *conn,char *filename)
 /*output the filesize of the given file, according to the configured sizefmt*/
 {
 	struct serverparsedinfo *info=(struct serverparsedinfo *)conn->handlerinfo;
-	os_error *err;
-	fileswitch_object_type objtype;
 	int size;
+	char buf[12];
+	int filetype;
 
-	err=xosfile_read_no_path(filename,&objtype,NULL,NULL,&size,NULL);
-	if (err) {
-		serverparsed_writeerror(conn,err->errmess);
-	} else if (objtype==fileswitch_NOT_FOUND) {
-		serverparsed_writeerror(conn,"File not found");
-	} else {
-		char buf[12];
+	filetype=get_file_info(filename, NULL, NULL, NULL, &size, 1);
 
-		if (info->abbrev) {
-			if (size<1024) sprintf(buf,"%d bytes",size);
-			else if (size<1024*10) sprintf(buf,"%.1f KB",(double)size/1024);
-			else if (size<1024*1024) sprintf(buf,"%d KB",size/1024);
-			else if (size<1024*1024*10) sprintf(buf,"%.1f MB",(double)size/(1024*1024));
-			else sprintf(buf,"%d MB",size/(1024*1024));
-		} else {
-			sprintf(buf,"%d",size);
-		}
-		webjames_writestring(conn->socket,buf);
+	switch (filetype) {
+		case OBJECT_IS_DIRECTORY:
+			serverparsed_writeerror(conn,"Object is a directory");
+			break;
+		case FILE_DOESNT_EXIST:
+			serverparsed_writeerror(conn,"File not found");
+			break;
+		case FILE_NO_MIMETYPE:
+			serverparsed_writeerror(conn,"File does not have a datestamp");
+			break;
+		case FILE_ERROR:
+			serverparsed_writeerror(conn,"File error");
+			break;
+		case FILE_LOCKED:
+			serverparsed_writeerror(conn,"File is locked");
+			break;
+		default:
+
+			if (info->abbrev) {
+				if (size<1024) sprintf(buf,"%d bytes",size);
+				else if (size<1024*10) sprintf(buf,"%.1f KB",(double)size/1024);
+				else if (size<1024*1024) sprintf(buf,"%d KB",size/1024);
+				else if (size<1024*1024*10) sprintf(buf,"%.1f MB",(double)size/(1024*1024));
+				else sprintf(buf,"%d MB",size/(1024*1024));
+			} else {
+				sprintf(buf,"%d",size);
+			}
+			webjames_writestring(conn->socket,buf);
 	}
 }
 
@@ -766,30 +782,33 @@ static void serverparsed_flastmod(struct connection *conn,char *filename)
 /*output the date/time the given file was last modified*/
 {
 	struct serverparsedinfo *info=(struct serverparsedinfo *)conn->handlerinfo;
-	os_error *err;
-	fileswitch_object_type objtype;
-	bits load,exec,filetype;
+	int filetype;
+	struct tm time;
+	os_date_and_time utc;
+	char str[50]="";
 
-	err=xosfile_read_stamped_no_path(filename,&objtype,&load,&exec,NULL,NULL,&filetype);
-	if (err) {
-		serverparsed_writeerror(conn,err->errmess);
-	} else if (objtype==fileswitch_NOT_FOUND) {
-		serverparsed_writeerror(conn,"File not found");
-	} else if (filetype==-1) {
-		serverparsed_writeerror(conn,"File does not have a datestamp");
-	} else {
-		struct tm time;
-		os_date_and_time utc;
-		char str[50]="";
+	filetype=get_file_info(filename, NULL, NULL, &utc, NULL, 1);
 
-		utc[4] = load &255;
-		utc[3] = (exec>>24) &255;
-		utc[2] = (exec>>16) &255;
-		utc[1] = (exec>>8) &255;
-		utc[0] = exec &255;
-		utc_to_localtime(&utc,&time);
-		if (info->timefmt==NULL) time_to_rfc(&time,str); else strftime(str,49,info->timefmt,&time);
-		webjames_writestring(conn->socket,str);
+	switch (filetype) {
+		case OBJECT_IS_DIRECTORY:
+			serverparsed_writeerror(conn,"Object is a directory");
+			break;
+		case FILE_DOESNT_EXIST:
+			serverparsed_writeerror(conn,"File not found");
+			break;
+		case FILE_NO_MIMETYPE:
+			serverparsed_writeerror(conn,"File does not have a datestamp");
+			break;
+		case FILE_ERROR:
+			serverparsed_writeerror(conn,"File error");
+			break;
+		case FILE_LOCKED:
+			serverparsed_writeerror(conn,"File is locked");
+			break;
+		default:
+			utc_to_localtime(&utc,&time);
+			if (info->timefmt==NULL) time_to_rfc(&time,str); else strftime(str,49,info->timefmt,&time);
+			webjames_writestring(conn->socket,str);
 	}
 }
 
@@ -993,7 +1012,7 @@ static void serverparsed_command(struct connection *conn,char *command,char *arg
 					if (newconn->cache) {
 						newconn->fileinfo.size = newconn->cache->size;
 					} else {
-						get_file_info(newconn->filename, NULL, NULL, &newconn->fileinfo.size,1);
+						get_file_info(newconn->filename, NULL, NULL, NULL, &newconn->fileinfo.size,1);
 						switch (newconn->fileinfo.filetype) {
 							case FILE_DOESNT_EXIST:
 							case OBJECT_IS_DIRECTORY:
@@ -1281,3 +1300,4 @@ int serverparsed_poll(struct connection *conn,int maxbytes)
 	return bytes;
 }
 
+#endif /*SSI*/

@@ -204,7 +204,7 @@ void cgiscript_start(struct connection *conn)
 	/* already set up for writing (this is done in write.c) */
 
 	/* read filesize */
-	if (get_file_info(configuration.cgi_out, NULL, NULL, &size, 0) < 0) {
+	if (get_file_info(configuration.cgi_out, NULL, NULL, NULL, &size, 0) < 0) {
 		report_servererr(conn, "error occured when reading file info");
 		return;
 	}
@@ -335,5 +335,4 @@ void cgiscript_start(struct connection *conn)
 		webjames_writestring(conn->socket, temp);
 	}
 }
-
 

@@ -1,4 +1,7 @@
-/* Content negotiation */
+/*
+	$Id: content.c,v 1.8 2001/09/01 12:22:27 AJW Exp $
+	Content negotiation
+*/
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -6,7 +9,6 @@
 #include <time.h>
 #include <ctype.h>
 
-#include "oslib/osfile.h"
 #include "oslib/osfscontrol.h"
 #include "oslib/osgbpb.h"
 #include "oslib/mimemap.h"
@@ -18,8 +20,9 @@
 
 #define MAP_CACHE_SIZE 10
 
+#ifdef CONTENT
 
-/*create a cache or recently accessed varmap files, to prevent rereading and parsing them unnessecerily*/
+/*create a cache of recently accessed varmap files, to prevent rereading and parsing them unnessecerily*/
 static struct {
 	struct varmap *map;
 	char *filename;
@@ -321,23 +324,13 @@ static struct varmap *content_readmap(char *filename)
 	FILE *varfile;
 	char line[256];
 	size_t len;
-	fileswitch_object_type objtype;
-	bits load,exec;
-	char date[5];
+	os_date_and_time date;
 	int valid=0,i;
+	int filetype;
 
-	if (xosfile_read_stamped_no_path(filename, &objtype, &load, &exec, NULL,NULL, NULL) || (objtype & 1)!=1)  return NULL;
+	filetype=get_file_info(filename, NULL, NULL, &date, NULL, 1);
 
-	if (configuration.casesensitive) {
-		if (xosfscontrol_canonicalise_path(filename,line,0,0,256,NULL)) return NULL;
-		if (check_case(line) == 0) return NULL;
-	}
-
-	date[4] = load &255;
-	date[3] = (exec>>24) &255;
-	date[2] = (exec>>16) &255;
-	date[1] = (exec>>8) &255;
-	date[0] = exec &255;
+	if (filetype<0 || filetype>=FILE_NO_MIMETYPE) return NULL;
 
 	len=strlen(filename);
 	for (i=0;i<MAP_CACHE_SIZE;i++) {
@@ -479,6 +472,7 @@ static struct varmap *content_readmap(char *filename)
 	return mapcache[i].map;
 }
 
+
 void content_recordextension(char *extn)
 /*store the extension to use to find the var-map*/
 {
@@ -572,3 +566,5 @@ int content_negotiate(struct connection *conn)
 
 	return 0;
 }
+
+#endif

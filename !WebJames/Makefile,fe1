@@ -13,7 +13,7 @@
 # build.gcc       compile with gcc and link with UnixLib - You must use this build if you wish to link with PHP
 # build/cross     cross compile with the gccsdk
 
-include build.memcheck
+include build.normal
 
 # Compile time options
 #
@@ -21,7 +21,7 @@ include build.memcheck
 # ANTRESOLVER     use the ANT resolver module API for reverse DNS
 # LOG             enable logging
 # SYSLOG          use SysLog instead of internal log
-FLAGS = -DLOG
+FLAGS = -DLOG -DCGISCRIPT -DSSI -DWEBJAMESSCRIPT -DSENDASIS -DCONTENT
 
 # Include other files, these should not need to be changed
 # build.php will be empty unless you are linking with PHP
@@ -30,24 +30,24 @@ include build.common
 
 # Dynamic dependencies:
 
-o.main: c.main MemCheck:h.MemCheck C:h.stddef C:h.stdio C:h.stdarg C:h.time C:h.ctype C:h.stdio C:h.string C:h.stdlib C:oslib.h.os C:oslib.h.types C:oslib.h.wimp C:oslib.h.osspriteop C:oslib.h.font h.main h.webjames C:oslib.h.os
-o.webjames: c.webjames C:h.stdio C:h.stdlib C:h.stdarg C:h.string C:h.ctype C:h.time C:oslib.h.os C:oslib.h.types C:oslib.h.osmodule C:oslib.h.osfscontrol C:oslib.h.fileswitch C:oslib.h.territory h.cache h.webjames C:oslib.h.os h.webjames h.ip h.stat h.report h.content h.write h.read h.openclose h.webjames h.attributes C:regex.h.regex h.resolve h.handler h.content
-o.ip: c.ip C:h.stdio C:h.string C:h.stdlib C:oslib.h.socket C:oslib.h.types C:oslib.h.os h.ip
-o.datetime: c.datetime C:h.stdio C:h.stdlib C:h.string C:h.ctype C:h.time C:oslib.h.territory C:oslib.h.types C:oslib.h.os h.webjames C:oslib.h.os h.datetime
-o.report: c.report C:h.stdio C:h.string C:h.time C:h.stdlib h.webjames C:oslib.h.os C:oslib.h.types h.cache h.webjames h.stat h.datetime h.openclose h.webjames h.report h.content h.write h.attributes C:regex.h.regex h.handler
-o.write: c.write C:h.stdio C:h.stdlib C:h.string C:h.ctype C:h.time C:oslib.h.osfile C:oslib.h.types C:oslib.h.os C:oslib.h.fileswitch C:oslib.h.osgbpb C:oslib.h.osfscontrol C:oslib.h.mimemap h.webjames C:oslib.h.os h.cache h.webjames h.ip h.datetime h.openclose h.webjames h.stat h.attributes C:regex.h.regex h.report h.content h.write h.handler h.content
-o.read: c.read C:h.stdio C:h.stdlib C:h.string C:h.ctype C:h.time h.webjames C:oslib.h.os C:oslib.h.types h.attributes C:regex.h.regex h.stat h.ip h.datetime h.read h.report h.content h.write h.coding
-o.cache: c.cache MemCheck:h.MemCheck C:h.stddef C:h.stdio C:h.stdarg C:h.stdio C:h.stdlib C:h.string C:h.time C:oslib.h.os C:oslib.h.types C:oslib.h.wimp C:oslib.h.osspriteop C:oslib.h.font C:oslib.h.fileswitch C:oslib.h.osfile C:oslib.h.osfscontrol h.webjames C:oslib.h.os h.datetime h.cache h.webjames h.write h.cacheheap h.stat
+o.main: c.main C:oslib.h.os C:oslib.h.types C:oslib.h.wimp C:oslib.h.osspriteop C:oslib.h.font h.main h.webjames C:oslib.h.os
+o.webjames: c.webjames C:oslib.h.os C:oslib.h.types C:oslib.h.osmodule C:oslib.h.osfscontrol C:oslib.h.fileswitch C:oslib.h.osfile C:oslib.h.territory h.cache h.webjames C:oslib.h.os h.webjames h.ip h.stat h.report h.content h.write h.read h.openclose h.webjames h.attributes C:regex.h.regex h.resolve h.handler h.content
+o.ip: c.ip C:oslib.h.socket C:oslib.h.types C:oslib.h.os h.ip
+o.stat: c.stat C:h.kernel C:oslib.h.os C:oslib.h.types h.webjames C:oslib.h.os h.stat h.ip
+o.datetime: c.datetime C:oslib.h.territory C:oslib.h.types C:oslib.h.os h.webjames C:oslib.h.os h.datetime
+o.report: c.report h.webjames C:oslib.h.os C:oslib.h.types h.cache h.webjames h.stat h.datetime h.openclose h.webjames h.report h.content h.write h.attributes C:regex.h.regex h.handler
+o.write: c.write C:oslib.h.osfile C:oslib.h.types C:oslib.h.os C:oslib.h.fileswitch C:oslib.h.osgbpb C:oslib.h.osfscontrol C:oslib.h.mimemap h.webjames C:oslib.h.os h.cache h.webjames h.ip h.datetime h.openclose h.webjames h.stat h.attributes C:regex.h.regex h.report h.content h.write h.handler h.content
+o.openclose: c.openclose h.cache h.webjames C:oslib.h.os C:oslib.h.types h.webjames h.ip h.attributes C:regex.h.regex h.stat h.openclose h.webjames h.resolve
+o.read: c.read h.webjames C:oslib.h.os C:oslib.h.types h.attributes C:regex.h.regex h.stat h.ip h.datetime h.read h.report h.content h.write h.coding
+o.cache: c.cache C:oslib.h.os C:oslib.h.types C:oslib.h.wimp C:oslib.h.osspriteop C:oslib.h.font C:oslib.h.fileswitch C:oslib.h.osfile C:oslib.h.osfscontrol h.webjames C:oslib.h.os h.datetime h.cache h.webjames h.write h.cacheheap h.stat
 o.coding: c.coding h.coding
-o.attributes: c.attributes C:h.stdio C:h.stdlib C:h.string C:h.ctype C:h.time h.webjames C:oslib.h.os C:oslib.h.types h.write h.attributes C:regex.h.regex h.stat h.handler h.content C:oslib.h.osfscontrol C:oslib.h.fileswitch
-o.resolve: c.resolve C:h.string C:h.stdio C:h.time C:h.kernel h.stat h.webjames C:oslib.h.os C:oslib.h.types h.resolve h.ip MemCheck:h.MemCheck C:h.stddef C:h.stdio C:h.stdarg
+o.attributes: c.attributes h.webjames C:oslib.h.os C:oslib.h.types h.write h.attributes C:regex.h.regex h.stat h.handler h.content C:oslib.h.osfscontrol C:oslib.h.fileswitch
+o.resolve: c.resolve C:h.kernel h.stat h.webjames C:oslib.h.os C:oslib.h.types h.resolve h.ip
 o.cacheheap: c.cacheheap C:oslib.h.osheap C:oslib.h.types C:oslib.h.os h.cacheheap
-o.handler: c.handler C:h.stdio C:h.stdlib C:h.string C:h.time h.webjames C:oslib.h.os C:oslib.h.types h.handler h.report h.content h.staticcontent h.sendasis h.cgiscript h.webjamesscript h.serverparsed
-o.staticcontent: c.staticcontent C:h.stdio C:h.stdlib C:h.string C:h.ctype C:h.time h.webjames C:oslib.h.os C:oslib.h.types h.datetime h.openclose h.webjames h.ip h.stat h.report h.content h.cache h.webjames h.staticcontent
-o.webjamesscript: c.webjamesscript MemCheck:h.MemCheck C:h.stddef C:h.stdio C:h.stdarg C:h.stdio C:h.stdlib C:h.string C:h.ctype C:h.time C:oslib.h.os C:oslib.h.types C:oslib.h.osfile C:oslib.h.fileswitch C:oslib.h.osfscontrol C:oslib.h.osmodule C:oslib.h.wimp C:oslib.h.osspriteop C:oslib.h.font h.webjames C:oslib.h.os h.webjamesscript h.openclose h.webjames h.report h.content h.stat h.ip h.write
-o.cgiscript: c.cgiscript C:h.stdio C:h.stdlib C:h.string C:h.ctype C:h.time C:oslib.h.os C:oslib.h.types C:oslib.h.osfile C:oslib.h.fileswitch C:oslib.h.osfscontrol C:oslib.h.osmodule C:oslib.h.wimp C:oslib.h.osspriteop C:oslib.h.font h.webjames C:oslib.h.os h.datetime h.cgiscript h.openclose h.webjames h.report h.content h.stat h.ip h.write h.handler
-o.sendasis: c.sendasis C:h.stdio C:h.stdlib C:h.time h.webjames C:oslib.h.os C:oslib.h.types h.report h.content h.datetime h.cache h.webjames h.sendasis
-o.content: c.content C:h.stdio C:h.stdlib C:h.string C:h.time C:h.ctype C:oslib.h.osfile C:oslib.h.types C:oslib.h.os C:oslib.h.fileswitch C:oslib.h.osfscontrol C:oslib.h.osgbpb C:oslib.h.mimemap h.webjames C:oslib.h.os h.write h.report h.content h.content
-o.openclose: c.openclose C:h.stdio C:h.stdlib C:h.string C:h.ctype C:h.time h.cache h.webjames C:oslib.h.os C:oslib.h.types h.webjames h.ip h.attributes C:regex.h.regex h.stat h.openclose h.webjames h.resolve
-o.serverparsed: c.serverparsed C:h.stdio C:h.stdlib C:h.string C:h.ctype C:h.time C:h.kernel C:oslib.h.osfile C:oslib.h.types C:oslib.h.os C:oslib.h.fileswitch C:regex.h.regex h.webjames C:oslib.h.os h.ip h.openclose h.webjames h.write h.stat h.datetime h.attributes C:regex.h.regex h.report h.content h.cache h.webjames h.handler h.staticcontent h.cgiscript h.serverparsed
-o.stat: c.stat C:h.time C:h.stdio C:h.stdlib C:h.string C:h.kernel C:oslib.h.os C:oslib.h.types h.webjames C:oslib.h.os h.stat h.ip
+o.handler: c.handler h.webjames C:oslib.h.os C:oslib.h.types h.handler h.report h.content h.staticcontent h.sendasis h.cgiscript h.webjamesscript h.serverparsed
+o.staticcontent: c.staticcontent h.webjames C:oslib.h.os C:oslib.h.types h.datetime h.openclose h.webjames h.ip h.stat h.report h.content h.cache h.webjames h.staticcontent
+o.webjamesscript: c.webjamesscript C:oslib.h.os C:oslib.h.types C:oslib.h.osfile C:oslib.h.fileswitch C:oslib.h.osfscontrol C:oslib.h.osmodule C:oslib.h.wimp C:oslib.h.osspriteop C:oslib.h.font h.webjames C:oslib.h.os h.webjamesscript h.openclose h.webjames h.report h.content h.stat h.ip h.write
+o.cgiscript: c.cgiscript C:oslib.h.os C:oslib.h.types C:oslib.h.osfile C:oslib.h.fileswitch C:oslib.h.osfscontrol C:oslib.h.osmodule C:oslib.h.wimp C:oslib.h.osspriteop C:oslib.h.font h.webjames C:oslib.h.os h.datetime h.cgiscript h.openclose h.webjames h.report h.content h.stat h.ip h.write h.handler
+o.sendasis: c.sendasis h.webjames C:oslib.h.os C:oslib.h.types h.report h.content h.datetime h.cache h.webjames h.sendasis
+o.content: c.content C:oslib.h.osfscontrol C:oslib.h.types C:oslib.h.os C:oslib.h.fileswitch C:oslib.h.osgbpb C:oslib.h.mimemap h.webjames C:oslib.h.os h.write h.report h.content h.content
+o.serverparsed: c.serverparsed C:h.kernel C:regex.h.regex h.webjames C:oslib.h.os C:oslib.h.types h.ip h.openclose h.webjames h.write h.stat h.datetime h.attributes C:regex.h.regex h.report h.content h.cache h.webjames h.handler h.staticcontent h.cgiscript h.serverparsed
