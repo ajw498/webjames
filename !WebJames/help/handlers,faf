@@ -72,7 +72,7 @@
  <p>
   When the request is a <code>POST</code>-request, the cgi-script can read
  the request-body from the standard input.
-
+ <p>You should ensure that your wimpslot value is big enough to run any scripts you have. E.g. if it is a perl script then the wimpslot will have to be set to at least a megabyte or more.
  <p>
   Scripts may not multitask, or use the BASIC/C cgi-lib included with
  WebJames, but languages such as Perl or PHP have their own libraries
