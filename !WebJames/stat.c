@@ -140,6 +140,7 @@ static void rotate_log(char *logfile, int copies) {
 	remove(logfile);
 }
 
+#ifndef SYSLOG
 static void write_buffer(void)
 {
 	if (logfile == NULL) logfile = fopen(configuration.weblog, "a+");
@@ -147,6 +148,7 @@ static void write_buffer(void)
 	if (logfile) fwrite(logbuffer,1,logbufferused,logfile);
 	logbufferused = 0;
 }
+#endif
 
 static void write_clfbuffer(void)
 {
@@ -155,6 +157,7 @@ static void write_clfbuffer(void)
 	if (clffile) fwrite(clfbuffer,1,clfbufferused,clffile);
 	clfbufferused = 0;
 }
+
 
 void update_statistics() {
 
@@ -184,6 +187,7 @@ void update_statistics() {
 	statistics.written = statistics.access = 0;
 }
 
+#ifndef SYSLOG
 static void check_for_rotate(void)
 /* Should only be called when logfile is already open */
 {
@@ -196,6 +200,7 @@ static void check_for_rotate(void)
 		}
 	}
 }
+#endif
 
 static void check_for_clfrotate(void)
 /* Should only be called when logfile is already open */
@@ -215,7 +220,7 @@ void writelog(int level, char *string) {
 #define SysLog_LogMessage 0x4c880
 
 #ifdef SYSLOG
-	if (level > loglevel)  return;
+	if (level > configuration.loglevel)  return;
 	level = (level<<8)/LOGLEVEL_NEVER;
 	if (level > 255)  level = 255;
 
