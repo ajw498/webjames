@@ -214,8 +214,8 @@ although doing so might help portability.
 
 PHP needs around 1.6Mb of free memory to run a simple script, and
 complex scripts will need more. By default PHP is set up to use dynamic
-areas. If you don't want it to, or you have RISC OS 3.11 or earlier, you
-can disable their use by editing the !PHP.!Boot file.
+areas. If you don't want it to you can disable their use by editing the
+!PHP.!Boot file.
 
 <p>
 <h3>
@@ -233,15 +233,6 @@ it into a text editor and make any alterations. Many of the options are
 not relevant to the RISC OS port. More information on the options can be
 found in the PHP manual. You may find changing the error_reporting
 variable to 15 helps with debugging.
-
-<p>
-<h3>
-<table bgcolor="#cccccc" width="99%"><tr><td>
-<a name="stronged">StrongEd mode</a>
-</td></tr></table>
-</h3>
-
-I have included a basic PHP modefile for StrongEd, which you may find useful.
 
 <p>
 <h3>
@@ -300,8 +291,7 @@ Due to the way the filename translation works, there are certain situations
 where a file cannot be found even though it exists, eg index/php when there is
 also a directory called index. In general, try to avoid using directory names
 that match any of your filenames (either the part before the extension,
-or the extension itself).  If you get the error "Primary script not found"
-then this may well be the problem.
+or the extension itself).
 <p>
 popen, system, exec, passthru and other functions that run external programs do work, but <b>only</b>
 if the child program being run was compiled with a recent version of UnixLib (September 2001 or later).
@@ -316,7 +306,10 @@ a chance to run because PHP is still running.
 However, any file you want to access via http://localhost can also be
 accesed by fopen with the pathname of the file relative to the current
 file, or an absolute pathname, which is faster anyway.
-
+<p>
+As RISC OS does not have an easilly accessible microsecond timer, the microsecond
+part of the return value from microtime() will be zero, so srand(microtime()) does
+not work as expected.
 <p>
 Any updates to the RISC OS port should be available from
 <a href="http://www.php.alexwaugh.com/">http://www.php.alexwaugh.com/</a>
