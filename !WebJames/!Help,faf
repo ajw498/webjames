@@ -13,7 +13,7 @@ WebJames - the web server
 </td></tr>
 <tr>
 <td><center><h5>
-Version 0.26
+Version 0.27
 </h5></center>
 </td>
 </tr></table>
@@ -25,7 +25,7 @@ Version 0.26
 <li><a href="#yoursite">Your site</a><br>
 <li><a href="#config">Configuration</a><br>
 <li><a href="#attr">Attributes</a><br>
-<li><a href="#cgi">CGI scripts</a><br>
+<li><a href="#handlers">Handlers and CGI scripts</a><br>
 <li><a href="#putdelete">PUT and DELETE methods</a><br>
 <li><a href="#log">Logging/statistics</a><br>
 <li><a href="#bandwidth">Bandwidth</a><br>
@@ -262,7 +262,7 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  <p>
   An attributes file consists of a number of sections, each section defines
  attributes for a file or directory.
- A section starts with <code>&lt;location /uri/&gt;</code> and finished with
+ A section starts with eg. <code>&lt;location /uri/&gt;</code> and finished with
  <code>&lt;/location&gt;</code>.
 
  <p>
@@ -278,14 +278,8 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  also causes all request for URIs starting with <code>/~xyz/</code> to
  access a directory in the RAM disc and ensures that files in that
  directory will never be cached.<br>
-  However, first of all it defines the <code>cgi-bin</code> directory.
-
 
  <pre>
- # select the cgi-bin directory
- &lt;location /cgi-bin/&gt;
- is-cgi
- &lt;/location&gt;
 
  # password-protect (almost) everything in /private/
  &lt;location /private/&gt;
@@ -325,7 +319,7 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  <p>
   Please notice - you can only set a home-directory for
  <em>directories</em> - NOT for files (eg. for <code>/~xyz/</code> but
- not for <code>/~xyz/pi.gif</code>).
+ not for <code>/~xyz/pic.gif</code>).
 
  <p>
   You can also create sections for specific directories using
@@ -335,13 +329,77 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  <p>
   Attributes in a <code>&lt;directory&gt;</code> section take precedence over
  those in a <code>&lt;location&gt;</code> section.
+ <p>
+  It is preferable to use <a href="#htaccess">.htaccess</a> files rather than <code>&lt;directory&gt;</code>
+  sections, as then if you move your website to a different directory on your hard disc, you
+  don't have to alter all the <code>&lt;directory&gt;</code> sections.
 
  <p>
-  Old style [/uri/] sections still work, although their use is deprecated.
+  There can also be <code>&lt;files&gt;</code> section, which apply the attributes
+ to only files that have a leafname that matches. eg.
+ <pre>
+ # hide all files with a leafname of pic.gif
+ &lt;files pic.gif&gt;
+ hidden
+ &lt;/files&gt;
+ </pre>
+ <p>
+  <code>&lt;files&gt;</code> sections can be nested within a <code>&lt;directory&gt;</code> section, and then they
+ will only apply to files within that directory.
+ <p>
+  Old style [/uri/] sections still work (they are treated as <code>&lt;location&gt;</code> sections), but their use is deprecated.
 
  <p>
+ <h5>Regular expressions</h5>
+ 
+ <p>
+  In addition to the types of section described above, there are <code>&lt;locationmatch&gt;</code>,
+ <code>&lt;directorymatch&gt;</code> and <code>&lt;filesmatch&gt;</code> sections. These take an
+ extended regular expression, and apply it to the URI, directory or leafname respectively. If it
+ matches then the attributes in the section are applied.
+ <p>
+  The regular expression matching is done by Henry Spencer's regex library.
+ <p>
+ Regular expressions are potentially complex, so I am not going to describe their syntax here.
+ See the <a href="regex/manpage">regex manpage</a> for more details.
+ <pre>
+ # this matches all leafnames that have between
+ # 1 and 3 digits followed by .gif or .jpg
+ &lt;filesmatch "^[0-9]{1,3}\.((gif)|(jpg))$"&gt;
+ notcacheable
+ &lt;/filesmatch&gt;
+ </pre>
+  The quotes around the regular expression are optional.
+ 
+ <p>
 
- <h5><center>The full list of attributes</center></h5>
+ <h5>The order of section matching</h5>
+ <p>
+  The order in which a request is processed is as follows:
+ <ul>
+  <li>The URI is compared with all <code>&lt;location&gt;</code> sections.
+  <li>The URI is compared with all <code>&lt;locationmatch&gt;</code> sections.
+  <li>The URI is converted to a filename.
+  <li>The filename is compared with all <code>&lt;directory&gt;</code> sections.
+  <li>The filename is compared with all <code>&lt;directorymatch&gt;</code> sections.
+  <li>If the request was for a directory, the relevant <code>defaultfile</code> list is
+      searched until a file is found.
+  <li>The leafname is compared with all <code>&lt;files&gt;</code> sections, with ones
+      nested within other applicable sections taking priority over those not nested.
+  <li>The leafname is compared with all <code>&lt;filesmatch&gt;</code> sections, with ones
+      nested within other applicable sections taking priority over those not nested.
+  <li>The leafname and filetype will be compared to any <code>AddHandler</code> or
+      <code>AddFiletypeHandler</code>.
+  <li>The relevant handler will be called to deal with the file.
+ </ul>
+ <p>
+  Therefore if you define an attribute for a whole directory, and the opposite
+ attribute for a specific file within that directory, then the directory attribute
+ will be applied first, but the file attribute will then be applied later, thus
+ overriding the directory attribute.
+ <p>
+
+ <h5>The full list of attributes</h5>
 
  <p>
   Below is the full list of attributes currently supported.
@@ -350,26 +408,6 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
  <table border="1" width="99%">
  <col span="1" width="150">
-
- <tr>
- <td><code>cgi-api</code></td>
- <td>this attribute tells WebJames how to start the cgi-script; allowed
-     values are <code>redirect</code> and <code>webjames</code>; default
-     is <code>webjames</code><br>
-     example: <code>cgi-api=redirect</code></td>
- </tr>
-
- <tr>
- <td><code>is-cgi</code></td>
- <td>allows the file (or all files in the directory) to be executed
-     as a cgi-script(s)</td>
- </tr>
-
- <tr>
- <td><code>isnt-cgi</code></td>
- <td>when included, the file (or the contents of the directory) may
-     not be executed as a cgi-script - this is obviously the default</td>
- </tr>
 
  <tr>
  <td><code>notcacheable</code></td>
@@ -401,7 +439,7 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  <td>the file holds a list of username:password pairs<br>
      example: <code>accessfile=&lt;WebJames$Dir&gt;.cgi-res.access0</code>
      </td>
- <tr>
+ </tr>
 
  <tr>
  <td><code>realm</code></td>
@@ -513,29 +551,6 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  </tr>
 
  <tr>
- <td><code>allowed-filetypes</code></td>
- <td>this attribute lists the filetypes that may be treated as cgi-scripts;
-     the value is a comma-seperated list of filetypes in hexadecimal
-     - you may have multiple <code>allowed-filetypes</code>-lines
-     for an URI; default is all filetypes; a blank list means all filetypes<br>
-     note: this only affects files that have the <code>is-cgi</code> attribute set; files
-     that have the <code>isnt-cgi</code> attribute will never be treated as cgi-scripts
-     regardless of their filetype<br>
-     example: <code>allowed-filetypes=18A,102,FFB</code></td>
- </tr>
-
- <tr>
- <td><code>forbidden-filetypes</code></td>
- <td>this attribute lists the filetypes that may not be treated as cgi-scripts;
-     the value is a comma-seperated list of filetypes in hexadecimal
-     - you may have multiple <code>forbidden-filetypes</code>-lines
-     for an URI; default is no filetypes are forbidden; a blank list means no filetypes; if a filetype is listed
-     in both the <code>allowed-filetypes</code> list and the <code>forbidden-filetypes</code>
-     list then the forbidden list takes priority<br>
-     example: <code>forbidden-filetypes=FAF,FFF,695,C85</code></td>
- </tr>
-
- <tr>
  <td><code>errordocument</code></td>
  <td>this attribute allows error messages to be customised for individual directories.
      the first parameter is the http status code that the error message refers to. the second
@@ -565,8 +580,76 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
      </td>
  </tr>
 
+ <tr>
+ <td><code>action</code></td>
+ <td>see the section on <a href="#handlers">handlers</a> for more details
+     </td>
+ </tr>
+
+ <tr>
+ <td><code>addfiletypehandler</code></td>
+ <td>see the section on <a href="#handlers">handlers</a> for more details
+     </td>
+ </tr>
+
+ <tr>
+ <td><code>addhandler</code></td>
+ <td>see the section on <a href="#handlers">handlers</a> for more details
+     </td>
+ </tr>
+
  </table>
 
+ The following attributes are included for backwards compatibility.
+ <a href="#handlers">Handlers</a> should be used instead.
+
+ <table border="1" width="99%">
+ <col span="1" width="150">
+
+ <tr>
+ <td><code>cgi-api</code></td>
+ <td>this attribute tells WebJames how to start the cgi-script; allowed
+     values are <code>redirect</code> and <code>webjames</code>; default
+     is <code>webjames</code><br>
+     example: <code>cgi-api=redirect</code></td>
+ </tr>
+
+ <tr>
+ <td><code>is-cgi</code></td>
+ <td>allows the file (or all files in the directory) to be executed
+     as a cgi-script(s)</td>
+ </tr>
+
+ <tr>
+ <td><code>isnt-cgi</code></td>
+ <td>when included, the file (or the contents of the directory) may
+     not be executed as a cgi-script - this is obviously the default</td>
+ </tr>
+
+ <tr>
+ <td><code>allowed-filetypes</code></td>
+ <td>this attribute lists the filetypes that may be treated as cgi-scripts;
+     the value is a comma-seperated list of filetypes in hexadecimal
+     - you may have multiple <code>allowed-filetypes</code>-lines
+     for an URI; default is all filetypes; a blank list means all filetypes<br>
+     note: this only affects files that have the <code>is-cgi</code> attribute set; files
+     that have the <code>isnt-cgi</code> attribute will never be treated as cgi-scripts
+     regardless of their filetype<br>
+     example: <code>allowed-filetypes=18A,102,FFB</code></td>
+ </tr>
+
+ <tr>
+ <td><code>forbidden-filetypes</code></td>
+ <td>this attribute lists the filetypes that may not be treated as cgi-scripts;
+     the value is a comma-seperated list of filetypes in hexadecimal
+     - you may have multiple <code>forbidden-filetypes</code>-lines
+     for an URI; default is no filetypes are forbidden; a blank list means no filetypes; if a filetype is listed
+     in both the <code>allowed-filetypes</code> list and the <code>forbidden-filetypes</code>
+     list then the forbidden list takes priority<br>
+     example: <code>forbidden-filetypes=FAF,FFF,695,C85</code></td>
+ </tr>
+
+ </table>
 
  <p>
 
@@ -620,7 +703,7 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  <p>
  Notice - you should not nest attribute-files in more than 3 levels.
 
- <h5>htaccess files</h5>
+ <a name="htaccess"><h5>htaccess files</h5></a>
 
   You can also specify attributes for a directory by putting them in an
  <code>htaccess</code> file within the directory. The name of the <code>htaccess</code>
@@ -631,7 +714,8 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
   The <code>htaccess</code> files are in the same format as the attributes file,
  but act as if the whole file was surrounded by a <code>&lt;directory dirname&gt;</code>
  section, where dirname is the directory the <code>htaccess</code> file is in.
-
+ It can contain <code>&lt;files&gt;</code> and <code>&lt;filesmatch&gt;</code> sections,
+ but not <code>&lt;location&gt;</code> or <code>&lt;directory&gt;</code> sections.
  <p>
   Please note that the <code>htaccess</code> files are cached, so if you alter one,
  then it may not take effect until you restart WebJames. Also, it you specify a
@@ -641,37 +725,49 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 <p>
 <h3>
 <table bgcolor="#cccccc" width="99%"><tr><td>
-<a name="cgi">CGI scripts</a>
+<a name="handlers">Handlers</a>
 </td></tr></table>
 </h3>
 
-  Any file (or the contents of any directory) which has the
- <code>is-cgi</code> <a href="#attr">attribute</a> set, can be executed
- as a cgi-script.
-
+  When WebJames receives a request for a file, it decides what to do with the file
+ (send it as it is, run it as a cgi script, etc.) according to any handlers set up
+ in the attributes file.
+ There are three handlers currently defined by WebJames (static-content, cgi-script and
+ webjames-script), and more can be added with the <a href="#action">action</a>
+ attribute.
  <p>
-  An incoming request for a file which is a cgi-script, causes WebJames
- to attempt to run that file, rather than reading the file and returning
- it to the client.
+  You can use the <code>addhandler</code> attribute to assign a handler to files with
+  a particular leafname extension, or <code>addfiletypehandler</code> to assign a handler
+  to files with a particular filetype.
+ <pre>
+ # treat all leafnames ending in .cgi as cgi scripts
+ AddHandler cgi-script .cgi
 
+ # treat all files with a leafname of index as being normal files
+ AddHandler static-content index
+
+ # treat all files with a filetype of &amp;FFB (BASIC) as webjames style cgi scripts
+ AddFiletypeHandler webjames-script FFB
+
+ # treat all files with a filetype of Perl as cgi scripts
+ AddFiletypeHandler cgi-script Perl
+
+ # treat all files as cgi scripts
+ AddFiletypeHandler cgi-script
+ </pre>
+
+  <code>Addhandler</code> or <code>addfiletypehandler</code> can be used outside of all the attributes sections, in
+ which case they will apply to all files, or inside an <code>&lt;location&gt;</code>,
+ <code>&lt;directory&gt;</code> or <code>&lt;files&gt;</code> section, in which case they
+ will only apply to files matched by that section.
+
+ <h6>static-content</h6>
+
+  This is the default handler, it simply sends the contents of the file
+ requested.
  <p>
-  WebJames supports two different types of cgi-scripts - <i>redirect</i>
- or <i>webjames-style</i>.
 
- <p>
-  Confusing these is likely to cause trouble; it is therefore recommended
- that <i>redirect</i> cgi-scripts are stored in a directory called
- <i>/cgi-bin2/</i> while <i>webjames-style</i> cgi-scripts are stored in
- a directory called <i>/cgi-bin/</i>.
-
-
- <p>
-  All cgi-scripts are treated as <i>webjames-style</i>, unless the
- <i>cgi-api</i> <a href="#attr">attribute</a> for the cgi-script is set 
- to <i>redirect</i> in the <a href="#attr">attributes file</a>.
-
-
- <h6>redirect</h6>
+ <h6>cgi-script</h6>
 
   When a cgi-script of this type is executed, all output from the script
  is redirected to a temporary file; when the script exits, WebJames reads
@@ -683,9 +779,9 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
  <p>
   Scripts may not multitask, or use the BASIC/C cgi-lib included with
- WebJames, and there is currently no provision for the script to read
- information about the request other than the information stored in the
- following system variables:
+ WebJames, but languages such as Perl or PHP have their own libraries
+ that provide this (and more) functionality. Information about the request
+ can be found in the following system variables:
 
  <table>
  <col span="1" width="150">
@@ -808,9 +904,9 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  </table>
 
 
- <h6>webjames-style</h6>
+ <h6>webjames-script</h6>
 
-  The cgi-script is run with the following arguments:
+  The script is run with the following arguments:
 
  <dl>
  <dt><code>-socket N</code>
@@ -875,7 +971,7 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
   CGI-scripts should only store the actual CGI-script-code (or an obey-file
  that calls the actual CGI-script-code) in the cgi-bin directory. All other
  files (database files, graphics etc.) should be stored outside the site-
- directory, preferably in <code>&lt;WebJames$Dir&gt;.cgi-res</code>.
+ directory.
   This is because any file in the cgi-bin directory may be run by a
  suitable request.
 
@@ -892,7 +988,34 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  application that lie dormant until a smaller script invokes them, eg. by
  broadcasting a Wimp-message.
 
+ <p>
+  <h6><a name="action">Action</a></h6>
 
+  This attributes defines an alternative star command to use to start a
+ redirect cgi-script. For example
+ <pre>
+ Action perl-script perl -w %f
+ </pre>
+  This will create a new handler called perl-script that will act the same
+ as a redirect cgi-script, but use the star command <code>perl -w %f</code>
+ where %f is replaced by the filename of the script requested.
+ <p>
+  This allows, for example, the normal runtype for a perl script when you
+ double click on it to run the script in a taskwindow, but when run from
+ WebJames as a cgi script it is single tasking.
+ <p>
+  There can also be a %u at the end of the command
+ <pre>
+ Action perl-script perl -w %f %u
+ </pre>
+  This will use Unix style redirection (eg. <code>perl -w filename &lt; input &gt; output</code>)
+ rather than RISC OS style redirection (eg. <code>perl -w filename { &lt; input &gt; output }</code>).
+ Unix style is recommended, as it causes less problems, but it cannot be used for BASIC or Obey
+ scripts.
+ <p>
+  If you define an action with the same name as one of the built in handlers, then the action will
+ override the built in handler. Actions can be defined outside of all sections in the attributes file,
+ or inside a section, but the effect is the same.
 
 <p>
 <h3>
@@ -998,6 +1121,9 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  <p>
   WebJames calculates the bandwidth-usage as a mean of the number of bytes
  written to the network over the last 1-2 minutes.
+ <p>
+  You can also use this option to simulate a slow link, so when you are testing
+  your site locally you can see how long it would take to download over a modem. 
 
 
 <p>
@@ -1247,6 +1373,9 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  <p>
   If the report-file doesn't exist, a standard report is returned to the
  client.
+ <p>
+  These reports can be overridden on a per-directory basis using the
+ <code>errordocument</code> attribute if required.
 
  <p>
   If the report-file exist, it will be returned to the client, after the
@@ -1357,16 +1486,19 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 </td></tr></table>
 </h3>
 
-<i>0.27 (19/12/2000)</i>
+<i>0.27 (24/12/2000)</i>
 
 <ul>
+  <li>added support for <code>&lt;files&gt;</code> sections in <a href="#attr">attributes</a> file
+  <li>added support for <code>&lt;locationmatch&gt;</code>, <code>&lt;directorymatch&gt;</code>
+      and <code>&lt;filesmatch&gt;</code> sections in <a href="#attr">attributes</a> file
+  <li>changed C++ style comments to C style and indentation spaces to tabs
+  <li>removed CASESENSITIVE compiler switch
+  <li>added casesensitive config option (which even works on case-insensitive filesystems)
   <li>new attributes <code>stripextensions</code> and <code>setcsd</code>
   <li>redirect cgi environment variables are now removed after the script has finished executing
-  <li>removed CASESENSITIVE compiler switch
-  <li>added casesensitive config option (which works on case-insensitive filesystems)
-  <li>changed C++ style comments to C style and indentation spaces to tabs
-  <li>added support for <code>&lt;files&gt;</code> sections in <a href="#attr">attributes</a> file
-  <li>added support for <code>&lt;locationmatch&gt;</code>, <code>&lt;directorymatch&gt;</code> and <code>&lt;filesmatch&gt;</code> sections in <a href="#attr">attributes</a> file
+  <li>introduced handlers, <code>AddHandler</code>, <code>AddFiletypeHandler</code> and
+      <code>Action</code>
 </ul>
 
 <i>0.26 (19/10/2000)</i>
