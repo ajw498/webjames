@@ -13,7 +13,7 @@ SETTYPE = SetType $@ Obey
 MEMCHECKLIB = MemCheck:o.MC
 STUBS = C:o.stubs
 OSLIB = OSLib:o.OSLib
-REGEX = C:regex.a.libregex
+REGEX = C:regex.libregex
 
 #Compiler flags
 THROWBACK = -throwback
