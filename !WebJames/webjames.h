@@ -1,7 +1,7 @@
 #ifndef WEBJAMES_H
 #define WEBJAMES_H
 
-#define WEBJAMES_H_REVISION "$Revision: 1.27 $"
+#define WEBJAMES_H_REVISION "$Revision: 1.28 $"
 
 #define WEBJAMES_VERSION "0.31"
 #define WEBJAMES_DATE "31/9/01"
@@ -180,29 +180,6 @@ typedef struct connection {
 
 typedef	void (*closefn)(struct connection *conn, int force); /*function to call to close the connection*/
 
-#ifndef WEBJAMES_PHP_ONLY
-
-/*Error handling*/
-/*Globals, but only used by the error handling macros*/
-extern os_error *webjames_last_error;
-extern void *webjames_last_malloc;
-
-/*Check the return from a SWI call, log the error if the was one, then return the error block pointer (or NULL)*/
-#define E(x) ((webjames_last_error=(x))==NULL ? NULL : (webjames_writelog(LOGLEVEL_OSERROR,"ERROR %s",webjames_last_error->errmess),webjames_last_error))
-/*As above, but prevent warning when used as a statement rather than as a test*/
-#define EV(x) ((void)(E(x)))
-/*Same as E(), but for malloc*/
-#define EM(x) ((webjames_last_malloc=(x))!=NULL ? webjames_last_malloc : (webjames_writelog(LOGLEVEL_OSERROR,"ERROR malloc failed")))
-/*#define EM(x) ((webjames_last_malloc=(x))==NULL ? (NULL) : webjames_last_malloc)*/
-
-/*The following functions should not be used; the wjstring functions or [v]snprintf should be used instead*/
-#define strncpy(x,y,z) dontusestrncpy(x,y,z)
-#define strcpy(x,y) dontusestrcpy(x,y)
-#define strncat(x,y,z) dontusestrncat(x,y,z)
-#define strcat(x,y) dontusestrcat(x,y)
-#define sprintf dontusesprintf
-#define vsprintf dontusevsprintf
-
 /* configuration */
 typedef struct config {
 	int timeout, bandwidth;
@@ -229,6 +206,50 @@ typedef struct config {
 	int logbuffersize;
 	char *webjames_h_revision;
 } config;
+
+#ifndef WEBJAMES_PHP_ONLY
+/* WEBJAMES_PHP_ONLY is defined if webjames.h is included by PHP*/
+/* PHP only needs the connection and config structures, and the webjames_writestring/buffer/log functions*/
+
+/*Error handling*/
+/*Globals, but only used by the error handling macros*/
+extern os_error *webjames_last_error;
+extern void *webjames_last_malloc;
+
+#ifdef MemCheck_MEMCHECK
+
+#include "MemCheck:MemCheck.h"
+
+#define DEBUG_FMT " %s, line %d"
+#define DEBUG_ARGS ,__FILE__,__LINE__
+
+#else
+
+#define MemCheck_RegisterMiscBlock(x,y) NULL
+#define MemCheck_UnRegisterMiscBlock(x) NULL
+#define DEBUG_FMT
+#define DEBUG_ARGS
+
+#endif
+
+/*Check the return from a SWI call, log the error if the was one, then return the error block pointer (or NULL)*/
+#define E(x) ((webjames_last_error=(x))==NULL ? NULL : (\
+MemCheck_RegisterMiscBlock(webjames_last_error,sizeof(os_error)),\
+webjames_writelog(LOGLEVEL_OSERROR,"ERROR %s" DEBUG_FMT,webjames_last_error->errmess DEBUG_ARGS),\
+MemCheck_UnRegisterMiscBlock(webjames_last_error),\
+webjames_last_error))
+/*As above, but prevent warning when used as a statement rather than as a test*/
+#define EV(x) ((void)(E(x)))
+/*Same as E(), but for malloc*/
+#define EM(x) ((webjames_last_malloc=(x))!=NULL ? webjames_last_malloc : (webjames_writelog(LOGLEVEL_OSERROR,"ERROR malloc failed" DEBUG_FMT DEBUG_ARGS)))
+
+/*The following functions should not be used; the wjstring functions or [v]snprintf should be used instead*/
+#define strncpy(x,y,z) dontusestrncpy(x,y,z)
+#define strcpy(x,y) dontusestrcpy(x,y)
+#define strncat(x,y,z) dontusestrncat(x,y,z)
+#define strcat(x,y) dontusestrcat(x,y)
+#define sprintf dontusesprintf
+#define vsprintf dontusevsprintf
 
 typedef struct globalserverinfo {
 	struct listeninfo servers[8];
