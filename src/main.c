@@ -36,7 +36,7 @@
 #define MESSAGE_WEBJAMES_CMD 0x4f988
 
 #ifdef PHP
-const char *__dynamic_da_name="WebJames and PHP Heap";
+const char * const __dynamic_da_name = "WebJames and PHP Heap";
 #endif
 
 /* local variables */
