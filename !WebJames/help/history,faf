@@ -14,6 +14,17 @@
 </td></tr></table>
 </h3>
 
+<i>0.32 (17/11/2001)</i>
+
+<ul>
+  <li>fixed bug that could cause WebJames to crash if a zero length URI was requested.
+  <li>fixed bug in BASIC and C cgi-libs that prevented more than 32K of data being sent at once.
+  <li>fixed bug in filer CGI script that allowed access to directories other than $.Public.
+  <li>filer CGI script can now cope with long filenames (up to 256 chars).
+  <li>addition to C cgi-lib to support POST data. Thanks to <a href="mailto:mdc@ihug.co.nz"> Michael Curtis</a> for this.
+
+</ul>
+
 <i>0.31 (18/9/2001)</i>
 
 <ul>
