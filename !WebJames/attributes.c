@@ -97,6 +97,51 @@ void insert_attributes(struct attributes *attr) {
 }
 
 
+void scan_filetype_list(char *list, struct attributes *attr, int allowed) {
+
+  int count, filetypeslist[256], *oldlist, *newlist, more;
+
+  if (allowed) {
+    count = attr->allowedfiletypescount;
+    oldlist = attr->allowedfiletypes;
+  } else {
+    count = attr->forbiddenfiletypescount;
+    oldlist = attr->forbiddenfiletypes;
+  }
+
+  if ((count > 0) && (oldlist))    memcpy(filetypeslist, oldlist, count*4);
+
+  more = 1;
+  do {
+    int n, f;
+
+    n = sscanf(list, "%x", &f);
+
+    if (n == 1)
+      filetypeslist[count++] = f;
+
+    if (strchr(list, ','))
+      list = strchr(list, ',')+1;
+    else
+      more = 0;
+  } while (more);
+
+  if (!count)  return;
+  newlist = malloc(4*count);
+  if (!newlist)  return;
+  if (oldlist)  free(oldlist);
+
+  memcpy(newlist, filetypeslist, 4*count);
+  if (allowed) {
+    attr->allowedfiletypes = newlist;
+    attr->allowedfiletypescount = count;
+  } else {
+    attr->forbiddenfiletypes = newlist;
+    attr->forbiddenfiletypescount = count;
+  }
+}
+
+
 
 void scan_host_list(char *list, struct attributes *attr, int allowed) {
 
@@ -159,6 +204,8 @@ struct attributes *create_attribute_structure(char *uri) {
   attr->next = attr->previous = NULL;
   attr->forbiddenhosts = attr->allowedhosts = NULL;
   attr->forbiddenhostscount = attr->allowedhostscount = 0;
+  attr->forbiddenfiletypes = attr->allowedfiletypes = NULL;
+  attr->forbiddenfiletypescount = attr->allowedfiletypescount = 0;
   attr->methods = (1<<METHOD_GET)|(1<<METHOD_HEAD)|(1<<METHOD_POST);
   // the flags indicate which attributes are defined for an URI
   // this is necessary as attributes may be NULL, so it is not
@@ -329,6 +376,19 @@ void read_attributes_file(char *filename, char *baseuri) {
           free(temp);
         }
 
+      } else if (strcmp(line, "forbidden-filetypes") == 0) {
+        // list of filetypes that may not be treated as cgi scripts
+        if (temp) {
+          scan_filetype_list(temp, attr, 0);
+          free(temp);
+        }
+      } else if (strcmp(line, "allowed-filetypes") == 0) {
+        // list of filetypes that may be treated as cgi scripts
+        if (temp) {
+          scan_filetype_list(temp, attr, 1);
+          free(temp);
+        }
+
       } else if (strcmp(line, "methods") == 0) {
         // allowed request-methods
         if (temp) {
@@ -448,6 +508,10 @@ void get_attributes(char *uri, struct connection *conn) {
       if (test->defined.userandpwd)   conn->userandpwd      = test->userandpwd;
       if (test->defined.cgi_api)      conn->cgi_api         = test->cgi_api;
       if (test->defined.is_cgi)       conn->flags.is_cgi    = test->is_cgi;
+      conn->allowedfiletypes = test->allowedfiletypes;
+      conn->allowedfiletypescount = test->allowedfiletypescount;
+      conn->forbiddenfiletypes = test->forbiddenfiletypes;
+      conn->forbiddenfiletypescount = test->forbiddenfiletypescount;
       if (test->defined.methods)
         if (!(test->methods & (1<<conn->method)))
           conn->attrflags.accessallowed = 0;

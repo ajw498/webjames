@@ -1,8 +1,0 @@
-WimpSlot -Min 1024k -Max 1024k
-Unset SERVER_SOFTWARE
-Unset SERVER_NAME
-Unset GATEWAY_INTERFACE
-Unset REQUEST_METHOD
-Echo Content-Type: text/html
-Echo
-Run <PHP$Dir>.PHP -f %*0

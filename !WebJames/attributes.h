@@ -39,6 +39,10 @@ typedef struct attributes {
   int *forbiddenhosts;  // list of forbidden hosts (ip-address)
   int allowedhostscount, forbiddenhostscount;
 
+  int *allowedfiletypes;    // list of allowed filetypes for cgi scripts
+  int *forbiddenfiletypes;  // list of forbidden filetypes for cgi scripts
+  int allowedfiletypescount, forbiddenfiletypescount;
+
   struct {
     unsigned int accessfile  : 1;
     unsigned int userandpwd  : 1;

@@ -9,8 +9,6 @@ RMEnsure MimeMap 0.10 Error You need version 0.10 (or later) of the MimeMap modu
 
 || insert initialisation of other programs/tools below here
 
-|| PHP3
-SetMacro Alias$@RunType_18A Run <WebJames$Dir>.cgi-res.startphp %%*0
 
 || insert initialisation of other programs/tools above here
 

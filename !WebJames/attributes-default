@@ -38,6 +38,8 @@
 # ram-faster
 # more-attributes=filename
 # defaultfile=filename
+# allowed-filetypes=list-of-filetypes
+# forbidden-filetypes=list-of-filetypes
 #
 #  if a file/directory is password-protected, a realm MUST
 # be defined for that file/directory, otherwise it cannot

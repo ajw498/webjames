@@ -13,7 +13,7 @@ WebJames - the web server
 </td></tr>
 <tr>
 <td><center><h5>
-Version 0.24 - by Henrik Bjerregaard Pedersen
+Version 0.25
 </h5></center>
 </td>
 </tr></table>
@@ -47,20 +47,28 @@ Version 0.24 - by Henrik Bjerregaard Pedersen
 
   <p>
   WebJames is a freeware HTTP server for RISC OS.<br>
-  Unlimited redistribution and use in source and binary forms, with or
- without modification, is permitted provided:
-
- <ul>
- <li>this file and the original config file both are included unaltered 
- <li>if a modified version of the source is included, you should also
-     include the original source
- <li>if you charge <i>ANYTHING</i> for the program or for the media on
-     which the program is stored, you should include the source
- </ul>
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+<p>
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+<p>
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
  <p>
+  Versions 0.24 and earlier were written by Henrik Bjerregaard Pedersen<br>
   email: <a href="mailto:henrik@login.dknet.dk">henrik@login.dknet.dk</a><br>
   www: <a href="http://login.dknet.dk/~henrik/">http://login.dknet.dk/~henrik/</a>
+ <p>
+  Development has now been taken over by Alex Waugh<br>
+  email: <a href="mailto:ajw498@ecs.soton.ac.uk">ajw498@ecs.soton.ac.uk</a><br>
+  www: <a href="http://www.ecs.soton.ac.uk/~ajw498/">http://www.ecs.soton.ac.uk/~ajw498/</a>
 
  <p>
   The source has been released in the hope that others will improve and
@@ -423,7 +431,7 @@ Version 0.24 - by Henrik Bjerregaard Pedersen
      attributes; if the <code>more-attributes</code> appears inside an
      URI-section, the URIs in the file are considered relative to the
      URI for the section in parent-file<br>
-     example: <code>more-attributes=&lt;WebJames$Dir&;gt.Site-Info.Attr1</code>
+     example: <code>more-attributes=&lt;WebJames$Dir&gt;.Site-Info.Attr1</code>
      </td>
  </tr>
 
@@ -448,6 +456,29 @@ Version 0.24 - by Henrik Bjerregaard Pedersen
      be accessed; this attribute is mainly useful for enabling access to
      files that are stored in a directory which has the <code>hidden</code>
      attribute set</td>
+ </tr>
+
+ <tr>
+ <td><code>allowed-filetypes</code></td>
+ <td>this attribute lists the filetypes that may be treated as cgi-scripts;
+     the value is a comma-seperated list of filetypes in hexadecimal
+     - you may have multiple <code>allowed-filetypes</code>-lines
+     for an URI; default is all filetypes<br>
+     note: this only affects files that have the <code>is-cgi</code> attribute set; files
+     that have the <code>isnt-cgi</code> attribute will never be treated as cgi-scripts
+     regardless of their filetype<br>
+     example: <code>allowed-filetypes=18A,102,FFB</code></td>
+ </tr>
+
+ <tr>
+ <td><code>forbidden-filetypes</code></td>
+ <td>this attribute lists the filetypes that may not be treated as cgi-scripts;
+     the value is a comma-seperated list of filetypes in hexadecimal
+     - you may have multiple <code>forbidden-filetypes</code>-lines
+     for an URI; default is no filetypes are forbidden; if a filetype is listed
+     in both the <code>allowed-filetypes</code> list and the <code>forbidden-filetypes</code>
+     list then the forbidden list takes priority<br>
+     example: <code>forbidden-filetypes=FAF,FFF,695,C85</code></td>
  </tr>
 
  </table>
@@ -1216,6 +1247,20 @@ Version 0.24 - by Henrik Bjerregaard Pedersen
 </td></tr></table>
 </h3>
 
+<i>0.25 (31/08/2000)</i>
+
+<ul>
+  <li>I (Alex Waugh) have now taken over the maintenance of WebJames
+  <li>a couple of new <a href="#attr">attributes</a> have been defined:
+      <ul>
+      <li><code>allowed-filetypes</code>
+      <li><code>forbidden-filetypes</code>
+      </ul>
+      these allow cgi-scripts to be executed only if their filetype is/isn't on the list,
+      useful for keeping both PHP scripts and normal HTML in the same directory
+</ul>
+
+
 <i>0.24 (26/06/2000)</i>
 
 <ul>
@@ -1511,29 +1556,16 @@ Version 0.24 - by Henrik Bjerregaard Pedersen
 
 <h5>PHP3</h5>
 
-  WebJames works with Alex Waugh port of PHP3 - if you make a few changes:
-
- <ul>
-   <li>copy the file <code>!PHP.php</code> to the
-       <code>!WebJames.cgi-res</code> directory
-   <li>create an <em>Obey</em>-file containing the following:
-        <pre>
-          WimpSlot -min 1024k -max 1024k
-          Unset SERVER_SOFTWARE
-          Unset SERVER_NAME
-          Unset GATEWAY_INTERFACE
-          Unset REQUEST_METHOD
-          Echo Content-Type: text/html
-          Echo
-          Run &lt;WebJames$Dir&gt;.cgi-res.php -f %*0
-        </pre>
-        and save is as <code>!WebJames.cgi-res.startphp</code>
-   <li>insert the line the following line in <code>!WebJames.!Run</code><br>
-       <code>SetMacro Alias$@RunType_18A Run &lt;WebJames$Dir&gt.cgi-res.startphp %%*0</code>
- </ul>
- Notice that !PHP itself sets the variable <code>Alias$@RunType_18A</code>,
- so you should take care not to run <code>!PHP.!Boot</code> (eg. by opening
- the directory containing !PHP after you've started WebJames.
+  WebJames works with Alex Waugh's <a href="http://www.ecs.soton.ac.uk/~ajw498/php/">port of PHP3</a><br>
+  If you chage the global attributes section of the attributes file to:
+   <pre>
+    # global atttributes
+    [/]
+    is-cgi
+    cgi-api=redirect
+    allowed-filetypes=18a
+   </pre>
+  then you can put PHP scripts anywhere where you would put normal HTML.
 
 <p>
 

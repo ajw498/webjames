@@ -208,8 +208,7 @@ void send_file(struct connection *conn) {
 
   // check if is it a cgi-script
   if (conn->flags.is_cgi) {
-    script_start(SCRIPT_CGI, conn, conn->filename, pwd, args);
-    return;
+    if (script_start(SCRIPT_CGI, conn, conn->filename, pwd, args)) return;
   }
 
   // check if object is cached
