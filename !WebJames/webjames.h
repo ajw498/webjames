@@ -1,7 +1,7 @@
 #ifndef WEBJAMES_H
 #define WEBJAMES_H
 
-#define WEBJAMES_H_REVISION "$Revision: 1.32 $"
+#define WEBJAMES_H_REVISION "$Revision: 1.33 $"
 
 #define WEBJAMES_VERSION "0.33"
 #define WEBJAMES_DATE "20/12/01"
@@ -137,6 +137,8 @@ typedef struct connection {
 	int headersize, headerallocated;
 	char *header;               /* malloc()'ed */
 	char vary[MAX_VARY];
+	char *contentlocation;
+	char *contentlanguage;
 
 	FILE *file;                 /* if file != NULL, data will be read */
 								/* directly from the file */
@@ -286,8 +288,8 @@ void read_config(char *config);
 #define webjames_writestringr(conn,string) \
 	if (webjames_writestring(conn,string)<0) return
 
-int webjames_writestring(struct connection *conn, char *string);
-int webjames_writebuffer(struct connection *conn, char *buffer, int size);
+int webjames_writestring(struct connection *conn, const char *string);
+int webjames_writebuffer(struct connection *conn, const char *buffer, int size);
 
 int webjames_readbuffer(struct connection *conn, char *buffer, int size);
 
