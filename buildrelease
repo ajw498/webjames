@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# $Id: buildrelease,v 1.8 2003/02/15 14:54:17 ajw Exp $
+# $Id: buildrelease,v 1.9 2003/06/18 20:41:52 ajw Exp $
 #
 # usage: buildrelease --webjames=0.34 --php=2.04 --php-dir=../php4
 
@@ -72,8 +72,8 @@ zip -r9, webjames-$WJVERSION.zip \!WebJames Site Licences \!System -x '*CVS*' '*
 # Build the PHP cgi
 (cd $PHPDIR; ./riscos.configure) || exit 1
 (cd $PHPDIR; make) || exit 1
-cp $PHPDIR/sapi/cgi/php !PHP/php,ff8
-zip -r9, php-$PHPVERSION.zip \!PHP Licences php.ini \!System -x '*CVS*' '*.cvsignore'
+cp $PHPDIR/sapi/cgi/php !PHP/php,ff8 || exit 1
+zip -r9, php-$PHPVERSION.zip \!PHP Licences php.ini \!System -x '*CVS*' '*.cvsignore' || exit 1
 
 # Build WebJames/PHP 
 ./configure --enable-php || exit 1
