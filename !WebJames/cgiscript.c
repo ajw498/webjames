@@ -50,6 +50,8 @@ void cgiscript_start(struct connection *conn)
 	if (configuration.serverip[0])  set_var_val("SERVER_NAME", configuration.serverip);
 	set_var_val("SERVER_ADMIN", configuration.webmaster);
 
+	set_var_val("DOCUMENT_ROOT", configuration.site);
+
 	set_var_val("SCRIPT_NAME", conn->uri);
 	set_var_val("PATH_TRANSLATED", conn->filename);
 
@@ -169,6 +171,7 @@ void cgiscript_start(struct connection *conn)
 	remove_var("SERVER_PROTOCOL");
 	remove_var("SERVER_NAME");
 	remove_var("SERVER_ADMIN");
+	remove_var("DOCUMENT_ROOT");
 	remove_var("SCRIPT_NAME");
 	remove_var("PATH_TRANSLATED");
 	remove_var("QUERY_STRING");

@@ -81,6 +81,10 @@ AddFiletypeHandler webjames-script ALL
 AddFiletypeHandler cgi-script
 </location>
 
+<location /config/>
+homedir=<WebJames$Dir>.conf
+</location>
+
 # protect .htaccess files
 <files .htaccess>
 hidden
