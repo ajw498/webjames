@@ -1,5 +1,5 @@
 /*
-	$Id: main.c,v 1.1 2002/02/17 22:50:10 ajw Exp $
+	$Id: main.c,v 1.2 2002/10/05 17:25:58 ajw Exp $
 	main() function, wimp polling loop
 */
 
@@ -9,6 +9,10 @@
 #include <string.h>
 #include <stdlib.h>
 
+#if defined(__GNUC__) && !defined(__TARGET_SCL__)
+#include <unixlib/features.h>
+#endif
+ 
 #include "kernel.h"
 #include "swis.h"
 
@@ -138,6 +142,11 @@ int main(int argc, char *argv[])
 	MemCheck_SetAutoOutputBlocksInfo(0);
 	MemCheck_SetWriteQuitting(0);
 #endif
+
+#if defined(__GNUC__) && !defined(__TARGET_SCL__)
+	__feature_imagefs_is_file = 1;
+#endif
+
 	/* first argument should be the configuration file */
 	if (argc >= 2) configfile=argv[1]; else configfile="<WebJames$Dir>.config";
 
