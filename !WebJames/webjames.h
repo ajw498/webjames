@@ -141,6 +141,7 @@ typedef struct config {
 	char attributesfile[256], serverip[256], cgi_in[256], cgi_out[256];
 	char htaccessfile[256];
 	int xheaders;
+	int casesensitive;
 } config;
 
 extern struct config configuration;

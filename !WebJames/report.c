@@ -474,7 +474,7 @@ void report_moved(struct connection *conn, char *newurl) {
 	char url[HTTPBUFFERSIZE];
 
 	if (*configuration.serverip)
-		sprintf(url, "http:/*%s%s", configuration.serverip, newurl); */
+		sprintf(url, "http://%s%s", configuration.serverip, newurl);
 	else
 		strcpy(url, newurl);
 
@@ -496,7 +496,7 @@ void report_movedtemporarily(struct connection *conn, char *newurl) {
 	char url[HTTPBUFFERSIZE];
 
 	if (*configuration.serverip)
-		sprintf(url, "http:/*%s%s", configuration.serverip, newurl); */
+		sprintf(url, "http://%s%s", configuration.serverip, newurl);
 	else
 		strcpy(url, newurl);
 

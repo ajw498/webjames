@@ -9,6 +9,7 @@
 #include "wimp.h"
 #include "fileswitch.h"
 #include "osfile.h"
+#include "osfscontrol.h"
 
 #include "webjames.h"
 #include "cache.h"
@@ -34,6 +35,7 @@ struct cache *get_file_through_cache(char *name, char *filename) {
 	bits filetype, load, exec, attr;
 	fileswitch_object_type objtype;
 	char utc[5], typename[128];
+	char buffer[256];
 	struct tm filedate;
 
 	if (!cachestart)  return NULL;
@@ -51,6 +53,12 @@ struct cache *get_file_through_cache(char *name, char *filename) {
 	/* read file info (this is also done in write.c !!!) */
 	if (xosfile_read_stamped_no_path(filename, &objtype, &load, &exec, &filesize, &attr, &filetype)) return NULL;
 	if (objtype != 1)  return NULL;       /* cache only real files */
+
+	if (configuration.casesensitive) {
+		if (xosfscontrol_canonicalise_path(filename,buffer,0,0,256,NULL)) return NULL;
+		if (strcmp(filename,buffer) != 0) return NULL;
+	}
+
 	if (filesize > maxcachefilesize)  return NULL;  /* too big */
 	if (filetype == -1)  return NULL;     /* cache only files with filetypes/datestamps */
 

@@ -25,13 +25,19 @@ server=WebJames/0.26
 port=80
 
 # homedir - directory holding the files
-homedir=<WebJames$Dir>.^.site
+homedir=<WebJames$Dir>.^.Site
 
 # attributes - name of attributes file
 attributes=<WebJames$Dir>.attributes
 
-# name of file to look for directory specific attributes
+# accessfilename - name of file to look for directory specific attributes
 accessfilename=/htaccess
+
+# casesensitive - are filenames matched case sensitive;
+# 0 no
+# 1 yes
+# this includes the homedir attribute above and any in the attributes file
+casesensitive=0
 
 # connection control
 # ------------------

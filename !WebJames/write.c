@@ -5,6 +5,8 @@
 #include <time.h>
 
 #include "osfile.h"
+#include "osgbpb.h"
+#include "osfscontrol.h"
 
 #include "cache.h"
 #include "webjames.h"
@@ -231,7 +233,7 @@ void send_file(struct connection *conn) {
 		strcat(testfile,"index/html"); /* incase the list is empty */
 		for(i=0; i<conn->defaultfilescount; i++) {
 			uri_to_filename(conn->defaultfiles[i], testfile+len);
-			type = get_file_info(testfile,NULL,NULL,&size);
+			type = get_file_info(testfile,NULL,NULL,&size,1);
 			if (type != FILE_DOESNT_EXIST) break;
 		}
 		strcpy(conn->filename,testfile);
@@ -254,7 +256,7 @@ void send_file(struct connection *conn) {
 		forbidden = 0;
 		allowed = 1;
 		/* check if cgi-script program exists, and has a suitable filetype */
-		type = get_file_info(conn->filename,NULL,NULL,&size);
+		type = get_file_info(conn->filename,NULL,NULL,&size,1);
 
 		if (type == FILE_DOESNT_EXIST) {
 			report_notfound(conn);
@@ -301,7 +303,7 @@ void send_file(struct connection *conn) {
 
 	} else {
 		/* check if object exist and get the filetype/mimetype at the same time */
-		type = get_file_info(conn->filename, mimetype, &date, &size);
+		type = get_file_info(conn->filename, mimetype, &date, &size,1);
 		if (type == FILE_DOESNT_EXIST) {
 			report_notfound(conn);
 			return;
@@ -324,8 +326,7 @@ void send_file(struct connection *conn) {
 			strcpy(mimetype, "text/plain");
 	}
 
-	if ((conn->method == METHOD_GET) || (conn->method == METHOD_PUT) ||
-			(conn->method == METHOD_DELETE))                               {
+	if ((conn->method == METHOD_GET) || (conn->method == METHOD_PUT) || (conn->method == METHOD_DELETE)) {
 		/* was there a valid If-Modified-Since field in the request?? */
 		if (conn->if_modified_since.tm_year > 0) {
 			if (compare_time(&date, &conn->if_modified_since) < 0) {
@@ -439,20 +440,58 @@ int check_access(struct connection *conn, char *authorization) {
 	return ACCESS_FAILED;
 }
 
+static int check_case(char *filename)
+/* Check that the given filename matches (case sensitive) with an actual file */
+/* It is a bit inefficient, but the only way I can think of */
+/* If only osfscontrol_canonicalise_path returned the correct case... */
+{
+	int count, more, found;
+	int end;
+	char leafname[256], buffer[256];
 
+	end=strlen(filename);
+	while (1) {
+		/* Get the leafname and dirname */
+		while (filename[end]!='.' && end>0) end--;
+		if (end <= 0) return 0;
+		strcpy(leafname,filename+end+1);
+		filename[end] = '\0';
+		/* Then enumerate the directory contents to see if there is a matching file/directory */
+		found = 0;
+		more = 0;
+		do {
+			if (xosgbpb_dir_entries(filename,(osgbpb_string_list *)buffer,1,more,256,NULL,&count,&more)) return 0;
+			if (count) {
+				if (strcmp(buffer,leafname) == 0) {
+					found = 1;
+					break;
+				}
+			}
+		} while(more != -1);
+		if (!found) return 0; /* Not found, so don't bother to check rest of pathname */
+		if (filename[end-1] == '$') return 1; /* We have reached the root directory, so the filename must match exactly */
+	}
+}
 
-int get_file_info(char *filename, char *mimetype, struct tm *date, int *size) {
+int get_file_info(char *filename, char *mimetype, struct tm *date, int *size, int checkcase) {
 /* return filetype or error-code, fill in date (secs since 1990) and mimetype */
 
 	char utc[5], typename[128];
+	char buffer[256];
 	fileswitch_object_type objtype;
 	bits load, exec, filetype;
 	fileswitch_attr attr;
 
 	/* check if cgi-script program exists */
 	if (xosfile_read_stamped_no_path(filename, &objtype, &load, &exec, size,&attr, &filetype))  return FILE_ERROR;
+	if (objtype != 1 && objtype != 2)  return FILE_DOESNT_EXIST;
+
+	if (checkcase && configuration.casesensitive) {
+		if (xosfscontrol_canonicalise_path(filename,buffer,0,0,256,NULL)) return FILE_ERROR;
+		if (check_case(buffer) == 0) return FILE_DOESNT_EXIST;
+	}
+
 	if (objtype == 2)  return OBJECT_IS_DIRECTORY;
-	if (objtype != 1)  return FILE_DOESNT_EXIST;
 	if (!(attr &1))  return FILE_LOCKED;
 	if (filetype == -1)  return FILE_NO_MIMETYPE;
 

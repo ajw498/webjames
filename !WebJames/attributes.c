@@ -364,10 +364,11 @@ static struct attributes *read_attributes_file(char *filename, char *base) {
 				section = section_LOCATION;
 				ptr[len-1] = '\0';
 				len--;
-#ifndef CASESENSITIVE
-				/* URIs are case-insensitive */
-				for (i = 0; i < len; i++)  ptr[i] = tolower(ptr[i]);
-#endif
+
+				if (!configuration.casesensitive) {
+					/* URIs are case-insensitive */
+					for (i = 0; i < len; i++)  ptr[i] = tolower(ptr[i]);
+				}
 
 				sprintf(uri, "%s%s", base, ptr);
 				attr = create_attribute_structure(uri);
@@ -435,9 +436,9 @@ static struct attributes *read_attributes_file(char *filename, char *base) {
 					if (section == section_LOCATION && attr->uri[attr->urilen-1] == '/') continue;
 					/* define where on the harddisc the directory is stored */
 					if (attr->homedir)  free(attr->homedir);
-					attr->defined.homedir = 1;
 					attr->homedir = value;
-					if (value)
+					attr->defined.homedir = 1;
+					if (attr->homedir)
 						/* calc how many chars at the start of the URI will be */
 						/* replaced by the home-directory-path */
 						attr->ignore = attr->urilen-1;
@@ -699,7 +700,6 @@ static void merge_attributes(struct connection *conn, struct attributes *attr) {
 
 void get_attributes(char *uri, struct connection *conn) {
 /* merge all attributes-structures that matches the directory */
-
 /* dir              pointer to the directory to match */
 /* conn             structure to fill in */
 	int found;

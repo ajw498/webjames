@@ -6,6 +6,7 @@
 
 #include "os.h"
 #include "osmodule.h"
+#include "osfscontrol.h"
 #include "territory.h"
 
 #include "global.h"
@@ -42,9 +43,7 @@ static int serverscount;
 
 int webjames_init(char *config) {
 /* initialise the webserver */
-
 /* config           name of configuration file */
-
 /* returns 1 (ok) or 0 (failed) */
 
 	int i, arg, active;
@@ -57,6 +56,7 @@ int webjames_init(char *config) {
 	configuration.timeout = 200;
 	configuration.bandwidth = 0;
 	reversedns = -1;
+	configuration.casesensitive=0;
 	*clflog = *weblog = *configuration.webmaster = *configuration.site = *configuration.serverip = *configuration.cgi_in = *configuration.cgi_out = '\0';
 	*configuration.put_script = *configuration.delete_script = *configuration.htaccessfile = '\0';
 	maxrequestsize = 100000;
@@ -360,7 +360,6 @@ void writestring(int socket, char *string) {
 
 void read_config(char *config) {
 /* read all config-options from the config file */
-
 /* config           configuration file name */
 
 	FILE *file;
@@ -476,7 +475,7 @@ void read_config(char *config) {
 				strcpy(rename_cmd, val);
 
 			else if (strcmp(cmd, "homedir") == 0)
-				strcpy(configuration.site, val);
+				strcpy(configuration.site,val);
 
 			else if (strcmp(cmd, "put-script") == 0)
 				strncpy(configuration.put_script, val, 255);
@@ -492,6 +491,9 @@ void read_config(char *config) {
 
 			else if (strcmp(cmd, "accessfilename") == 0)
 				strncpy(configuration.htaccessfile, val, 255);
+
+			else if (strcmp(cmd, "casesensitive") == 0)
+				configuration.casesensitive = atoi(val);
 
 			else if (strcmp(cmd, "panic") == 0)
 				strncpy(configuration.panic, val, 500);

@@ -208,10 +208,11 @@ void pollread_header(struct connection *conn, int bytes) {
 			if (!conn->uri)  return;                    /* failed to get buffer */
 			strcpy(conn->uri, file);                    /* fill it with filename */
 
-#ifndef CASESENSITIVE
-			for (i = 0; conn->uri[i] && (conn->uri[i] != '?'); i++)
-				conn->uri[i] = tolower(conn->uri[i]);     /* lower-case until args */
-#endif
+			if (!configuration.casesensitive) {
+				for (i = 0; conn->uri[i] && (conn->uri[i] != '?'); i++) {
+					conn->uri[i] = tolower(conn->uri[i]);     /* lower-case until args */
+				}
+			}
 
 			if (strncmp(upper, "GET ", 4) == 0)
 				conn->method = METHOD_GET;
@@ -235,9 +236,10 @@ void pollread_header(struct connection *conn, int bytes) {
 				}
 				conn->uri = ptr;
 				strcpy(conn->uri, configuration.delete_script);
-#ifndef CASESENSITIVE
-				for (i = 0; conn->uri[i]; i++) conn->uri[i] = tolower(conn->uri[i]);  /* must be lowercase */
-#endif
+
+				if (!configuration.casesensitive) {
+					for (i = 0; conn->uri[i]; i++) conn->uri[i] = tolower(conn->uri[i]);  /* must be lowercase */
+				}
 
 			} else if (strncmp(upper, "PUT ", 4) == 0) {
 				if (!*configuration.put_script) {
@@ -255,9 +257,10 @@ void pollread_header(struct connection *conn, int bytes) {
 				}
 				conn->uri = ptr;
 				strcpy(conn->uri, configuration.put_script);
-#ifndef CASESENSITIVE
-				for (i = 0; conn->uri[i]; i++) conn->uri[i] = tolower(conn->uri[i]);  /* must be lowercase */
-#endif
+
+				if (!configuration.casesensitive) {
+					for (i = 0; conn->uri[i]; i++) conn->uri[i] = tolower(conn->uri[i]);  /* must be lowercase */
+				}
 
 			} else { /* OPTIONS TRACE LINK UNLINK PATCH */
 				char *space;

@@ -172,7 +172,7 @@ void script_start_redirect(char *script, struct connection *conn, char *args, in
 	/* already set up for writing (this is done in write.c) */
 
 	/* read filesize */
-	if (get_file_info(tempfile, NULL, NULL, &size) < 0) {
+	if (get_file_info(tempfile, NULL, NULL, &size, 0) < 0) {
 		report_badrequest(conn, "error occured when reading file info");
 		return;
 	}
