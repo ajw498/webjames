@@ -543,6 +543,13 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
      </td>
  </tr>
+ <td><code>stripextensions</code></td>
+ <td>this attribute strips the filename extensions from URIs before looking for the file.
+     this includes the default files if a directory is requested, and any errordocument files as well.<br>
+     example: a request of <code>/wibble.html</code> would return the file <code>wibble</code>
+
+     </td>
+ </tr>
 
  </table>
 
