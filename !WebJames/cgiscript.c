@@ -19,30 +19,10 @@
 #include "write.h"
 #include "handler.h"
 
-#define remove_var(name) xos_set_var_val(name,NULL,-1,0,os_VARTYPE_STRING,NULL,NULL)
-#define set_var_val(name,value) xos_set_var_val(name, (byte *)value, strlen(value), 0, 4, NULL, NULL)
 
-void cgiscript_start(struct connection *conn)
-/* start a CGI script with redirection */
+void cgiscript_setvars(struct connection *conn)
 {
-	char tempfile[256], input[256], cmd[256], cmdformat[256], temp[HTTPBUFFERSIZE+1];
-	int size, unix;
-	FILE *file;
-	wimp_t task;
-
-	/* change currently selected directory if required */
-	if (conn->flags.setcsd) {
-		char dirname[256], *dot;
-
-		strcpy(dirname,conn->filename);
-		dot = strrchr(dirname,'.');
-		if (dot != NULL) {
-			*dot = '\0';
-			xosfscontrol_dir(dirname);
-		}
-	}
-
-	/* set up the system variables */
+	char temp[30];
 
 	if (configuration.server[0])  set_var_val("SERVER_SOFTWARE", configuration.server);
 	set_var_val("SERVER_PORT", "80");
@@ -134,6 +114,61 @@ void cgiscript_start(struct connection *conn)
 		set_var_val("HTTP_ENCODING", conn->acceptencoding);
 	else
 		set_var_val("HTTP_ENCODING", "");
+}
+
+void cgiscript_removevars(void)
+{
+	remove_var("SERVER_SOFTWARE");
+	remove_var("SERVER_PORT");
+	remove_var("SERVER_PROTOCOL");
+	remove_var("SERVER_NAME");
+	remove_var("SERVER_ADMIN");
+	remove_var("DOCUMENT_ROOT");
+	remove_var("GATEWAY_INTERFACE");
+	remove_var("REQUEST_URI");
+	remove_var("SCRIPT_NAME");
+	remove_var("PATH_TRANSLATED");
+	remove_var("QUERY_STRING");
+	remove_var("REMOTE_ADDR");
+	remove_var("REMOTE_HOST");
+	remove_var("REQUEST_METHOD");
+	remove_var("CONTENT_LENGTH");
+	remove_var("CONTENT_TYPE");
+	remove_var("SERVER_PORT");
+	remove_var("ENTITY_PATH");
+	remove_var("AUTH_TYPE");
+	remove_var("REMOTE_USER");
+	remove_var("HTTP_COOKIE");
+	remove_var("HTTP_USER_AGENT");
+	remove_var("HTTP_REFERER");
+	remove_var("HTTP_ACCEPT");
+	remove_var("HTTP_ACCEPT_LANGUAGE");
+	remove_var("HTTP_ACCEPT_CHARSET");
+	remove_var("HTTP_ENCODING");
+}
+
+void cgiscript_start(struct connection *conn)
+/* start a CGI script with redirection */
+{
+	char tempfile[256], input[256], cmd[256], cmdformat[256], temp[HTTPBUFFERSIZE+1];
+	int size, unix;
+	FILE *file;
+	wimp_t task;
+
+	/* change currently selected directory if required */
+	if (conn->flags.setcsd) {
+		char dirname[256], *dot;
+
+		strcpy(dirname,conn->filename);
+		dot = strrchr(dirname,'.');
+		if (dot != NULL) {
+			*dot = '\0';
+			xosfscontrol_dir(dirname);
+		}
+	}
+
+	/* set up the system variables */
+	cgiscript_setvars(conn);
 
 
 	input[0] = '\0';                      /* clear spool-input filename */
@@ -189,33 +224,7 @@ void cgiscript_start(struct connection *conn)
 	if (input[0])   remove(input);
 
 	/* Remove all system variables that were set */
-	remove_var("SERVER_SOFTWARE");
-	remove_var("SERVER_PORT");
-	remove_var("SERVER_PROTOCOL");
-	remove_var("SERVER_NAME");
-	remove_var("SERVER_ADMIN");
-	remove_var("DOCUMENT_ROOT");
-	remove_var("GATEWAY_INTERFACE");
-	remove_var("REQUEST_URI");
-	remove_var("SCRIPT_NAME");
-	remove_var("PATH_TRANSLATED");
-	remove_var("QUERY_STRING");
-	remove_var("REMOTE_ADDR");
-	remove_var("REMOTE_HOST");
-	remove_var("REQUEST_METHOD");
-	remove_var("CONTENT_LENGTH");
-	remove_var("CONTENT_TYPE");
-	remove_var("SERVER_PORT");
-	remove_var("ENTITY_PATH");
-	remove_var("AUTH_TYPE");
-	remove_var("REMOTE_USER");
-	remove_var("HTTP_COOKIE");
-	remove_var("HTTP_USER_AGENT");
-	remove_var("HTTP_REFERER");
-	remove_var("HTTP_ACCEPT");
-	remove_var("HTTP_ACCEPT_LANGUAGE");
-	remove_var("HTTP_ACCEPT_CHARSET");
-	remove_var("HTTP_ENCODING");
+	cgiscript_removevars();
 
 	/* Set the CSD back to what it was if we changed it */
 	if (conn->flags.setcsd) xosfscontrol_back();

@@ -91,4 +91,5 @@ typedef struct attributes {
 void init_attributes(char *filename);
 void get_attributes(char *uri, struct connection *conn);
 void find_handler(struct connection *conn);
+void lower_case(char *str);
 

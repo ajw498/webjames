@@ -67,6 +67,9 @@ Action php-script php %f %u
 AddFiletypeHandler php-script PHP
 AddFiletypeHandler perl-script Perl
 
+# Treat all files with an .shtml extension as SSI files
+AddHandler server-parsed .shtml
+
 # send all files with an asis extension without adding any headers
 # the file should contain appropriate headers
 AddHandler send-as-is .asis

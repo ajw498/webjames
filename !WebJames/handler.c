@@ -11,6 +11,7 @@
 #include "sendasis.h"
 #include "cgiscript.h"
 #include "webjamesscript.h"
+#include "serverparsed.h"
 
 static struct handlerentry handlers[] = {
 	{
@@ -43,6 +44,14 @@ static struct handlerentry handlers[] = {
 		NULL,
 		content_starthandler,
 		NULL,
+		NULL
+	},
+	{
+		"server-parsed",
+		1,
+		NULL,
+		serverparsed_start,
+		serverparsed_poll,
 		NULL
 	},
 	{

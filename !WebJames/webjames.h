@@ -146,6 +146,14 @@ typedef struct connection {
 	int pwd; /* if if the file is password-protected */
 	char *args; /* arguments passed to script */
 
+	struct {
+		char *errmsg;
+		int abbrev;
+		char *timefmt;
+		int output; /*whether normal body text of the page should be output (used by #if etc)*/
+		int conditionmet; /*whether any if the if/elif conditions have been met yet*/
+	} serverparsedinfo;
+
 } connection;
 
 
@@ -197,4 +205,5 @@ void read_config(char *config);
 void time_to_rfc(struct tm *time, char *out);
 void rfc_to_time(char *rfc, struct tm *time);
 void utc_to_time(char *utc, struct tm *time);
+void utc_to_localtime(char *utc, struct tm *time);
 int compare_time(struct tm *time1, struct tm *time2);

@@ -584,17 +584,36 @@ void utc_to_time(char *utc, struct tm *time) {
 
 /* utc              char[5] holding the utc value */
 /* time             tm structure to fill in */
-	int ordinals[9];
+	territory_ordinals ordinals;
 
-	if (xterritory_convert_time_to_utc_ordinals((os_date_and_time *)utc, (territory_ordinals *)ordinals));
-	time->tm_sec   = ordinals[1];
-	time->tm_min   = ordinals[2];
-	time->tm_hour  = ordinals[3];
-	time->tm_mday  = ordinals[4];
-	time->tm_mon   = ordinals[5];
-	time->tm_year  = ordinals[6] - 1900;
-	time->tm_wday  = ordinals[7];
-	time->tm_yday  = ordinals[8];
+	if (xterritory_convert_time_to_utc_ordinals((os_date_and_time *)utc, &ordinals));
+	time->tm_sec   = ordinals.second;
+	time->tm_min   = ordinals.minute;
+	time->tm_hour  = ordinals.hour;
+	time->tm_mday  = ordinals.date;
+	time->tm_mon   = ordinals.month - 1;
+	time->tm_year  = ordinals.year - 1900;
+	time->tm_wday  = ordinals.weekday - 1;
+	time->tm_yday  = ordinals.yearday - 1;
+	time->tm_isdst = 0;
+}
+
+void utc_to_localtime(char *utc, struct tm *time) {
+/* converts 5 byte UTC to tm structure */
+
+/* utc              char[5] holding the utc value */
+/* time             tm structure to fill in */
+	territory_ordinals ordinals;
+
+	if (xterritory_convert_time_to_ordinals(territory_CURRENT,(os_date_and_time *)utc, &ordinals));
+	time->tm_sec   = ordinals.second;
+	time->tm_min   = ordinals.minute;
+	time->tm_hour  = ordinals.hour;
+	time->tm_mday  = ordinals.date;
+	time->tm_mon   = ordinals.month - 1;
+	time->tm_year  = ordinals.year - 1900;
+	time->tm_wday  = ordinals.weekday - 1;
+	time->tm_yday  = ordinals.yearday - 1;
 	time->tm_isdst = 0;
 }
 
@@ -728,7 +747,7 @@ void time_to_rfc(struct tm *time, char *out) {
 /* time             tm structure */
 /* out              char-array to hold result, at least 26 bytes */
 
-	strftime(out, 25, "%a, %d %b %Y %H:%M:%S", time);
+	strftime(out, 26, "%a, %d %b %Y %H:%M:%S", time);
 }
 
 

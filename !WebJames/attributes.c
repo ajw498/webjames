@@ -306,7 +306,7 @@ static int stack(int value, int push) {
 	return section_NONE;
 }
 
-static void lower_case(char *str)
+void lower_case(char *str)
 {
 	while (*str) {
 		*str = tolower(*str);
@@ -904,7 +904,6 @@ static void merge_attributes3(struct connection *conn, struct attributes *attr) 
 	if (attr->defined.cgi_api)         conn->cgi_api               = attr->cgi_api;
 	if (attr->defined.is_cgi)          conn->flags.is_cgi          = attr->is_cgi;
 	if (attr->defined.stripextensions) conn->flags.stripextensions = attr->stripextensions;
-	if (attr->defined.multiviews)      conn->flags.multiviews       = attr->multiviews;
 	for (i=0; i<attr->errordocscount; i++) {
 		/* add to top of linked list */
 		struct errordoc *error;
@@ -969,6 +968,7 @@ static void merge_attributes1(struct connection *conn, struct attributes *attr) 
 	if (attr->defined.cacheable)    conn->flags.cacheable = attr->cacheable;
 	if (attr->defined.moved)        conn->moved           = attr->moved;
 	if (attr->defined.tempmoved)    conn->tempmoved       = attr->tempmoved;
+	if (attr->defined.multiviews)      conn->flags.multiviews       = attr->multiviews;
 }
 
 static void merge_handlers(struct handlerlist *head, struct connection *conn)

@@ -3,7 +3,7 @@
 
 CC            = cc
 
-#MemCheck = MemCheck.cc
+MemCheck = MemCheck.cc
 
 # possible flags:
 # ANTRESOLVER     use the ANT resolver module API for reverse DNS
@@ -12,19 +12,20 @@ CC            = cc
 Flags         = -DLOG
 #Flags         = -DANTRESOLVER -DLOG -DSYSLOG
 
-CCFlags       = -c -throwback -depend !Depend -IC: -strict -fah -Otime $(Flags)
-#CCFlags       = -c -throwback -depend !Depend -IC: -g -strict -fah $(Flags) -Wg
-LinkFlags     = -o $@
+#CCFlags       = -c -throwback -depend !Depend -IC: -strict -fah -Otime $(Flags)
+CCFlags       = -c -throwback -depend !Depend -IC: -g -strict -fah $(Flags) -Wg
+LinkFlags     = -d -o $@
 
 Libs          = C:OSLib.o.OSLib C:o.Stubs C:o.socklib MemCheck:o.MC C:regex.a.libregex
-Objects       = main.o webjames.o ip.o stat.o report.o write.o openclose.o read.o cache.o coding.o mimemap.o attributes.o resolve.o cacheheap.o handler.o staticcontent.o webjamesscript.o cgiscript.o sendasis.o content.o
+Objects       = main.o webjames.o ip.o stat.o report.o write.o openclose.o read.o cache.o coding.o mimemap.o attributes.o resolve.o cacheheap.o handler.o staticcontent.o webjamesscript.o cgiscript.o sendasis.o content.o serverparsed.o
 
 !RunImage:    $(Objects)
 	Link $(Linkflags) $(Objects) $(Libs)
-	Squeeze -f -v !RunImage
+	SetType $@ Absolute
+#	Squeeze -f -v !RunImage
 
 .c.o:
 	$(MemCheck) $(CC) $(CCFlags) $< -o $@
 
 # Dynamic dependencies:
-o.content: c.content C:oslib.h.osfile C:oslib.h.types C:oslib.h.os C:oslib.h.fileswitch C:oslib.h.osfscontrol C:oslib.h.osgbpb C:oslib.h.mimemap h.webjames h.write h.report h.content h.content
+o.serverparsed: c.serverparsed C:h.stdio C:h.stdlib C:h.string C:h.ctype C:h.time C:h.swis C:h.kernel C:regex.h.regex h.webjames h.ip h.openclose h.stat h.attributes C:regex.h.regex h.report h.content h.cache h.cgiscript h.serverparsed C:oslib.h.osfile C:oslib.h.types C:oslib.h.os C:oslib.h.fileswitch MemCheck:h.MemCheck C:h.stddef C:h.stdio C:h.stdarg
