@@ -1,5 +1,5 @@
 /*
-	$Id: wjstring.c,v 1.3 2001/09/06 11:07:56 AJW Exp $
+	$Id: wjstring.c,v 1.4 2001/09/18 21:06:32 AJW Exp $
 	String handling functions for WebJames
 	Warning: These are subtly different from their ANSI equivalents
 */
@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdarg.h>
+#include <ctype.h>
 
 /*Do not include webjames.h*/
 #include "wjstring.h"
@@ -14,27 +15,6 @@
 #include <time.h>
 
 #include "stat.h"
-/*temporary*/
-/*int snprintf(char *buf, size_t len, const char *format,...)
-{
-	va_list ap;
-	int ret;
-
-	va_start(ap, format);
-	ret=vsprintf(buf, format, ap);
-	va_end(ap);
-	if (ret>len) writelog(0,"snprintf should have failed");
-	return ret;
-}
-
-
-int vsnprintf(char *buf, size_t len, const char *format, va_list ap)
-{
-	int ret;
-	ret=vsprintf(buf,format,ap);
-	if (ret>len) writelog(0,"vsnprintf should have failed");
-	return ret;
-} */
 
 char *wjstrncpy(char *dest, const char *src, const size_t n)
 /*copy at most n characters from src to dest, and ensure that dest is 0 terminated (even if the string gets truncated)*/
@@ -54,4 +34,13 @@ char *wjstrncat(char *dest, const char *src, const size_t n)
 	strncpy(dest+len,src,n-len);
 	dest[n-1]='\0';
 	return dest;
+}
+
+int wjstrnicmp(char *s1, char *s2,size_t n)
+/*compares n characters, case insensitively. returns zero if equal*/
+{
+	int i;
+
+	for (i=0;i<n;i++) if (tolower(s1[i])!=tolower(s2[i])) return 1;
+	return 0;
 }
