@@ -7,13 +7,13 @@
 <table bgcolor="#aaaaaa" width="99%"><tr>
 <td><center>
 <h1>
-PHP 4.2.1
+PHP 4.2.2
 </h1>
 </center>
 </td></tr>
 <tr>
 <td><center><h5>
-RISC OS version 2.11 ported by <a href="mailto:alex@alexwaugh.com">Alex Waugh</a>
+RISC OS version 2.12 ported by <a href="mailto:alex@alexwaugh.com">Alex Waugh</a>
 </h5></center>
 </td>
 </tr></table>
@@ -29,7 +29,6 @@ RISC OS version 2.11 ported by <a href="mailto:alex@alexwaugh.com">Alex Waugh</a
 <li><a href="#filenames">Filenames</a><br>
 <li><a href="#memory">Memory</a><br>
 <li><a href="#config">Configuration</a><br>
-<li><a href="#stronged">StrongEd mode</a><br>
 <li><a href="#mail">mail()</a><br>
 <li><a href="#extensions">Extension modules</a><br>
 <li><a href="#problems">Known problems</a><br>
@@ -225,14 +224,20 @@ areas. If you don't want it to you can disable their use by editing the
 </h3>
 
 You can double click on !PHP to configure which webserver you are
-using (or standalone if you aren't using any webserver).
+using (or standalone if you aren't using any webserver). This is not
+needed if you are using WebJames with the built in PHP handler.
+<p>
 There are some other options that can be configured, although the
 defaults should be fine for most people. To configure the other options,
 copy the file php/ini into your !Boot.Choices directory, and then load
 it into a text editor and make any alterations. Many of the options are
 not relevant to the RISC OS port. More information on the options can be
-found in the PHP manual. You may find changing the error_reporting
-variable to 15 helps with debugging.
+found in the PHP manual.
+<br>You may find changing the error_reporting variable to 15 helps with debugging.
+<br>Any pathnames in the php/ini file should be specified in Unix format,
+and if there are multiple paths they should be separated by semi-colons.
+<br>For example the include_path variable should be specified something like:
+<code>include_path=/ADFS::4/$/dir;/IDEFS::Toffee/$/dir1/dir2</code>
 
 <p>
 <h3>
