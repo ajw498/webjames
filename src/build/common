@@ -1,6 +1,6 @@
 # Makefile for WebJames the web server
 #
-# $Id: common,v 1.6 2002/02/22 23:20:16 ajw Exp $
+# $Id: common,v 1.7 2002/02/22 23:35:33 ajw Exp $
 #
 # Parts common to all builds
 
@@ -107,6 +107,5 @@ clean:
 	-rm -f $(PHPDIR)php$(EXT_FF8)
 	-rm -f $(PHPGUI)
 	-rm -f *.o
-	-rm -f ../*.zip
 
 
