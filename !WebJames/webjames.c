@@ -1,5 +1,5 @@
 /*
-	$Id: webjames.c,v 1.23 2001/09/06 11:09:58 AJW Exp $
+	$Id: webjames.c,v 1.24 2002/01/07 22:41:01 uid1 Exp $
 	General functions for WebJames
 */
 
@@ -371,7 +371,7 @@ void abort_reverse_dns(struct connection *conn, int newstatus)
 /* ------------------------------------------------ */
 
 
-int webjames_writestring(struct connection *conn, char *string)
+int webjames_writestring(struct connection *conn, const char *string)
 /* write a string to a socket (and block until it is sent), and update statistics */
 /* return bytes written (length of string) or -1 if error */
 {
@@ -396,7 +396,7 @@ int webjames_writestring(struct connection *conn, char *string)
 	return written;
 }
 
-int webjames_writebuffer(struct connection *conn, char *buffer, int size)
+int webjames_writebuffer(struct connection *conn, const char *buffer, int size)
 /* write a block of memory to a socket, and update statistics */
 /* return bytes written or -1 if error */
 {
