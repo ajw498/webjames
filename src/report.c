@@ -1,5 +1,5 @@
 /*
-	$Id: report.c,v 1.3 2002/10/23 20:23:46 ajw Exp $
+	$Id$
 	Error reporting functions
 */
 
@@ -503,10 +503,7 @@ void report_moved(struct connection *conn, char *newurl) {
 	char url[MAX_FILENAME];
 	size_t len;
 
-	if (conn->vhost && conn->vhost->domain[0])
-		snprintf(url, MAX_FILENAME, "http://%s%s", conn->vhost->domain, newurl);
-	else
-		wjstrncpy(url, newurl, MAX_FILENAME);
+	wjstrncpy(url, newurl, MAX_FILENAME);
 
 	snprintf(temp, TEMPBUFFERSIZE, "Location: %s", url);
 	len=strlen(temp)+1;
@@ -527,10 +524,7 @@ void report_movedtemporarily(struct connection *conn, char *newurl) {
 	char url[MAX_FILENAME];
 	size_t len;
 
-	if (conn->vhost && conn->vhost->domain[0])
-		snprintf(url, MAX_FILENAME, "http://%s%s", conn->vhost->domain, newurl);
-	else
-		wjstrncpy(url, newurl, MAX_FILENAME);
+	wjstrncpy(url, newurl, MAX_FILENAME);
 
 	snprintf(temp, TEMPBUFFERSIZE, "Location: %s", url);
 	len=strlen(temp)+1;
