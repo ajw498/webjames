@@ -20,7 +20,7 @@
 DEPEND = -mamu
 WARNINGS = -Wall -Wundef -Wpointer-arith -Wmissing-prototypes
 OPTIMISATION = -O2
-DEBUG =
+DEBUG = -mpoke-function-name
 INCLUDE = -IL:
 
 #Linker flags
