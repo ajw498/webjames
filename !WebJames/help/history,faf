@@ -18,6 +18,7 @@
 
 <ul>
   <li>Requesting a file with a trailing slash now results in a 404 error rather than serving the file.
+  <li>A moved attribute on a file that doesn't exist now only sends the moved report and not the 404 report as well.
 </ul>
 
 <i>0.44 (3/1/2005)</i>

@@ -1,6 +1,6 @@
 /*
 	$Id$
-	Get attributes for each request the send the file
+	Get attributes for each request then send the file
 */
 
 #include <stdio.h>
@@ -200,10 +200,13 @@ void send_file(struct connection *conn)
 	}
 
 	/* check if the file has been moved */
-	if (conn->moved)
+	if (conn->moved) {
 		report_moved(conn, conn->moved);
-	else if (conn->tempmoved)
+		return;
+	} else if (conn->tempmoved) {
 		report_movedtemporarily(conn, conn->tempmoved);
+		return;
+	}
 
 	/* if if the file is password-protected */
 	conn->pwd = check_access(conn, conn->authorization);
