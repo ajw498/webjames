@@ -1,5 +1,5 @@
 /*
-	$Id: read.c,v 1.1 2002/02/17 22:50:10 ajw Exp $
+	$Id: read.c,v 1.2 2002/03/09 00:19:35 ajw Exp $
 	Reading requests
 */
 
@@ -498,6 +498,7 @@ void pollread_header(struct connection *conn, int bytes)
 					memcpy(conn->body, conn->buffer, conn->used);
 					if (conn->used == conn->bodysize)  donereading(conn);
 				}
+				return;
 
 
 			} else {                                /* no body, so we're done!! */
