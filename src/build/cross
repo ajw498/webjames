@@ -1,11 +1,12 @@
 # Makefile for WebJames the web server
 #
-# $Id: cross,v 1.4 2002/02/23 21:54:18 ajw Exp $
+# $Id: cross,v 1.5 2002/02/24 12:11:47 ajw Exp $
 #
 # Settings for the gcc/unixlib build using the gccsdk cross compiler
 
 #Programs
 CC = gcc
+GCC = gcc
 LINK = gcc
 MEMCHECK =
 SQUEEZE =
