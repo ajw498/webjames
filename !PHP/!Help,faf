@@ -1,5 +1,5 @@
 
-                    PHP 4.0.2  RISC OS version 2.05
+                    PHP 4.0.2  RISC OS version 2.06
                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 What is it?
 ~~~~~~~~~~~
@@ -177,7 +177,6 @@ pcre      Perl compatible regular expressions
 calendar  Date related functions
 ftp       FTP client
 gd        Create/manipulate GIF images
-sockets   Functions for using sockets
 session   Tracking site visitors
 zlib      Compression functions
 xml       XML parsing
@@ -194,6 +193,8 @@ let me know.
 
 Some functions will not work as they do not have any meaning under RISC OS,
 eg. Symbolic links and file ownership.
+
+popen, system, exec and friends do not work.
 
 Any updates to the RISC OS port should be available from
 http://www.ecs.soton.ac.uk/~ajw498/
