@@ -752,8 +752,8 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
   When WebJames receives a request for a file, it decides what to do with the file
  (send it as it is, run it as a cgi script, etc.) according to any handlers set up
  in the attributes file.
- There are four handlers currently defined by WebJames (static-content, send-as-is, cgi-script and
- webjames-script), and more can be added with the <a href="#action">action</a>
+ There are five handlers currently defined by WebJames (static-content, send-as-is, server-parsed,
+ cgi-script and webjames-script), and more can be added with the <a href="#action">action</a>
  attribute.
  <p>
   You can use the <code>addhandler</code> attribute to assign a handler to files with
@@ -795,7 +795,7 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  <h6>send-as-is</h6>
 
   This is similar to static-content, but WebJames does not add any headers beforehand.
- This means that all headers (including the HTTP status line) must be at the beggining
+ This means that all headers (including the HTTP status line) must be at the beginning
  of the file. See the file moved/asis in the site directory as an example. Note that the
  header lines should be terminated with a CRLF not just an LF. There should be a blank line
  between the headers and the rest of the file. 
@@ -1052,10 +1052,223 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  application that lie dormant until a smaller script invokes them, eg. by
  broadcasting a Wimp-message.
 
+ <h6>server-parsed</h6>
+  This handler provides support for Server Side Includes (SSI). These are
+ normal HTML pages, but with commands embedded as comments. For example, the
+ following code will output the size of the file
+ <pre>
+ ... the size of the file is &lt;!--#fsize file="foo.bar" --&gt;.
+ </pre>
+ <p>
+  There should no spaces between the <code>&lt;!--#</code> and the command, but
+  there should be at least one space between the last attribute and the
+  <code>--&gt;</code>
+ <p>
+  If there are any spaces in the value of an attibute (foo.bar in the above
+ example) then the value should be enclosed in quotes; if there are no spaces
+ then the quotes are optional.
+ <p>
+  By default, all files with an extension of .shtml are treated as SSI files;
+ this can be altered by editing the attributes file.
+ <p>
+  The commands available are:
+
+ <table border="1" width="99%">
+
+ <tr>
+ <th>Command</th>
+ <th>Purpose</th>
+ <th>Attributes</th>
+ <th>Values</th>
+ </tr>
+ 
+ <tr>
+ <td rowspan="3"><code>config</code></td>
+ <td rowspan="3">sets various options</td>
+ <td><code>timefmt</code></td><td> specifies the format to use when printing
+ dates/times, syntax is the same as for the standard C function
+ <code>strftime</code></td>
+ </tr>
+
+ <tr>
+ <td><code>sizefmt</code></td><td> specifies the format to use when printing file
+ sizes. valid values are <code>bytes</code> or <code>abbrev</code> for using
+ KB or MB as appropriate</td>
+ </tr>
+
+ <tr>
+ <td><code>errmsg</code></td><td> specifies a message to use if a command fails.
+ you will get more helpfull error messages if you don't use this attribute</td>
+ </tr>
+
+ <tr>
+ <td><code>echo</code></td>
+ <td>prints the value of a system variable</td>
+ <td><code>var</code></td><td> specifies the name of the variable to print. if the
+ variable is unset then it is printed as <code>(none)</code></td>
+ </tr>
+
+ <tr>
+ <td rowspan="2"><code>exec</code></td>
+ <td rowspan="2">executes a CGI script or *command</td>
+ <td><code>cgi</code></td><td> specifies a URL. <code>include virtual</code> should be
+ used in preference to this; they are identical in operation.</td>
+ </tr>
+ <tr>
+ <td><code>cmd</code></td><td> specifies a *command to execute. this should only be used
+ for debugging scripts.</td>
+ </tr>
+
+ <tr>
+ <td rowspan="2"><code>fsize</code></td>
+ <td rowspan="2">prints the size of a file</td>
+ <td><code>file</code></td><td> unix format filename, relative to the current
+ document</td>
+ </tr>
+ <tr>
+ <td><code>virtual</code></td><td> URL relative to the current document</td>
+ </tr>
+
+ <tr>
+ <td rowspan="2"><code>flastmod</code></td>
+ <td rowspan="2">prints the date the file was last modified</td>
+ <td><code>file</code></td><td> unix format filename, relative to the current
+ document</td>
+ </tr>
+ <tr>
+ <td><code>virtual</code></td><td> URL relative to the current document</td>
+ </tr>
+
+ <tr>
+ <td rowspan="2"><code>include</code></td>
+ <td rowspan="2">includes the contents of another file into the current
+ document</td>
+ <td><code>file</code></td><td> unix format filename, relative to the current
+ document. the file will be included as if it were plain text; if it is a CGI
+ script the the script source will be included, rather then the script output.
+ The <code>virtual</code> attribute should be used in preference to this one
+ </td>
+ </tr>
+ <tr>
+ <td><code>virtual</code></td><td> URL relative to the current document. The included
+ text will be whatever you would get if you requested the file normally; if it
+ is a CGI script then you get the output of the script. it can even be another
+ SSI script, although it cannot be a webjames style cgi script</td>
+ </tr>
+
+ <tr>
+ <td><code>printenv</code></td>
+ <td>equivalent to <code>&lt;!--#exec cmd="show" --&gt;</code></td>
+ <td colspan="2">none</td>
+ </tr>
+
+ <tr>
+ <td rowspan="2"><code>set</code></td>
+ <td rowspan="2">sets a system variable</td>
+ <td><code>var</code></td><td> the name of the variable</td>
+ </tr>
+ <tr>
+ <td><code>value</code></td><td> the value to give to the variable</td>
+ </tr>
+
+ <tr>
+ <td><code>if</code></td>
+ <td>start of a conditional block</td>
+ <td><code>expr</code></td><td> the condition to test</td>
+ </tr>
+
+ <tr>
+ <td><code>elif</code></td>
+ <td>optional part of a conditional block</td>
+ <td><code>expr</code></td><td> the condition to test</td>
+ </tr>
+
+ <tr>
+ <td><code>else</code></td>
+ <td>optional part of a conditional block</td>
+ <td colspan="2">none</td>
+ </tr>
+
+ <tr>
+ <td><code>endif</code></td>
+ <td>end of a conditional block</td>
+ <td colspan="2">none</td>
+ </tr>
+
+ </table>
+
+ <p>
+  If any of the values to attributes contain a $, then the following word is
+ treated as a variable name, and is replaced by the value of the variable.
+ The name of the variable can also be enclosed in braces to reduce ambiguity.
+ This variable subsitution is most useful in <code>if</code> commands, but
+ can be used in any of the other commands, for example:
+ <pre>&lt;!--#fsize virtual="${DOCUMENT_URI}" --&gt;</pre>
+ <p>
+ The variables that are availiable are all system variables, all the variables
+ that are set for CGI scripts, and the following:
+
+ <table>
+
+ <tr>
+ <td valign="top"><code>DATE_GMT</code></td>
+ <td>The current date/time in Greewich Mean Time</td>
+ </tr>
+
+ <tr>
+ <td valign="top"><code>DATE_LOCAL</code></td>
+ <td>The current date/time in the local time zone</td>
+ </tr>
+
+ <tr>
+ <td valign="top"><code>LAST_MODIFIED</code></td>
+ <td>The date/time that the current document was last modified</td>
+ </tr>
+
+ <tr>
+ <td valign="top"><code>DOCUMENT_NAME</code></td>
+ <td>The leafname of the current document (in unix format, eg. index.html)</td>
+ </tr>
+
+ <tr>
+ <td valign="top"><code>DOCUMENT_URI</code></td>
+ <td>The URL that caused this page to be requested</td>
+ </tr>
+
+ </table>
+
+ <p>
+  Conditional blocks allow you to include or not include a portion of the page,
+ depending on a condition. For example:
+ <pre>
+ &lt;!--#if expr="$DOCUMENT_NAME=index.shtml" --&gt;
+ we are in the index document
+ &lt;!--#elif expr="$DOCUMENT_NAME=fred.shtml" --&gt;
+ we are in fred.shtml
+ &lt;!--#else --&gt;
+ we are in an unknown document
+ &lt;!--#endif --&gt;
+ </pre>
+ The elif condition is only evaluated if the if condition was false. The else
+ section is only included in the output if none of the if/elif conditions
+ matched. All comparisons are case sensitive.
+ <p>
+  The expressions can contain <code>=</code> equals, <code>!=</code> not
+  equals, <code>&lt;</code> less than, <code>&lt;=</code> less than or equal,
+  <code>&gt;</code> greater than, <code>&gt;=</code> greater than or equal.
+  Several equalities can be combined, using <code>&amp;&amp;</code> logical
+  AND, <code>||</code> logical OR, <code>!</code> logical NOT. Parentheses
+  can be used to indicate precedence.<br>
+  For example: <code>expr="$a=$b || !($d&lt;=$e && $f!=$g)"</code>
+  <p>
+  If the string on the right side of an equality operator starts and ends with
+  a <code>/</code> then it is treated as a regular expression. 
+
+
  <p>
   <h6><a name="action">Action</a></h6>
 
-  This attributes defines an alternative star command to use to start a
+  This attribute defines an alternative star command to use to start a
  redirect cgi-script. For example
  <pre>
  Action perl-script perl -w %f
@@ -1616,13 +1829,14 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 </td></tr></table>
 </h3>
 
-<i>0.30 (10/7/2001)</i>
+<i>0.30 (24/7/2001)</i>
 
 <ul>
   <li>no longer converts %7E type escape characters that are in the query string.
   <li>sets more environment variables for CGI scripts: <code>REQUEST_URI, DOCUMENT_ROOT,
   HTTP_ACCEPT, HTTP_ACCEPT_LANGUAGE, HTTP_ACCEPT_CHARSET, HTTP_ENCODING</code>.
   <li>added support for content negotiation and multiviews.
+  <li>added the server-parsed handler for SSI files.
 
 </ul>
 
@@ -2007,6 +2221,11 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
 <p>
 
+<h5>Apache</h5>
+
+  Although some of the features in WebJames are compatible with, or inspired by, Apache,
+ non of the code has been taken from Apache. 
+<p>
 <h5>Recompiling WebJames</h5>
 
   The pre-compiled version of WebJames is usually compiled with the
