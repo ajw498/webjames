@@ -45,6 +45,9 @@ void script_start(int scripttype, struct connection *conn, char *script, int pwd
 	else if (conn->cgi_api == CGI_API_WEBJAMES)
 		script_start_webjames(scripttype, conn, script, pwd);
 
+	/* Set the CSD back to what it was if we changed it */
+	if (conn->flags.setcsd) xosfscontrol_back();
+
 	return;
 }
 

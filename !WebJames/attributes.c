@@ -16,10 +16,10 @@
 #define HASHINCREMENT 20
 
 typedef enum sectiontype {
+	section_NONE,
 	section_LOCATION,
 	section_DIRECTORY,
-	section_FILES,
-	section_NONE
+	section_FILES
 } sectiontype;
 
 typedef struct hashentry {
@@ -30,7 +30,7 @@ typedef struct hashentry {
 static struct hashentry *hash=NULL;
 static int hashsize, hashentries;
 
-static struct attributes *globalfiles=NULL;
+static struct attributes *globalfiles=NULL,*globallocations=NULL,*globaldirectories=NULL;
 
 static int generate_key(char *uri, int size) {
 /* generate a hash table key for given uri */
@@ -238,6 +238,7 @@ static struct attributes *create_attribute_structure(char *uri) {
 	attr->cacheable = attr->hidden = attr->ignore = attr->stripextensions = 0;
 	attr->realm = attr->accessfile = attr->userandpwd = NULL;
 	attr->homedir = attr->moved = attr->tempmoved = NULL;
+	attr->regex = NULL;
 	attr->defaultfiles = NULL;
 	attr->defaultfilescount = 0;
 	attr->next = NULL;
@@ -336,14 +337,17 @@ static struct attributes *read_attributes_file(char *filename, char *base) {
 		/* **** lines are either start-of-section */
 		if ((ptr[0] == '[') || (ptr[0] == '<')) {
 			/* start of a new section */
-			char *type = NULL;
+			char *type = "location";
 			int len;
 
 			if ((ptr[0] == '[') || (ptr[0] == '<' && ptr[1] == '/')) {
 				sectiontype oldsection;
 				/* end of a section */
 				oldsection = section;
-				if (section != section_FILES && attr) insert_attributes(attr);
+				if (section != section_FILES && attr) {
+					if (attr->regex == NULL) insert_attributes(attr);
+				}
+				attr = NULL;
 				section = (sectiontype)stack(section_NONE,0);
 				if (oldsection == section_FILES) attr = (struct attributes*)stack(section_NONE,0);
 				if (ptr[0] == '<') continue; /* end of section, but not the start of a new one */
@@ -362,55 +366,117 @@ static struct attributes *read_attributes_file(char *filename, char *base) {
 			ptr++;
 			len = strlen(ptr);
 
-			if (type == NULL || strcmp(type,"location") == 0) {
-				if (ptr[0] != '/')  continue;        /* MUST start with a / */
+			if (strcmp(type,"location") == 0 || strcmp(type,"locationmatch") == 0) {
+				int match = 0;
+
 				if (section != section_NONE && section != section_LOCATION) continue; /* cannot have a location inside anything else */
+
+				if (type[8] != '\0') match = 1;
+				if (!match && ptr[0] != '/')  continue;        /* MUST start with a / */
 
 				stack(section,1);
 				section = section_LOCATION;
+				/* Remove the trailing > */
 				ptr[len-1] = '\0';
 				len--;
+				/* Remove the quotes around the regex (if there are any) */
+				if (match && ptr[0] == '"' && ptr[len-1] == '"') {
+					ptr[len-1] = '\0';
+					ptr++;
+					len--;
+				}
 
-				if (!configuration.casesensitive) {
+
+				if (!match && !configuration.casesensitive) {
 					/* URIs are case-insensitive */
 					for (i = 0; i < len; i++)  ptr[i] = tolower(ptr[i]);
 				}
 
-				sprintf(uri, "%s%s", base, ptr);
+				if (match) strcpy(uri,ptr); else sprintf(uri, "%s%s", base, ptr);
 				attr = create_attribute_structure(uri);
 				if (!attr) {
 					fclose(file);
 					return NULL;
 				}
-			} else if (strcmp(type,"directory") == 0) {
+
+				if (match) {
+					/* Add to linked list */
+					attr->next = globallocations;
+					globallocations = attr;
+
+					attr->regex = malloc(sizeof(regex_t));
+					if (attr->regex == NULL) {
+						fclose(file);
+						return NULL;
+					}
+
+					if (regcomp(attr->regex,ptr,REG_EXTENDED | REG_NOSUB)) {
+						/* use regerror to give a meaning full error message */
+						free(attr->regex);
+						attr->regex = NULL;
+					}
+				}
+			} else if (strcmp(type,"directory") == 0 || strcmp(type,"directorymatch") == 0) {
+				int match = 0;
 				char buffer[256];
 				int spare;
 
 				if (section != section_NONE) continue; /* cannot have a directory inside anything else */
+
+				if (type[9] != '\0') match = 1;
 
 				stack(section,1);
 				section = section_DIRECTORY;
 				/* Remove the trailing > */
 				ptr[len-1] = '\0';
 				len--;
+				/* Remove the quotes around the regex (if there are any) */
+				if (match && ptr[0] == '"' && ptr[len-1] == '"') {
+					ptr[len-1] = '\0';
+					ptr++;
+					len--;
+				}
 
-				if (!configuration.casesensitive) {
+				if (!match && !configuration.casesensitive) {
 					/* filenames are case-insensitive */
 					for (i = 0; i < len; i++)  ptr[i] = tolower(ptr[i]);
 				}
 
-				sprintf(uri, "%s%s", base, ptr);
-
-				if (xosfscontrol_canonicalise_path(uri,buffer,NULL,NULL,255,&spare)) strcpy(buffer,uri);
+				if (match) {
+					strcpy(buffer,ptr);
+				} else {
+					sprintf(uri, "%s%s", base, ptr);
+					if (xosfscontrol_canonicalise_path(uri,buffer,NULL,NULL,255,&spare)) strcpy(buffer,uri);
+				}
 
 				attr = create_attribute_structure(buffer);
 				if (!attr) {
 					fclose(file);
 					return NULL;
 				}
-			} else if (strcmp(type,"files") == 0) {
-				struct attributes **fileslist;
 
+				if (match) {
+					/* Add to linked list */
+					attr->next = globaldirectories;
+					globaldirectories = attr;
+
+					attr->regex = malloc(sizeof(regex_t));
+					if (attr->regex == NULL) {
+						fclose(file);
+						return NULL;
+					}
+
+					if (regcomp(attr->regex,ptr,REG_EXTENDED | REG_NOSUB)) {
+						/* use regerror to give a meaning full error message */
+						free(attr->regex);
+						attr->regex = NULL;
+					}
+				}
+			} else if (strcmp(type,"files") == 0 || strcmp(type,"filesmatch") == 0) {
+				struct attributes **fileslist;
+				int match = 0;
+
+				if (type[5] != '\0') match = 1;
 				if (section != section_NONE && section != section_DIRECTORY) continue; /* cannot have a files inside a location or another files section */
 
 				if (attr) {
@@ -424,8 +490,15 @@ static struct attributes *read_attributes_file(char *filename, char *base) {
 				/* Remove the trailing > */
 				ptr[len-1] = '\0';
 				len--;
+				/* Remove the quotes around the regex (if there are any) */
+				if (match && ptr[0] == '"' && ptr[len-1] == '"') {
+					ptr[len-1] = '\0';
+					ptr++;
+					len--;
+				}
 
-				if (!configuration.casesensitive) for (i = 0; i < len; i++)  ptr[i] = tolower(ptr[i]);
+				if (!match && !configuration.casesensitive) for (i = 0; i < len; i++)  ptr[i] = tolower(ptr[i]);
+				/* Is/should regex matching case sensitive? */
 
 				attr = create_attribute_structure(ptr);
 				if (!attr) {
@@ -434,8 +507,20 @@ static struct attributes *read_attributes_file(char *filename, char *base) {
 				}
 				attr->next = *fileslist;
 				*fileslist = attr;
-			} else {
-				/* an unknown section type */
+
+				if (match) {
+					attr->regex = malloc(sizeof(regex_t));
+					if (attr->regex == NULL) {
+						fclose(file);
+						return NULL;
+					}
+					if (regcomp(attr->regex,ptr,REG_EXTENDED | REG_NOSUB)) {
+						/* use regerror to give a meaning full error message */
+						free(attr->regex);
+						attr->regex = NULL;
+					}
+				}
+
 			}
 
 		/* **** or an attribute and value */
@@ -766,6 +851,7 @@ void get_attributes(char *uri, struct connection *conn) {
 		strcpy(path,uri);
 		len = strlen(path);
 		if (path[len-1] == '.') {
+			/* There isn't any leafname */
 			path[--len] = '\0';
 			leafname = (char *)1;
 		} else {
@@ -782,11 +868,16 @@ void get_attributes(char *uri, struct connection *conn) {
 		if (xosfscontrol_canonicalise_path(path,buffer,NULL,NULL,255,&len)) strcpy(buffer,path);
 		splitchar = '.';
 		if (leafname) {
+			/* There isn't a leafname */
 			leafname = NULL;
 		} else {
+			/* Find the leafname */
 			leafname = strrchr(buffer,splitchar) + 1;
 			if (leafname) {
+				/* Convert leafname to unix style */
+				/* Convieniently uri_to_filename works both ways */
 				if (uri_to_filename(leafname,leafnamebuffer,0)) {
+					/* Invalid characters in leafname */
 					leafname = NULL;
 				} else {
 					leafname = leafnamebuffer;
@@ -794,6 +885,7 @@ void get_attributes(char *uri, struct connection *conn) {
 			}
 		}
 	} else {
+		/* It is actually a URI */
 		strcpy(buffer,uri);
 		splitchar = '/';
 		leafname = NULL;
@@ -831,7 +923,18 @@ void get_attributes(char *uri, struct connection *conn) {
 					struct attributes *filesattr;
 					filesattr = hash[key].attr->next;
 					while (filesattr != NULL) {
-						if (strcmp(filesattr->uri,leafname) == 0) merge_attributes(conn,filesattr);
+						if (filesattr->regex) {
+							switch (regexec(filesattr->regex,leafname,0,NULL,0)) {
+								case REG_OKAY:
+									merge_attributes(conn,filesattr);
+									break;
+								case REG_NOMATCH:
+									break;
+								/*default: use regerror? */
+							}
+						} else if (strcmp(filesattr->uri,leafname) == 0) {
+							merge_attributes(conn,filesattr);
+						}
 						filesattr = filesattr->next;
 					}
 				}
@@ -863,8 +966,57 @@ void get_attributes(char *uri, struct connection *conn) {
 
 		filesattr = globalfiles;
 		while (filesattr != NULL) {
-			if (strcmp(filesattr->uri,leafname) == 0) merge_attributes(conn,filesattr);
+			if (filesattr->regex) {
+				switch (regexec(filesattr->regex,leafname,0,NULL,0)) {
+					case REG_OKAY:
+						merge_attributes(conn,filesattr);
+						break;
+					case REG_NOMATCH:
+						break;
+					/*default: use regerror? */
+				}
+			} else if (strcmp(filesattr->uri,leafname) == 0) {
+				merge_attributes(conn,filesattr);
+			}
 			filesattr = filesattr->next;
+		}
+	}
+
+	if (uri[0] == '/') {
+		/* Check to see if the uri matches any <locationmatch> sections */
+		struct attributes *locationattr;
+
+		locationattr = globallocations;
+		while (locationattr != NULL) {
+			if (locationattr->regex) {
+				switch (regexec(locationattr->regex,buffer,0,NULL,0)) {
+					case REG_OKAY:
+						merge_attributes(conn,locationattr);
+						break;
+					case REG_NOMATCH:
+						break;
+					/*default: use regerror? */
+				}
+			}
+			locationattr = locationattr->next;
+		}
+	} else {
+		/* Check to see if the filename matches any <directorymatch> sections */
+		struct attributes *dirattr;
+
+		dirattr = globaldirectories;
+		while (dirattr != NULL) {
+			if (dirattr->regex) {
+				switch (regexec(dirattr->regex,buffer,0,NULL,0)) {
+					case REG_OKAY:
+						merge_attributes(conn,dirattr);
+						break;
+					case REG_NOMATCH:
+						break;
+					/*default: use regerror? */
+				}
+			}
+			dirattr = dirattr->next;
 		}
 	}
 

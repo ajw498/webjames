@@ -213,23 +213,6 @@ void send_file(struct connection *conn) {
 		return;
 	}
 
-	/* protect htaccess files - temporary measure until <files> is implemented */
-	{
-		char temp[256], *src, *dest;
-
-		src=configuration.htaccessfile;
-		dest=temp;
-		while (*src) *dest++ = tolower(*src++);
-		*dest = '\0';
-
-		if (*configuration.htaccessfile) {
-			if (strcmp(conn->filename+strlen(conn->filename)-strlen(temp),temp) == 0) {
-				report_forbidden(conn);
-				return;
-			}
-		}
-	}
-
 	/* if requesting a directory (ie. the uri ends with a /) use index.html */
 	len = strlen(conn->filename);
 	if (conn->filename[len-1] == '.') {

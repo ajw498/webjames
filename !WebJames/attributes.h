@@ -1,3 +1,5 @@
+#include "regex/regex.h"
+
 
 #define ATTR___A              0
 #define ATTR_A_Z              1
@@ -58,6 +60,8 @@ typedef struct attributes {
 
 	struct errordoc *errordocs;  /* list of custom error reports */
 	int errordocscount;
+
+	regex_t *regex; /* ptr to compiled regex */
 
 	struct {
 		unsigned int accessfile         : 1;
