@@ -142,15 +142,19 @@ void send_file(struct connection *conn) {
 		int i;
 
 		wjstrncpy(testfile,conn->filename,MAX_FILENAME);
-		uri_to_filename("index.html", testfile+len, conn->flags.stripextensions); /* incase the list is empty */
+		/* Remove the trailling dot so the filename points to the
+		   directory if no index file is found */
+		conn->filename[len-1] = '\0';
 		for(i=0; i<conn->defaultfilescount; i++) {
 			int type, size;
 
 			uri_to_filename(conn->defaultfiles[i], testfile+len, conn->flags.stripextensions);
 			type = get_file_info(testfile,NULL,NULL,NULL,&size,1);
-			if (type != FILE_DOESNT_EXIST) break;
+			if (type != FILE_DOESNT_EXIST) {
+				wjstrncpy(conn->filename,testfile,MAX_FILENAME);
+				break;
+			}
 		}
-		wjstrncpy(conn->filename,testfile,MAX_FILENAME);
 	}
 
 
@@ -178,10 +182,14 @@ void send_file(struct connection *conn) {
 			char newurl[MAX_FILENAME];
 			snprintf(newurl, MAX_FILENAME,"%s/", conn->uri);
 			report_moved(conn, newurl);
+			return;
+		}
+		if (conn->flags.autoindex) {
+			conn->handler = get_handler("autoindex");
 		} else {
 			report_notfound(conn);
+			return;
 		}
-		return;
 	} else if (conn->fileinfo.filetype == FILE_LOCKED) {
 		report_forbidden(conn);
 		return;
@@ -196,7 +204,7 @@ void send_file(struct connection *conn) {
 	/*must be a real file if we get here */
 
 	/* check if it is a cgi-script */
-	if (conn->flags.is_cgi) {
+	if (conn->handler == NULL && conn->flags.is_cgi) {
 		/* this is only for backwards compatibility */
 		/* Add[Filetype]Handler should be used in preference to is-cgi */
 		int forbidden, allowed;

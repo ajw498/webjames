@@ -1,5 +1,5 @@
 /*
-	$Id: attributes.c,v 1.6 2003/10/19 15:53:54 ajw Exp $
+	$Id$
 	Reading and using attributes files
 */
 
@@ -291,7 +291,8 @@ static struct attributes *create_attribute_structure(char *uri) {
 		attr->defined.homedir = attr->defined.is_cgi = attr->defined.cgi_api =
 		attr->defined.methods = attr->defined.port = attr->defined.hidden =
 		attr->defined.defaultfile = attr->defined.allowedfiletypes = attr->defined.forbiddenfiletypes =
-		attr->defined.stripextensions = attr->defined.multiviews = attr->defined.setcsd = 0;
+		attr->defined.stripextensions = attr->defined.multiviews =
+		attr->defined.setcsd = attr->defined.autoindex = 0;
 
 	attr->urilen = strlen(uri);
 	attr->uri = EM(malloc(attr->urilen+1));
@@ -870,6 +871,18 @@ static struct attributes *read_attributes_file(char *filename, char *base, struc
 					attr->setcsd = 1;
 					if (value) free(value);
 
+				} else if (strcmp(attribute, "autoindex") == 0) {
+					/* Autogenerate indexes for directories */
+					attr->defined.autoindex = 1;
+					attr->autoindex = 1;
+					if (value) free(value);
+
+				} else if (strcmp(attribute, "noautoindex") == 0) {
+					/* No autogeneration of indexes for directories */
+					attr->defined.autoindex = 1;
+					attr->autoindex = 0;
+					if (value) free(value);
+
 				} else if (strcmp(attribute, "is-cgi") == 0) {
 					/* URI is cgi */
 					attr->defined.is_cgi = 1;
@@ -1045,6 +1058,7 @@ static void merge_attributes2(struct connection *conn, struct attributes *attr) 
 /* merge all attributes from attr into conn */
 	
 	if (attr->defined.setcsd)          conn->flags.setcsd          = attr->setcsd;
+	if (attr->defined.autoindex)       conn->flags.autoindex       = attr->autoindex;
 	if (attr->defined.methods)
 		if (!(attr->methods & (1<<conn->method)))
 			conn->attrflags.accessallowed = 0;

@@ -36,6 +36,7 @@ WJOBJECTS = \
 	cgiscript.o\
 	sendasis.o\
 	content.o\
+	autoindex.o \
 	serverparsed.o
 
 WJLIBS = \

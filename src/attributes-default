@@ -15,12 +15,13 @@ ServerName
 # ServerAdmin - the emailaddress of the webmaster; this is used to replace
 # %EMAIL% in reports; the SERVER_ADMIN enviromentvariable (used by
 # 'redirect' cgi-scripts) is set to this value
-ServerAdmin i.havent@changed.the.emailaddress.com
+ServerAdmin i.havent@changed.the.emailaddress.invalid
 
 
 # global atttributes
 <Location />
-defaultfile index.php index.html index.shtml index
+DefaultFile index.php index.html index.shtml index
+AutoIndex
 </location>
 
 # Set up some handlers for specific filetypes

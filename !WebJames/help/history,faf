@@ -14,6 +14,15 @@
 </td></tr></table>
 </h3>
 
+<i>0.43 (7/12/2004)</i>
+
+<ul>
+  <li>Added OverrideName attribute.
+  <li>Added support for substituting regex matches into OverrideName and DocumentRoot attributes inside locationmatch sections.
+  <li>Now gives a wimp error box if unable to listen on any sockets.
+  <li>Added autoindex handler to generate directory listings.
+</ul>
+
 <i>0.42 (18/1/2004)</i>
 
 <ul>

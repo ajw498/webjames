@@ -127,6 +127,7 @@ typedef struct connection {
 		unsigned int multiviews        : 1;  /* content negotiation */
 		unsigned int setcsd            : 1;  /* set the currently selected directory to the dir containing the cgi script */
 		unsigned int outputheaders     : 1;  /* output the http headers. set unless this file is nested within an SSI doc */
+		unsigned int autoindex         : 1;  /* autogenerate directory indexes */
 	} flags;
 
 	/* various header-lines, all malloc()'ed */

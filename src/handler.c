@@ -1,5 +1,5 @@
 /*
-	$Id: handler.c,v 1.1 2002/02/17 22:50:10 ajw Exp $
+	$Id$
 	Management of handlers
 */
 
@@ -18,6 +18,7 @@
 #include "cgiscript.h"
 #include "webjamesscript.h"
 #include "serverparsed.h"
+#include "autoindex.h"
 
 #ifdef PHP
 #include "php_webjames.h"
@@ -50,6 +51,16 @@ static struct handlerentry handlers[] = {
 		1,
 		NULL,
 		sendasis_start,
+		staticcontent_poll,
+		NULL
+	},
+#endif
+#ifdef AUTOINDEX
+	{
+		"autoindex",
+		0,
+		NULL,
+		autoindex_start,
 		staticcontent_poll,
 		NULL
 	},
