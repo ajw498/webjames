@@ -21,7 +21,7 @@ DEPEND =
 WARNINGS = -Wall -Wundef -Wpointer-arith -Wmissing-prototypes
 OPTIMISATION = -O2
 DEBUG =
-INCLUDE =
+INCLUDE = -I/home/cross/libs
 
 #Linker flags
 LINKDEBUG =
