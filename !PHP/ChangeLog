@@ -1,3 +1,7 @@
+v2.13 29-Oct-02
+Updated to PHP 4.2.3
+Enabled gettext extension (currently untested)
+
 v2.12 22-Jul-02
 Updated to PHP 4.2.2
 
