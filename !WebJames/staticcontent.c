@@ -72,7 +72,7 @@ void staticcontent_start(struct connection *conn)
 			writestring(conn->socket, configuration.xheader[i]);
 			writestring(conn->socket, "\r\n");
 		}
-		sprintf(temp, "Server: %s\r\n\r\n", configuration.server);
+		if (configuration.server[0]) sprintf(temp, "Server: %s\r\n\r\n", configuration.server);
 		writestring(conn->socket, temp);
 	}
 }

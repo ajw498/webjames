@@ -17,7 +17,9 @@ webmaster=i.havent@changed.the.emailaddress.com
 serverip=
 
 # server - included in the Server: fields when replying
-server=WebJames/0.30
+# if unset, the default is WebJames/x.xx
+# if set to an empty string then don't output a Server: header
+#server=
 
 # port - http port number
 # Webjames can accept connections on up to 8 ports simultaneously - simply

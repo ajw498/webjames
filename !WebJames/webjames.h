@@ -1,7 +1,11 @@
 #ifndef WEBJAMES_H
 #define WEBJAMES_H
 
-#define WEBJAMES_H_REVISION "$Revision: 1.20 $"
+#define WEBJAMES_H_REVISION "$Revision: 1.21 $"
+
+#define WEBJAMES_VERSION "0.31"
+#define WEBJAMES_DATE "5/8/01"
+#define WEBJAMES_SERVER_SOFTWARE "WebJames/" WEBJAMES_VERSION
 
 #define MAXCONNECTIONS    100
 #define HTTPBUFFERSIZE    4096
@@ -49,7 +53,6 @@ typedef struct errordoc {
 
 #endif
 
-
 typedef struct serverinfo {
 	int port;
 	int socket;
@@ -76,8 +79,10 @@ typedef struct connection {
 	int status;                 /* unused/header/body/write/dns */
 	char index;                 /* index in connections[] */
 	char method;                /* 0 GET  1=POST  2=HEAD */
+	char *methodstr;			/* method as a string*/
 	int httpminor;
 	int httpmajor;
+	char *protocol;				/*protocol used to reply currently always "HTTP/1.0"*/
 	int statuscode;             /* code returned to the user */
 
 	char dnsstatus;             /* DNS_FAILED, DNS_TRYING or DNS_OK */
@@ -181,6 +186,7 @@ typedef struct connection {
 
 } connection;
 
+typedef	void (*closefn)(struct connection *conn, int force); /*function to call to close the connection*/
 
 extern struct connection *connections[MAXCONNECTIONS];
 
@@ -205,6 +211,7 @@ typedef struct config {
 	int log_max_age, log_max_copies, log_max_size;
 	int clf_max_age, clf_max_copies, clf_max_size;
 	int logbuffersize;
+	char *webjames_h_revision;
 } config;
 
 extern struct config configuration;

@@ -6,7 +6,7 @@
 #include <ctype.h>
 #include <time.h>
 
-#include "swis.h"
+#include "kernel.h"
 
 #include "oslib/osfile.h"
 
@@ -563,13 +563,13 @@ static int serverparsed_evaluateexpression(struct connection *conn,char *exp)
 }
 
 static void serverparsed_close(struct connection *conn,int force)
-/*an aliased version of close() from openclose.c*/
+/*an aliased version of close_connection() from openclose.c*/
 /*called when a child has finished, so return to parent rather than actually closing the connection*/
 {
 	struct connection *parent;
 
 	parent=conn->parent;
-	close(conn,force,0);
+	close_connection(conn,force,0);
 	if (force) {
 		parent->close(parent,force);
 	} else {
@@ -684,12 +684,12 @@ static char *serverparsed_virtualtofilename(struct connection *conn,char *virt)
 	/* append URI, with . and / switched */
 	if (uri_to_filename(ptr,name,conn->flags.stripextensions)) {
 		serverparsed_writeerror(conn,"Filename includes illegal characters");
-		close(newconn,0,0);
+		close_connection(newconn,0,0);
 		return NULL;
 	}
 
 	strcpy(filename,newconn->filename);
-	close(newconn,0,0);
+	close_connection(newconn,0,0);
 	return filename;
 }
 

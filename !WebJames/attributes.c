@@ -1179,7 +1179,7 @@ void get_attributes(char *uri, struct connection *conn) {
 			if (key>=hashsize) key = 0;
 		}
 
-		if (!found && uri[0] != '/' && *configuration.htaccessfile) {
+		if (!found && uri[0] != '/' && *configuration.htaccessfile && strchr(path,'$')) {
 			struct attributes *newattr;
 			char htaccessfile[256];
 

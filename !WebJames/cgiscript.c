@@ -36,8 +36,7 @@ void cgiscript_setvars(struct connection *conn)
 	char temp[30];
 
 	if (configuration.server[0])  set_var_val("SERVER_SOFTWARE", configuration.server);
-	set_var_val("SERVER_PORT", "80");
-	set_var_val("SERVER_PROTOCOL", "HTTP/1.0");
+	set_var_val("SERVER_PROTOCOL", conn->protocol);
 	if (configuration.serverip[0])  set_var_val("SERVER_NAME", configuration.serverip);
 	set_var_val("SERVER_ADMIN", configuration.webmaster);
 
@@ -49,27 +48,13 @@ void cgiscript_setvars(struct connection *conn)
 	set_var_val("SCRIPT_NAME", conn->uri);
 	set_var_val("PATH_TRANSLATED", conn->filename);
 
-	if (conn->args)
-		set_var_val("QUERY_STRING", conn->args);
-	else
-		set_var_val("QUERY_STRING", "");
+	if (conn->args) set_var_val("QUERY_STRING", conn->args);
 
-	sprintf(temp, "%d.%d.%d.%d", conn->ipaddr[0], conn->ipaddr[1],
-					conn->ipaddr[2], conn->ipaddr[3]);
+	sprintf(temp, "%d.%d.%d.%d", conn->ipaddr[0], conn->ipaddr[1], conn->ipaddr[2], conn->ipaddr[3]);
 	set_var_val("REMOTE_ADDR", temp);
 	if (conn->dnsstatus == DNS_OK)  set_var_val("REMOTE_HOST", conn->host);
 
-	if (conn->method == METHOD_HEAD)
-		strcpy(temp, "HEAD");
-	else if (conn->method == METHOD_POST)
-		strcpy(temp, "POST");
-	else if (conn->method == METHOD_GET)
-		strcpy(temp, "GET");
-	else if (conn->method == METHOD_PUT)
-		strcpy(temp, "PUT");
-	else if (conn->method == METHOD_DELETE)
-		strcpy(temp, "DELETE");
-	set_var_val("REQUEST_METHOD", temp);
+	set_var_val("REQUEST_METHOD", conn->methodstr);
 
 	if ((conn->method == METHOD_POST) || (conn->method == METHOD_PUT)) {
 		sprintf(temp, "%d", conn->bodysize);
@@ -91,28 +76,13 @@ void cgiscript_setvars(struct connection *conn)
 		set_var_val("REMOTE_USER", "");
 	}
 
-	if (conn->cookie)
-		set_var_val("HTTP_COOKIE", conn->cookie);
-	else
-		set_var_val("HTTP_COOKIE", "");
-
-	if (conn->useragent)
-		set_var_val("HTTP_USER_AGENT", conn->useragent);
-	else
-		set_var_val("HTTP_USER_AGENT", "");
-
-	if (conn->referer)
-		set_var_val("HTTP_REFERER", conn->referer);
-	else
-		set_var_val("HTTP_REFERER", "");
-
+	if (conn->cookie) set_var_val("HTTP_COOKIE", conn->cookie);
+	if (conn->useragent) set_var_val("HTTP_USER_AGENT", conn->useragent);
+	if (conn->referer) set_var_val("HTTP_REFERER", conn->referer);
 	if (conn->accept) set_var_val("HTTP_ACCEPT", conn->accept);
-
 	if (conn->acceptlanguage) set_var_val("HTTP_ACCEPT_LANGUAGE", conn->acceptlanguage);
-
 	if (conn->acceptcharset) set_var_val("HTTP_ACCEPT_CHARSET", conn->acceptcharset);
-
-	if (conn->acceptencoding) set_var_val("HTTP_ENCODING", conn->acceptencoding);
+	if (conn->acceptencoding) set_var_val("HTTP_ACCEPT_ENCODING", conn->acceptencoding);
 }
 
 void cgiscript_removevars(void)
@@ -144,7 +114,7 @@ void cgiscript_removevars(void)
 	remove_var("HTTP_ACCEPT");
 	remove_var("HTTP_ACCEPT_LANGUAGE");
 	remove_var("HTTP_ACCEPT_CHARSET");
-	remove_var("HTTP_ENCODING");
+	remove_var("HTTP_ACCEPT_ENCODING");
 }
 
 void cgiscript_start(struct connection *conn)
@@ -182,7 +152,8 @@ void cgiscript_start(struct connection *conn)
 	if (*configuration.cgi_out) {
 		strcpy(tempfile, configuration.cgi_out);
 	} else {
-		tmpnam(tempfile);
+		strcpy(tempfile,"<Wimp$Scrap>");
+		/*tmpnam(tempfile);*/
 	}
 
 	strcpy(cmdformat,"*%s");
@@ -375,7 +346,7 @@ void cgiscript_start(struct connection *conn)
 				writestring(conn->socket,temp);
 			}
 		}
-		sprintf(temp, "Server: %s\r\n\r\n", configuration.server);
+		if (configuration.server[0]) sprintf(temp, "Server: %s\r\n\r\n", configuration.server);
 		writestring(conn->socket, temp);
 	}
 }

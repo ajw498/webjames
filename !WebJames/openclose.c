@@ -26,6 +26,7 @@ struct connection *create_conn(void) {
 	conn->bodysize = conn->headersize = -1;
 	conn->used = conn->fileinfo.size = conn->fileused = 0;
 	conn->if_modified_since.tm_year = -1;
+	conn->protocol="HTTP/1.0";
 	/* various header lines */
 	conn->uri = conn->body = conn->accept = conn->acceptcharset = conn->acceptencoding = conn->acceptlanguage = conn->header = NULL;
 	conn->requestline = conn->type = conn->authorization = NULL;
@@ -125,7 +126,7 @@ void open_connection(int socket, char *host, int port) {
 		conn->dnsstatus = DNS_FAILED;
 }
 
-void close(struct connection *conn, int force, int real) {
+void close_connection(struct connection *conn, int force, int real) {
 /* close a connection; if dns lookup still in progress then try again later */
 /* this funcion may be called twice, first when reading/writing is finished */
 /* and again later when dns is done */
@@ -255,6 +256,6 @@ void close(struct connection *conn, int force, int real) {
 
 void close_real(struct connection *conn, int force)
 {
-	close(conn,force,1);
+	close_connection(conn,force,1);
 }
 

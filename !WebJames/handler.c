@@ -12,6 +12,8 @@
 #include "cgiscript.h"
 #include "webjamesscript.h"
 #include "serverparsed.h"
+#include "WJPHP:sapi.webjames.h.php_webjames"
+
 
 static struct handlerentry handlers[] = {
 	{
@@ -54,6 +56,16 @@ static struct handlerentry handlers[] = {
 		serverparsed_poll,
 		NULL
 	},
+#ifdef PHP_HANDLER
+	{
+		"php-script",
+		0,
+		webjames_php_init,
+		webjames_php_request,
+		NULL,
+		webjames_php_shutdown
+	},
+#endif
 	{
 		"static-content",
 		1,
@@ -153,11 +165,11 @@ struct handler *get_handler(char *name)
 	return NULL;
 }
 
-void init_handlers(void)
+int init_handlers(void)
 {
-	int i=0;
+	int i;
 
-	while (handlers[i].name != NULL) {
+	for (i=0;handlers[i].name;i++) {
 		struct handler *newhandler;
 	
 		newhandler = malloc(sizeof(struct handler));
@@ -171,17 +183,18 @@ void init_handlers(void)
 		newhandler->pollfn = handlers[i].pollfn;
 		newhandler->next = handlerslist;
 		handlerslist = newhandler;
-		if (handlers[i].initfn) handlers[i].initfn();
-		i++;
+		if (handlers[i].initfn) {
+			if (!handlers[i].initfn()) return 0;
+		}
 	}
+	return 1; /*successfully started all handlers*/
 }
 
 void quit_handlers(void)
 {
-	int i=0;
+	int i;
 
-	while (handlers[i].name != NULL) {
+	for (i=0;handlers[i].name;i++) {
 		if (handlers[i].quitfn) handlers[i].quitfn();
-		i++;
 	}
 }

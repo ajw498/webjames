@@ -272,7 +272,7 @@ void writelog(int level, char *string) {
 }
 
 
-void closelog() {
+void close_log(void) {
 
 #ifndef SYSLOG
 	write_buffer();

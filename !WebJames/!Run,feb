@@ -13,6 +13,6 @@ RMEnsure MimeMap 0.10 Error You need version 0.10 (or later) of the MimeMap modu
 || insert initialisation of other programs/tools above here
 
 
-WimpSlot -min 144k -max 144k
+WimpSlot -min 344k -max 344k
 Run <WebJames$Dir>.Restart
 Run <WebJames$Dir>.!RunImage <WebJames$dir>.config

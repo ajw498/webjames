@@ -1,4 +1,6 @@
 
+#include "webjames.h"
+
 /* max no. of files to cache - the more, the slower the cache-scan */
 #define MAXCACHEFILES         30
 

@@ -234,19 +234,23 @@ void pollread_header(struct connection *conn, int bytes) {
 				}
 			}
 
-			if (strncmp(upper, "GET ", 4) == 0)
+			if (strncmp(upper, "GET ", 4) == 0) {
 				conn->method = METHOD_GET;
-			else if (strncmp(upper, "POST ", 5) == 0)
+				conn->methodstr="GET";
+			} else if (strncmp(upper, "POST ", 5) == 0) {
 				conn->method = METHOD_POST;
-			else if (strncmp(upper, "HEAD ", 5) == 0)
+				conn->methodstr="POST";
+			} else if (strncmp(upper, "HEAD ", 5) == 0) {
 				conn->method = METHOD_HEAD;
-			else if (strncmp(upper, "DELETE ", 7) == 0) { /* DELETE request */
+				conn->methodstr="HEAD";
+			} else if (strncmp(upper, "DELETE ", 7) == 0) { /* DELETE request */
 				if (!*configuration.delete_script) {
 					read_report(conn);
 					report_notfound(conn);
 					return;
 				}
 				conn->method = METHOD_DELETE;
+				conn->methodstr="DELETE";
 				conn->requesturi = conn->uri;
 				ptr = malloc(strlen(configuration.delete_script)+1);
 				if (!ptr) {
@@ -268,6 +272,7 @@ void pollread_header(struct connection *conn, int bytes) {
 					return;
 				}
 				conn->method = METHOD_PUT;
+				conn->methodstr="PUT";
 				conn->requesturi = conn->uri;
 				ptr = malloc(strlen(configuration.put_script)+1);
 				if (!ptr) {

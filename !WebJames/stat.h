@@ -1,3 +1,5 @@
+#ifndef STAT_H
+#define STAT_H
 
 /* loglevel for various log entries */
 #define LOGLEVEL_OPEN         4
@@ -32,8 +34,10 @@ void init_statistics(void);
 void update_statistics(void);
 
 void writelog(int level, char *string);
-void closelog(void);
+void close_log(void);
 
 void clf_connection_closed(int cn);
 void clf_cgi_finished(int code, int bytes, char *host, char *request);
 void writeclf(char *string);
+
+#endif

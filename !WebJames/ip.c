@@ -136,11 +136,11 @@ int ip_listen(int socket) {
 
 int ip_accept(int socket, char *host) {
 /* returns a socket or -1 (failed) */
-	int size;
+	int size=16;
 	socket_s sock;
 
 	if (xsocket_accept((socket_s)socket, (socket_sockaddr *)host, &size, &sock))    return -1;
-	return (int)sock;;
+	return (int)sock;
 }
 
 

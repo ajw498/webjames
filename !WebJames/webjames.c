@@ -69,7 +69,8 @@ int webjames_init(char *config) {
 	configuration.maxrequestsize = 100000;
 	configuration.xheaders = 0;
 	configuration.logheaders = 0;
-	strcpy(configuration.server, "WebJames");
+	strcpy(configuration.server, WEBJAMES_SERVER_SOFTWARE);
+	configuration.webjames_h_revision=WEBJAMES_H_REVISION; /*used by PHP module to ensure that it was compiled with the correct version of webjames.h */
 	read_config(config);
 	if ((*configuration.site == '\0') || (serverscount == 0) || (configuration.timeout < 0))
 		return 0;
@@ -101,7 +102,12 @@ int webjames_init(char *config) {
 	slowdown = 0;
 
 	/* initilise any handler modules */
-	init_handlers();
+	if (!init_handlers()) {
+#ifdef LOG
+		writelog(LOGLEVEL_ALWAYS, "Couldn't initialise handlers...");
+#endif
+		return 0;
+	}
 
 	init_attributes(configuration.attributesfile);
 
@@ -228,7 +234,7 @@ void webjames_kill() {
 		if (connections[i]->socket >= 0)  connections[i]->close(connections[i], 1);
 
 #ifdef LOG
-	closelog();
+	close_log();
 #endif
 
 	/* close all servers */

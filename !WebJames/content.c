@@ -431,7 +431,7 @@ static struct varmap *content_readmap(char *filename)
 				if (*p==';') {
 					while (isspace(*++p));
 					if (strncmp(p,"qs=",3)==0) {
-						mapcache[i].map->qs=(float)atof(p+3);
+						mapcache[i].map->qs=(float)strtod(p+3,NULL);
 					} else if (strncmp(p,"charset=",8)==0) {
 						d=mapcache[i].map->charset=malloc(strlen(p)+1);
 						if (mapcache[i].map->charset==NULL) break;

@@ -253,7 +253,7 @@ static void report_quickanddirty(struct connection *conn, int report) {
 		name = get_report_name(report);
 		sprintf(temp, "HTTP/1.0 %d %s\r\n", report, name);
 		writestring(conn->socket, temp);
-		sprintf(temp, "Server: %s\r\n", configuration.server);
+		if (configuration.server[0]) sprintf(temp, "Server: %s\r\n", configuration.server);
 		writestring(conn->socket, temp);
 		writestring(conn->socket, "Content-Type: text/html\r\n");
 		sprintf(temp, "Content-Length: %d\r\n\r\n", strlen(configuration.panic));
@@ -468,7 +468,7 @@ void report(struct connection *conn, int code, int subno, int headerlines, char 
 		/* if no substitution was required, simply send the cached file */
 		sprintf(temp, "Content-Length: %d\r\n", size);
 		writestring(conn->socket, temp);
-		sprintf(temp, "Server: %s\r\n", configuration.server);
+		if (configuration.server[0]) sprintf(temp, "Server: %s\r\n", configuration.server);
 		writestring(conn->socket, temp);
 		time(&now);
 		time_to_rfc(localtime(&now),rfcnow);

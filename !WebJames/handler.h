@@ -5,7 +5,7 @@ typedef int  (*handlerpollfn)(struct connection *conn, int maxbytes);
 typedef struct handlerentry {
 	char *name;
 	int cache;
-	void (*initfn)(void);
+	int (*initfn)(void);
     handlerstartfn startfn;
     handlerpollfn pollfn;
 	void (*quitfn)(void);
@@ -25,7 +25,7 @@ void handler_start(struct connection *conn);
 int handler_poll(struct connection *conn, int maxbytes);
 void add_handler(char *name, char *command);
 struct handler *get_handler(char *name);
-void init_handlers(void);
+int init_handlers(void);
 void quit_handlers(void);
 
 
