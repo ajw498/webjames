@@ -1,5 +1,5 @@
 /*
-	$Id: main.c,v 1.3 2002/10/20 21:29:54 ajw Exp $
+	$Id: main.c,v 1.4 2003/11/01 13:31:37 ajw Exp $
 	main() function, wimp polling loop
 */
 
@@ -12,7 +12,7 @@
 #if defined(__GNUC__) && !defined(__TARGET_SCL__)
 #include <unixlib/features.h>
 #endif
- 
+
 #include "kernel.h"
 #include "swis.h"
 
@@ -129,6 +129,9 @@ void closedown(void)
 	xwimp_close_down(0);
 }
 
+#if defined(__GNUC__) && !defined(__TARGET_SCL__)
+int __feature_imagefs_is_file = 1;
+#endif
 
 
 int main(int argc, char *argv[])
@@ -142,10 +145,6 @@ int main(int argc, char *argv[])
 	MemCheck_SetStoreMallocFunctions(1);
 	MemCheck_SetAutoOutputBlocksInfo(0);
 	MemCheck_SetWriteQuitting(0);
-#endif
-
-#if defined(__GNUC__) && !defined(__TARGET_SCL__)
-	__feature_imagefs_is_file = 1;
 #endif
 
 	/* first argument should be the configuration file */
