@@ -1,5 +1,5 @@
 /*
-	$Id: webjames.c,v 1.22 2001/09/03 22:04:07 AJW Exp $
+	$Id: webjames.c,v 1.23 2001/09/06 11:09:58 AJW Exp $
 	General functions for WebJames
 */
 
@@ -41,7 +41,6 @@ struct connection *connections[MAXCONNECTIONS];
 
 /* various */
 char temp[HTTPBUFFERSIZE];
-static int serverscount;
 
 /* variables used by error handling macros*/
 os_error *webjames_last_error;
@@ -60,7 +59,7 @@ int webjames_init(char *config) {
 	quitwhenidle = 0;
 
 	/* default configuration */
-	serverscount = 0;
+	serverinfo.serverscount = 0;
 
 	configuration.timeout = 200;
 	configuration.bandwidth = 0;
@@ -94,7 +93,7 @@ int webjames_init(char *config) {
 		if (E(xosfscontrol_canonicalise_path("<WebJames$Scrap>.Out",configuration.cgi_out,NULL,NULL,256,NULL))) wjstrncpy(configuration.cgi_out,"<WebJames$Scrap>.Out",MAX_FILENAME);
 	}
 
-	if ((*configuration.site == '\0') || (serverscount == 0) || (configuration.timeout < 0))
+	if ((*configuration.site == '\0') || (serverinfo.serverscount == 0) || (configuration.timeout < 0))
 		return 0;
 
 	/* reset everything */
@@ -133,7 +132,7 @@ int webjames_init(char *config) {
 
 #define SOCKETOPT_REUSEADDR   4
 
-	for (i = 0; i < serverscount; i++) {
+	for (i = 0; i < serverinfo.serverscount; i++) {
 		socket_s listen;
 		serverinfo.servers[i].socket = socket_CLOSED;
 
@@ -166,7 +165,7 @@ int webjames_init(char *config) {
 	}
 
 	active = 0;
-	for (i = 0; i < serverscount; i++)
+	for (i = 0; i < serverinfo.serverscount; i++)
 		if (serverinfo.servers[i].socket != socket_CLOSED)  active++;
 	if (active == 0)  return 0;
 
@@ -220,9 +219,9 @@ void webjames_command(char *cmd, int release) {
 }
 
 
-void webjames_kill() {
+void webjames_kill(void)
 /* stop webserver */
-
+{
 	int i;
 
 	/* update statistics */
@@ -238,23 +237,22 @@ void webjames_kill() {
 	close_log();
 
 	/* close all servers */
-	for (i = 0; i < serverscount; i++)
+	for (i = 0; i < serverinfo.serverscount; i++)
 		if (serverinfo.servers[i].socket != socket_CLOSED)
 			ip_close(serverinfo.servers[i].socket);
-	serverscount = 0;
+	serverinfo.serverscount = 0;
 
 	kill_cache();
 }
 
 
 
-int webjames_poll() {
+int webjames_poll(int cs)
 /* called repeatedly to perform all the webserver operations */
-
 /* returns polldelay (cs) or -1 to quit */
-
+{
 	socket_s socket;
-	int cs, i, srv;
+	int i, srv;
 	char host[16], select[32];
 
 	/* are there any reverse-dns lookups in progress? */
@@ -330,7 +328,7 @@ int webjames_poll() {
 	if (serverinfo.activeconnections == MAXCONNECTIONS)  return serverinfo.slowdown;
 
 	/* are there any new connections? */
-	for (srv = 0; srv < serverscount; srv++) {
+	for (srv = 0; srv < serverinfo.serverscount; srv++) {
 		for (i = 0; i < 8; i++)  ((int *)select)[i] = 0;
 		select[(int)serverinfo.servers[srv].socket>>3] |= 1 << ((int)serverinfo.servers[srv].socket &7);
 
@@ -350,7 +348,6 @@ int webjames_poll() {
 	if ((serverinfo.activeconnections == 0) && (quitwhenidle)) return -1;
 
 	/* calc when to return */
-	cs = 10;
 	if (serverinfo.activeconnections)      cs = 1;
 	if (serverinfo.activeconnections > 1)  cs = 0;
 	return cs+serverinfo.slowdown;
@@ -492,12 +489,12 @@ void read_config(char *config)
 
 					port = atoi(val);
 					unused = 1;                             /* check if port already used */
-					for (i = 0; i < serverscount; i++)
+					for (i = 0; i < serverinfo.serverscount; i++)
 						if (serverinfo.servers[i].port == port)  unused = 0;
 
 					if ((unused) && (port > 0) && (port <= 65535)) { /* unused port, so grab it! */
-						serverinfo.servers[serverscount].port = port;
-						serverscount++;
+						serverinfo.servers[serverinfo.serverscount].port = port;
+						serverinfo.serverscount++;
 					}
 
 					if (strchr(val, ','))
@@ -505,7 +502,7 @@ void read_config(char *config)
 					else
 						val = NULL;
 
-				} while ((val) && (serverscount < 8));
+				} while ((val) && (serverinfo.serverscount < 8));
 
 			} else if (strcmp(cmd, "bandwidth") == 0)
 				configuration.bandwidth = atoi(val);

@@ -26,6 +26,7 @@
   <li>new config option <code>imagedirs</code> that allows some image files to be treated as files, and others as directories, based on filetype.
   <li>fixed bug that caused a crash if you forced a shutdown from the taskmanager while there were still active connections.
   <li>split the help file into several smaller files, as it was getting a bit large.
+  <li>now uses the SocketWatch module, if present, to improve performance.
 
 </ul>
 
@@ -412,7 +413,7 @@
 <p>
 <h3>
 <table bgcolor="#cccccc" width="99%"><tr><td>
-<a name="todo">Things that need to be done</a>
+<a name="todo">Things that need to be improved</a>
 </td></tr></table>
 </h3>
 

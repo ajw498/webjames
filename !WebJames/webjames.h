@@ -1,20 +1,24 @@
 #ifndef WEBJAMES_H
 #define WEBJAMES_H
 
-#define WEBJAMES_H_REVISION "$Revision: 1.26 $"
+#define WEBJAMES_H_REVISION "$Revision: 1.27 $"
 
 #define WEBJAMES_VERSION "0.31"
 #define WEBJAMES_DATE "31/9/01"
 #define WEBJAMES_SERVER_SOFTWARE "WebJames/" WEBJAMES_VERSION
 
 #ifdef WEBJAMES_PHP_ONLY
+
 /*Avoid pulling in any OSLib headers */
 typedef int socket_s;
+
 #else
 
 #include "oslib/os.h"
 #include "oslib/socket.h"
 #include <stdarg.h>
+#include "snprintf.h"
+
 #endif
 
 #define MAXCONNECTIONS    100
@@ -228,6 +232,7 @@ typedef struct config {
 
 typedef struct globalserverinfo {
 	struct listeninfo servers[8];
+	int serverscount;
 	int readcount;
 	int writecount;
 	int slowdown;
@@ -246,14 +251,11 @@ extern char temp[HTTPBUFFERSIZE];
 
 int webjames_init(char *config);
 void webjames_kill(void);
-int webjames_poll(void);
+int webjames_poll(int cs);
 void webjames_command(char *cmd, int release);
 
 void abort_reverse_dns(struct connection *conn, int newstatus);
 void read_config(char *config);
-
-int snprintf(char *buf, size_t len, const char *format,...);
-int vsnprintf(char *buf, size_t len, const char *format, va_list ap);
 
 #endif /*WEBJAMES_PHP_ONLY*/
 

@@ -74,6 +74,7 @@
 </td></tr></table>
 </h3>
 
+  WebJames keeps a cache of recently requested files, to improve performance.
   The cache is configured in the <a href="config#config">config file</a>.<br>
   The following configuration options control the cache:
 
@@ -101,6 +102,17 @@
  </table>
 
 
+<p>
+<h3>
+<table bgcolor="#cccccc" width="99%"><tr><td>
+<a name="socketwatch">SocketWatch</a>
+</td></tr></table>
+</h3>
+
+If Dickon Hood's <a href="ftp://ftp.fluff.org/pub/dickon/">SocketWatch</a>
+module is loaded when WebJames is run, then WebJames will make use of it.
+This reduces response times to requests, and reduces the load on the computer
+when there are no connections.
 
 <p>
 <h3>

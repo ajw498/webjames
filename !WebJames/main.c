@@ -1,5 +1,5 @@
 /*
-	$Id: main.c,v 1.11 2001/09/03 14:10:37 AJW Exp $
+	$Id: main.c,v 1.12 2001/09/06 11:09:56 AJW Exp $
 	main() function, wimp polling loop
 */
 
@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include "swis.h"
 
 #include "oslib/os.h"
 #include "oslib/wimp.h"
@@ -20,12 +21,17 @@
 #include "MemCheck:MemCheck.h"
 #endif
 
+#define SocketWatch_Register 0x52280
+#define SocketWatch_Deregister 0x52281
+#define SocketWatch_AtomicReset 0x52282
+#define SocketWatch_AllocPW 0x52283
+#define SocketWatch_DeallocPW 0x52284
 
 /* local variables */
 static int quit;
 static int wimp[64];
-static int polldelay;
-
+static os_t polldelay;
+static int *pollword=NULL;
 
 void init_task() {
 
@@ -45,21 +51,31 @@ void init_task() {
 
 
 
-void poll() {
-
-	int clk, flags, action;
-
+void poll(void)
+{
+	os_t clk;
+	int flags;
+	wimp_event_no action;
+	wimp_poll_flags pollmask;
+	
 	EV(xos_read_monotonic_time(&clk));
-
-	EV(xwimp_poll_idle(0, (wimp_block *)wimp, (os_t)clk+polldelay, NULL, (wimp_event_no *)&action));
+	if (pollword) {
+		pollmask=wimp_GIVEN_POLLWORD;
+	} else {
+		pollmask=0;
+	}
+	EV(xwimp_poll_idle(pollmask, (wimp_block *)wimp, clk+polldelay, pollword, &action));
 	switch (action) {
-	case 0:
-		polldelay = webjames_poll();
+	case wimp_POLLWORD_NON_ZERO:
+		*pollword=0;
+		/*fall through*/
+	case wimp_NULL_REASON_CODE:
+		polldelay = webjames_poll(pollword ? 100 : 10);
 		if (polldelay < 0)  quit = 1;
 		break;
-	case 17:
-	case 18:
-	case 19:
+	case wimp_USER_MESSAGE:
+	case wimp_USER_MESSAGE_RECORDED:
+	case wimp_USER_MESSAGE_ACKNOWLEDGE:
 		switch (wimp[4]) {
 		case 0:                             /* WIMP_MESSAGE_QUIT */
 			quit = 1;
@@ -95,8 +111,9 @@ void poll() {
 
 
 
-void closedown() {
-	/* quit */
+void closedown(void)
+/* quit */
+{
 	xwimp_close_down(0);
 }
 
@@ -105,6 +122,7 @@ void closedown() {
 int main(int argc, char *argv[])
 {
 	char *configfile;
+	int i;
 #ifdef MemCheck_MEMCHECK
 	MemCheck_Init();
 	MemCheck_RegisterArgs(argc,argv);
@@ -119,7 +137,29 @@ int main(int argc, char *argv[])
 	init_task();
 	if (!quit)
 		if (!webjames_init(configfile))  quit = 1;
+	if (_swix(SocketWatch_AllocPW,_OUT(0),&pollword)) {
+		/* if this failed, then socketwatch is probably not loaded */
+		pollword=NULL;
+	} else {
+#ifdef MemCheck_MEMCHECK
+		MemCheck_RegisterMiscBlock(pollword,4);
+#endif
+		for (i = 0; i < serverinfo.serverscount; i++) {
+			EV((os_error*)_swix(SocketWatch_Register,_INR(0,2),pollword,1,serverinfo.servers[i].socket));
+		}
+	}
+
 	while (!quit)   poll();
+	if (pollword) {
+		for (i = 0; i < serverinfo.serverscount; i++) {
+			EV((os_error*)_swix(SocketWatch_Deregister,_INR(0,1),serverinfo.servers[i].socket,pollword));
+		}
+#ifdef MemCheck_MEMCHECK
+		MemCheck_UnRegisterMiscBlock(pollword);
+#endif
+		EV((os_error*)_swix(SocketWatch_DeallocPW,_IN(0),pollword));
+	}
+
 	webjames_kill();
 	closedown();
 	return EXIT_SUCCESS;
