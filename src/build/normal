@@ -1,6 +1,6 @@
 # Makefile for WebJames the web server
 #
-# $Id: normal,v 1.2 2002/02/23 21:54:18 ajw Exp $
+# $Id: normal,v 1.3 2002/10/05 16:59:17 ajw Exp $
 #
 # Settings for the normal build
 
@@ -26,7 +26,7 @@ DEPEND = -depend !Depend
 WARNINGS = -strict -fah
 OPTIMISATION = -Otime
 DEBUG =
-INCLUDE = -IC: -IOSLib:
+INCLUDE = -IC: -IOSLib: -IC:regex
 GCCINCLUDE = -IL: -IOSLib:
 
 #Linker flags
