@@ -40,7 +40,7 @@ LIBS = \
 	$(REGEX)\
 	$(MEMCHECKLIB)
 
-all: !RunImage !Run
+all: !RunImage !Run attributes config
 
 
 !RunImage: $(OBJECTS)
@@ -51,10 +51,36 @@ all: !RunImage !Run
 	$(MEMCHECK) $(CC) -c $(CFLAGS) $(PHP_CFLAGS) $< -o $@
 
 clean:
-	rm !RunImage
-	rm !Run
-	rm *.o
+	-rm !RunImage
+	-rm !Run
+	-rm config
+	-rm attributes
+	-rm log
+	-rm clf
+	-rm stderr
+	-rm *.o
 
-!Run: !Run-in
-	sed -e "s/|wimpslot/WimpSlot -min $(WIMPSLOT) -max $(WIMPSLOT)/" -e "s/|stderr$(STDERR)//" -e "s/|typestderr$(TYPESTDERR)//" !Run-in > $@
+!Run: !Run-default
+	sed -e "s/|wimpslot/WimpSlot -min $(WIMPSLOT) -max $(WIMPSLOT)/" -e "s/|stderr$(STDERR)//" -e "s/|typestderr$(TYPESTDERR)//" !Run-default > $@
 	$(SETTYPE)
+
+
+attributes: attributes-default
+	sed -e "s/dummy/dummy/" -e "s/$(REMOVE_ATTRIBUTE)//" attributes-default > $@
+
+config: config-default
+	sed -e "s/dummy/dummy/" -e "s/$(REMOVE_CONFIG)//" config-default > $@
+
+dist:
+	cd ..
+	-rm webjames.zip
+	-rm source.zip
+	-rm libphp.zip
+	-rm libs.zip
+	zip -r -9 webjames/zip !WebJames Site Licence -x */o/* *CVS* *stderr *log *clf *build* *Makefile */c/* */h/* *-default
+	zip -r -9 source/zip !WebJames Site Licence -x */o/* *CVS* *stderr *log *clf *!Run *!RunImage *attributes *config
+	zip -r -9 -j libs/zip C:regex.a.libregex C:libpng.libpng C:zlib.zlib C:libjpeg.libjpeg C:gd-1/8/4.libgd
+	cd PHP
+	zip -r -9 libphp/zip build h libphp4 ReadMe -x */o/* *CVS*
+	cd ../!WebJames
+

@@ -20,7 +20,7 @@ THROWBACK = -throwback
 DEPEND = -depend !Depend
 WARNINGS = -strict -fah
 OPTIMISATION =
-DEBUG = -g -Wg
+DEBUG = -g
 INCLUDE = -IC: -IOSLib:
 
 #Linker flags

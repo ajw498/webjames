@@ -120,7 +120,7 @@ maxcachefilesize=100
 # syslog - whether to use the SysLog module for logging
 # 1  use SysLog module
 # 0  use logfile specified in the log entry below
-syslog=1
+syslog=0
 
 # log - log file
 # remove the line to disable logging
@@ -150,7 +150,7 @@ logbuffersize=4096
 # opening/closing the log files repeatedly
 # if logbuffersize is nonzero  - write any data still in the buffer out
 # to disc after this many seconds of inactivity
-keep-log-open=1
+keep-log-open=5
 
 # log-rotate - prevents the logfiles from getting too big
 # first number is the maximum age (in hours)
