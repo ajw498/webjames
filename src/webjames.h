@@ -1,7 +1,7 @@
 #ifndef WEBJAMES_H
 #define WEBJAMES_H
 
-#define WEBJAMES_H_REVISION "$Revision: 1.7 $"
+#define WEBJAMES_H_REVISION "$Revision: 1.8 $"
 
 #define WEBJAMES_VERSION "0.37-dev"
 #define WEBJAMES_DATE "22/7/02"
@@ -68,9 +68,11 @@ typedef int socket_s;
 #define MAX_HOSTNAME 128
 #define MAX_VARY 60
 
+#ifndef SysLog_LogMessage
 #define SysLog_LogMessage 0x4c880
 #define SysLog_GetLogLevel 0x4c881
 #define SysLog_LogUnstamped 0x4c884
+#endif
 
 typedef struct listeninfo {
 	int port;
