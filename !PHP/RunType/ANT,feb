@@ -1,5 +1,0 @@
-WimpSlot -Min 1400k -Max 1400k
-Set InetServ$CGIHeadered Yes
-Set SCRIPT_FILENAME %0
-Set PATH_TRANSLATED %0
-Run <PHP$Dir>.php
