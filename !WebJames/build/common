@@ -3,7 +3,7 @@
 # Parts common to all builds
 
 WIMPSLOT_UNIXLIB = 400k
-WIMPSLOT_SCL = 344k
+WIMPSLOT_SCL = 144k
 WIMPSLOT_PHP = 2000k
 WIMPSLOT_DEBUG = 3000k
 
@@ -15,6 +15,7 @@ OBJECTS = \
 	webjames.o\
 	ip.o\
 	stat.o\
+	datetime.o\
 	report.o\
 	write.o\
 	openclose.o\
