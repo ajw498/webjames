@@ -18,6 +18,10 @@ CCFLAGS = $(CCEXTRA) -throwback -depend !Depend -strict -fah -Otime -I$(INCLUDE)
 
 CC = cc -c $(CCFLAGS)
 
+all: $(TARGET) PHPMail
+
+PHPMail: c.PHPMail
+	gcc -mthrowback -O2 -IOSLib: -o PHPMail c.PHPMail -lOSLib:OSLib.o.OSLib
 
 .c.o:
 	$(CC) $< -o $@
