@@ -1,6 +1,21 @@
-Echo Creating zip...
 Dir <Obey$Dir>
+Echo Creating binary zip...
 Remove <Obey$Dir>.webjames/zip
-copy C:regex <Obey$Dir>.!WebJames.regex A~C~DF~L~N~P~QRS~T~V
-zip -r -9 <Obey$Dir>.webjames/zip !WebJames Site Licence -x */o/* o/* *CVS* *Debug* *zip* *stderr* !WebJames/log !WebJames/clf *regex/main !WebJames/conf/*
-wipe <Obey$Dir>.!WebJames.regex ~CFR~V
+Remove <Obey$Dir>.source/zip
+Remove <Obey$Dir>.libphp/zip
+Remove <Obey$Dir>.libs/zip
+Remove <Obey$Dir>.sapi/zip
+|copy C:regex <Obey$Dir>.!WebJames.regex A~C~DF~L~N~P~QRS~T~V
+zip -r -9 <Obey$Dir>.webjames/zip !WebJames Site Licence -x */o/* *CVS* *Debug* *zip* *stderr* !WebJames/log !WebJames/clf *regex/main !WebJames/conf/* !WebJames/build/* !WebJames/Makefile */c/* */h/* *-in *-default
+
+Echo Creating source zip...
+zip -r -9 <Obey$Dir>.source/zip !WebJames Site Licence -x */o/* *CVS* *Debug* *zip* *stderr* !WebJames/log !WebJames/clf *regex/main !WebJames/conf/* !WebJames/!RunImage !WebJames/!Run
+
+Dir <Obey$Dir>.PHP
+Echo Creating libphp zip...
+zip -r -9 <Obey$Dir>.libphp/zip build h libphp4 Readme -x */o/* *CVS*
+
+Echo Creating sapi zip...
+zip -r -9 <Obey$Dir>.sapi/zip sapi -x */o/* *CVS*
+
+|wipe <Obey$Dir>.!WebJames.regex ~CFR~V
