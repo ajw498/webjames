@@ -1,0 +1,34 @@
+# Makefile for WebJames the web server
+#
+# Settings for the gcc/unixlib build
+
+#Programs
+CC = gcc
+LINK = gcc
+MEMCHECK =
+SQUEEZE = Squeeze -f $@
+SETTYPE = SetType $@ Obey
+
+#Libraries
+MEMCHECKLIB =
+STUBS =
+OSLIB = C:OSLib.o.OSLib
+REGEX = C:regex.a.libregex
+
+#Compiler flags
+THROWBACK = -mthrowback
+DEPEND = -mamu
+WARNINGS = -Wall -Wundef -Wpointer-arith -Wmissing-prototypes
+OPTIMISATION = -O2
+DEBUG =
+INCLUDE = -IL:
+
+#Linker flags
+LINKDEBUG =
+
+#!Run file
+WIMPSLOT = $(WIMPSLOT_UNIXLIB)
+STDERR = .*
+TYPESTDERR = .*
+
+

@@ -1,0 +1,32 @@
+# Makefile for WebJames the web server
+#
+# Settings for the normal build
+
+#Programs
+CC = cc
+LINK = link
+MEMCHECK =
+SQUEEZE = Squeeze -f $@
+SETTYPE = SetType $@ Obey
+
+#Libraries
+MEMCHECKLIB =
+STUBS = C:o.stubs
+OSLIB = C:OSLib.o.OSLib
+REGEX = C:regex.a.libregex
+
+#Compiler flags
+THROWBACK = -throwback
+DEPEND = -depend !Depend
+WARNINGS = -strict -fah
+OPTIMISATION = -Otime
+DEBUG =
+INCLUDE = -IC:
+
+#Linker flags
+LINKDEBUG =
+
+#!Run file
+WIMPSLOT = $(WIMPSLOT_SCL)
+STDERR = .*
+TYPESTDERR = .*

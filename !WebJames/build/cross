@@ -1,0 +1,32 @@
+# Makefile for WebJames the web server
+#
+# Settings for the gcc/unixlib build using the gccsdk cross compiler
+
+#Programs
+CC = gcc
+LINK = gcc
+MEMCHECK =
+SQUEEZE =
+SETTYPE =
+
+#Libraries
+MEMCHECKLIB =
+STUBS =
+OSLIB = -loslib
+REGEX = -lregex
+
+#Compiler flags
+THROWBACK =
+DEPEND =
+WARNINGS = -Wall -Wundef -Wpointer-arith -Wmissing-prototypes
+OPTIMISATION = -O2
+DEBUG =
+INCLUDE =
+
+#Linker flags
+LINKDEBUG =
+
+#!Run file
+WIMPSLOT = $(WIMPSLOT_UNIXLIB)
+STDERR = .*
+TYPESTDERR = .*
