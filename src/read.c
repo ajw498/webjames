@@ -1,5 +1,5 @@
 /*
-	$Id: read.c,v 1.6 2003/06/25 22:14:17 ajw Exp $
+	$Id: read.c,v 1.7 2004/01/17 17:20:03 ajw Exp $
 	Reading requests
 */
 
@@ -242,7 +242,10 @@ void pollread_header(struct connection *conn, int bytes)
 					num[0] = file[1];
 					num[1] = file[2];
 					num[2] = 0;
-					conn->uri[i++] = (char)strtol(num,&end,16);
+					conn->uri[i] = (char)strtol(num,&end,16);
+					/* Convert spaces to hard spaces */
+					if (conn->uri[i] == 32) conn->uri[i] = 160;
+					i++;
 					file+=3;
 				} else {
 					conn->uri[i++]=*(file++);
