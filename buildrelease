@@ -1,21 +1,57 @@
 #!/bin/sh
 #
-# $Id: buildrelease,v 1.2 2002/02/19 20:53:11 ajw Exp $
+# $Id: buildrelease,v 1.3 2002/02/21 22:37:28 ajw Exp $
 #
-# usage: buildrelease 0.34 2.04
-WJVERSION=0.34
-PHPVERSION=2.04
+# usage: buildrelease --webjames=0.34 --php=2.04 --php-dir=../php4
+
+# Set defaults
+WJVERSION=test
+PHPVERSION=test
 PHPDIR=../php4
-#check args
+
+# Get arguments
+for X in "$@"; do
+  case $X in
+    --webjames=*) WJVERSION=`echo "$X" | sed 's/[-_a-zA-Z0-9]*=//'`;;
+    --php=*) PHPVERSION=`echo "$X" | sed 's/[-_a-zA-Z0-9]*=//'`;;
+    --php-dir=*) PHPDIR=`echo "$X" | sed 's/[-_a-zA-Z0-9]*=//'`;;
+    *) echo usage: $0 [--webjames=x.xx --php=x.xx] [--php-dir=../php4]; exit 1;;
+  esac
+done
+
+if test $WJVERSION = test -a $PHPVERSION != test; then
+  echo Cannot set only PHP version
+  exit 1
+fi
+if test $PHPVERSION = test -a $WJVERSION != test; then
+  echo Cannot set only WebJames version
+  exit 1
+fi
 
 # Make sure everything is pristine
 if test -f Makefile; then
   make cvsclean
 fi
 
-# Make sure cvs is up to date
-#cvs commit
-#cvs tag v$WJVERSION-$PHPVERSION
+if test $WJVERSION != test; then
+  # Check that all version numbers are consistent
+  if test -z `grep "WEBJAMES_VERSION \"$WJVERSION\"" src/webjames.h | sed 'y/ /_/'`; then
+    echo 'Please update version number in webjames.h'
+    exit 1
+  fi
+  if test -z `grep "Version $WJVERSION" \!WebJames/help/index.html,faf | sed 'y/ /_/'`; then
+    echo 'Please update version number in !WebJames/help/index.html'
+    exit 1
+  fi
+  if test -z `grep "RISC OS version $PHPVERSION" \!PHP/!Help,faf | sed 'y/ /_/'`; then
+    echo 'Please update version number in !PHP/!Help'
+    exit 1
+  fi
+
+  # Make sure cvs is up to date
+  echo cvs commit
+  echo cvs tag v`echo $WJVERSION | sed 's/\.//'`_`echo $PHPVERSION | sed 's/\.//'`
+fi
 
 # Build the source zip
 zip -r9, webjames-source-$WJVERSION.zip * -x '*CVS*' '*.cvsignore' \!System scripts
@@ -27,14 +63,14 @@ zip -r9, webjames-$WJVERSION.zip \!WebJames Site Licences \!System -x '*CVS*' '*
 
 # Build the PHP cgi
 (cd $PHPDIR; ./riscos.configure || exit 1)
-(cd $PHPDIR; make || exit 1)
+(cd $PHPDIR; make)
 cp $PHPDIR/php !PHP/php,ff8
 zip -r9, php-$PHPVERSION.zip \!PHP Licences \!System -x '*CVS*' '*.cvsignore'
 
 # Build WebJames/PHP 
 ./configure --enable-php
 (cd $PHPDIR; ./riscos.configure --with-webjames=../webjames/src --disable-pear || exit 1)
-(cd $PHPDIR; make install || exit 1)
+(cd $PHPDIR; make install)
 make
 zip -r9, webjames-$WJVERSION-php-$PHPVERSION.zip \!WebJames Site Licences \!System -x '*CVS*' '*.cvsignore'
 
