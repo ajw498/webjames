@@ -24,6 +24,7 @@
   <li>Added DocumentRoot attribute as an alias for homedir.
   <li>Added ServerName and ServerAdmin attributes, to replace serverip and webmaster config options for virtual hosts.
   <li>Added support for <code>&lt;IfHandler&gt;</code> conditional sections in attributes file.
+  <li>Fixed bug that could cause a socket to be registered with SocketWatch even if WebJames failed to listen on the socket.
 
 </ul>
 
