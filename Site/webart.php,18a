@@ -9,6 +9,7 @@ if ($picture) {
 	$black = imagecolorallocate($im,0,0,0);
 	$white = imagecolorallocate($im,255,255,255);
 	imagefill($im,150,150,$white); #Set the background colour
+	imagerectangle($im,0,0,299,299,$black);
 	for ($i=0;$HTTP_GET_VARS["x".$i];$i++) { #Find all shapes we need to plot
 		switch ($HTTP_GET_VARS["s".$i]) {
 			case 3: #Triangle
@@ -22,8 +23,8 @@ if ($picture) {
 				imagefilledrectangle($im,$HTTP_GET_VARS["x".$i]-20,$HTTP_GET_VARS["y".$i]-20,$HTTP_GET_VARS["x".$i]+20,$HTTP_GET_VARS["y".$i]+20,$blue);
 		}
 	}
-	imagestring($im,4,220,285,date("d/m/Y"),$black); #Add the date to the bottom right corner
-	imagepng($im); #Create the GIF
+	imagestring($im,4,219,284,date("d/m/Y"),$black); #Add the date to the bottom right corner
+	imagepng($im); #Create the picture
 	imagedestroy($im); #Free the memory
 } else {
 #We are being called to generate the HTML bit of the page?>
@@ -32,7 +33,7 @@ PHP Example
 </title></head><body>
 <h1>WebArt</h1>
 <P>Select the shape you want to draw, then click on the image to add it. The PHP script can cope with any number of shapes being added, but as the length of URLs are limited then it only works up to about ten shapes.
-<P>There is one PHP script that generates both this HTML and the image.
+<P>There is one PHP script that generates both this HTML and the <b>PNG</b> image. Note: you must be using a version of PHP that has PNG support, otherwise the picture will be blank.
 <P><FORM ACTION="<? echo $PHP_SELF ?>" METHOD="GET">
 <INPUT TYPE=radio NAME="shape" VALUE="1" checked>Square<br>
 <INPUT TYPE=radio NAME="shape" VALUE="2">Circle<br>
