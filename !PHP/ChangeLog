@@ -1,3 +1,10 @@
+v2.07 26-Jun-01
+Added support for $DOCUMENT_ROOT, $REQUEST_URI, $GATEWAY_INTERFACE
+
+v2.06 22-Mar-01
+Updated to PHP 4.04pl1
+PHP is now compiled with the gccsdk cross compiler
+
 v2.05 6-Feb-01
 Rewrote the configuration frontend.
 Fixed problems with the Wimpslot not being set correctly sometimes
