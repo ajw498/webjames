@@ -1,3 +1,7 @@
+v2.10 26-Feb-02
+Fixed UnixLib bug that caused if ("-" == "+") to match
+Fixed "input in flex scanner failed" error when using php from the command line
+
 v2.09 10-Jan-02
 Updated to PHP 4.1.1
 Fixed UnixLib bug that caused session_start() to fail
