@@ -5,11 +5,11 @@
 #include <string.h>
 #include <time.h>
 
-#include "os.h"
-#include "wimp.h"
-#include "fileswitch.h"
-#include "osfile.h"
-#include "osfscontrol.h"
+#include "oslib/os.h"
+#include "oslib/wimp.h"
+#include "oslib/fileswitch.h"
+#include "oslib/osfile.h"
+#include "oslib/osfscontrol.h"
 
 #include "webjames.h"
 #include "cache.h"

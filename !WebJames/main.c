@@ -6,8 +6,8 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include "os.h"
-#include "wimp.h"
+#include "oslib/os.h"
+#include "oslib/wimp.h"
 
 #include "main.h"
 #include "webjames.h"

@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "os.h"
+#include "oslib/os.h"
 
 #include "webjames.h"
 #include "stat.h"

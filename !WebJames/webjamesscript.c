@@ -6,11 +6,11 @@
 #include <ctype.h>
 #include <time.h>
 
-#include "os.h"
-#include "osfile.h"
-#include "osfscontrol.h"
-#include "osmodule.h"
-#include "wimp.h"
+#include "oslib/os.h"
+#include "oslib/osfile.h"
+#include "oslib/osfscontrol.h"
+#include "oslib/osmodule.h"
+#include "oslib/wimp.h"
 
 #include "webjames.h"
 #include "webjamesscript.h"

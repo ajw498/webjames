@@ -4,10 +4,10 @@
 #include <ctype.h>
 #include <time.h>
 
-#include "os.h"
-#include "osmodule.h"
-#include "osfscontrol.h"
-#include "territory.h"
+#include "oslib/os.h"
+#include "oslib/osmodule.h"
+#include "oslib/osfscontrol.h"
+#include "oslib/territory.h"
 
 #include "global.h"
 #include "cache.h"

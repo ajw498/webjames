@@ -10,7 +10,7 @@
 #include "stat.h"
 #include "handler.h"
 
-#include "osfscontrol.h"
+#include "oslib/osfscontrol.h"
 
 #define STACKSIZE 10
 #define HASHINCREMENT 20

@@ -4,9 +4,9 @@
 #include <ctype.h>
 #include <time.h>
 
-#include "osfile.h"
-#include "osgbpb.h"
-#include "osfscontrol.h"
+#include "oslib/osfile.h"
+#include "oslib/osgbpb.h"
+#include "oslib/osfscontrol.h"
 
 #include "webjames.h"
 #include "cache.h"
