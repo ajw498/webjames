@@ -13,46 +13,15 @@
 #include "resolve.h"
 
 
-void open_connection(int socket, char *host, int port) {
-// called when an incoming connection has been accepted
-// find an empty entry, and use that for the connection
-//
-// socket           socket number
-// host             pointer to host structure as returned by accept()
-// port             port number
+struct connection *create_conn(void) {
+// create and empty connection structure
 //
   struct connection *conn;
 
   conn = malloc(sizeof(struct connection));
 
-  // no empty entries
-  if (!conn) {
-    // can't use report_busy() as we haven't allocated a connection-structure
-    writestring(socket, "HTTP/1.0 503 Server is busy\r\nContent-type: text/html\r\n\r\n<html><head><title>Server is busy</title><body><h1>The server is busy</h1>Please try again later...</body></html>");
-    ip_close(socket);
-    return;
-  }
+  if (!conn) return NULL;
 
-#ifdef LOG
-  sprintf(temp, "OPEN request from %d.%d.%d.%d",
-                 host[4], host[5], host[6], host[7]);
-  writelog(LOGLEVEL_OPEN, temp);
-#endif
-
-  conn->index = activeconnections;
-  connections[activeconnections++] = conn;
-
-  // update statistics
-  statistics.access++;
-
-  // set up for reading the header
-  conn->status = WJ_STATUS_HEADER;
-  fd_set(select_read, socket);
-  readcount++;
-
-  // fill in the structure with default values
-  conn->socket = socket;
-  conn->port = port;
   conn->bodysize = conn->headersize = -1;
   conn->used = conn->filesize = conn->fileused = 0;
   conn->if_modified_since.tm_year = -1;
@@ -85,11 +54,56 @@ void open_connection(int socket, char *host, int port) {
   conn->flags.cacheable = 1;
   conn->flags.is_cgi = 0;
   conn->statuscode = HTTP_OK;           //
+  conn->starttime = clock();
+
+  return conn;
+}
+
+
+void open_connection(int socket, char *host, int port) {
+// called when an incoming connection has been accepted
+// find an empty entry, and use that for the connection
+//
+// socket           socket number
+// host             pointer to host structure as returned by accept()
+// port             port number
+//
+  struct connection *conn;
+
+  conn = create_conn();
+
+  // no empty entries
+  if (!conn) {
+    // can't use report_busy() as we haven't allocated a connection-structure
+    writestring(socket, "HTTP/1.0 503 Server is busy\r\nContent-type: text/html\r\n\r\n<html><head><title>Server is busy</title><body><h1>The server is busy</h1>Please try again later...</body></html>");
+    ip_close(socket);
+    return;
+  }
+
+#ifdef LOG
+  sprintf(temp, "OPEN request from %d.%d.%d.%d",
+                 host[4], host[5], host[6], host[7]);
+  writelog(LOGLEVEL_OPEN, temp);
+#endif
+
+  conn->index = activeconnections;
+  connections[activeconnections++] = conn;
+
+  // update statistics
+  statistics.access++;
+
+  // set up for reading the header
+  conn->status = WJ_STATUS_HEADER;
+  fd_set(select_read, socket);
+  readcount++;
+
+  // fill in the structure
+  conn->socket = socket;
+  conn->port = port;
   conn->ipaddr[0] = host[4];
   conn->ipaddr[1] = host[5];
   conn->ipaddr[2] = host[6];
   conn->ipaddr[3] = host[7];
-  conn->starttime = clock();
 
   // default name of the remote host is the ip-address
   sprintf(conn->host, "%d.%d.%d.%d", host[4], host[5], host[6], host[7]);
@@ -101,7 +115,6 @@ void open_connection(int socket, char *host, int port) {
   } else
     conn->dnsstatus = DNS_FAILED;
 }
-
 
 
 void close(int cn, int force) {

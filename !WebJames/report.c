@@ -10,6 +10,7 @@
 #include "openclose.h"
 #include "report.h"
 #include "write.h"
+#include "attributes.h"
 
 
 struct reportcache reports[REPORTCACHECOUNT];
@@ -300,40 +301,122 @@ void report(struct connection *conn, int code, int subno, int headerlines) {
     if (reporttext[0] == '\"') {
       // send message given in errordoc
       reporttext++;
-      size = strlen(reporttext);
-      buffer = malloc(size+1);
-      if (!buffer) {
-        // if this failed, do it the primitive way
-        report_quickanddirty(conn, code);
-        close(conn->index, 0);
-        return;
-      }
-      strcpy(buffer,reporttext);
+      conn->flags.releasefilebuffer = 0;
+      conn->filebuffer = reporttext;
+      conn->filesize = strlen(reporttext);
+      conn->file = NULL;
+      conn->fileused = 0;
+      conn->flags.is_cgi = 0;
     } else {
       // must be a redirect
       if (reporttext[0] == '/') {
         // file is stored on this server
-        if (*configuration.serverip)
-          sprintf(url, "http://%s%s", configuration.serverip, reporttext);
-        else
-          strcpy(url, reporttext);
+        struct connection *tempconn;
+        char *name;
+
+        tempconn = create_conn();
+        if (tempconn) {
+          tempconn->uri = reporttext;
+          get_attributes(tempconn->uri,tempconn);
+
+          // build RISCOS filename
+          name = tempconn->filename;
+          strcpy(name, tempconn->homedir);
+          name += strlen(name);
+          // append requested URI, with . and / switched
+          if (!uri_to_filename(tempconn->uri + tempconn->homedirignore,name)) {
+            struct cache *cacheentry;
+
+            strcpy(conn->filename,tempconn->filename);
+
+            // check if object is cached
+            if (tempconn->flags.cacheable) {
+              cacheentry = get_file_through_cache(tempconn->uri, conn->filename);
+            } else {
+              cacheentry = NULL;
+            }
+            free(tempconn);
+
+            // prepare to send file
+            if (cacheentry) {
+              conn->filebuffer = cacheentry->buffer;
+              size = conn->filesize = cacheentry->size;
+              conn->flags.releasefilebuffer = 0;
+              conn->flags.is_cgi = 0;
+              conn->file = NULL;
+              conn->fileused = 0;
+              conn->cache = cacheentry;
+              cacheentry->accesses++;
+
+              for (i = 0; i < headerlines; i++) {
+                if (header[i]) {
+                  free(header[i]);
+                  header[i] = NULL;
+                }
+              }
+              subno = 0;
+              headerlines = 0;
+
+            } else {
+              FILE *handle;
+
+              handle = fopen(conn->filename, "rb");
+              if (handle) {
+                // attempt to get a read-ahead buffer for the file
+                // notice: things will still work if malloc fails
+                conn->filebuffer = malloc(readaheadbuffer*1024);
+                conn->flags.releasefilebuffer = 1;
+                conn->flags.is_cgi = 0;
+                conn->leftinbuffer = 0;
+                // set the fields in the structure, and that's it!
+                conn->file = handle;
+                fseek(handle,0,SEEK_END);
+                size = conn->filesize = (int)ftell(handle);
+                fseek(handle,0,SEEK_SET);
+
+                for (i = 0; i < headerlines; i++) {
+                  if (header[i]) {
+                    free(header[i]);
+                    header[i] = NULL;
+                  }
+                }
+                subno = 0;
+                headerlines = 0;
+
+              } else {
+                errordoc = NULL;
+              }
+            }
+          } else {
+            errordoc = NULL;
+          }
+        } else {
+          errordoc = NULL;
+        }
       } else {
-        // file is on another server (or this server, but the whole url including hostname was given
+        // file is on another server (or this server, but the whole url including hostname was given)
         strcpy(url, reporttext);
+
+        for (i = 0; i < headerlines; i++) {
+          if (header[i]) {
+            free(header[i]);
+            header[i] = NULL;
+          }
+        }
+
+        header[0] = malloc(strlen(url)+11);
+        if (header[0])  sprintf(header[0], "Location: %s", url);
+
+        subs[0].name = "%NEWURL%";
+        subs[0].value = url;
+        subs[1].name = "%URL%";
+        subs[1].value = conn->uri;
+
+        subno = 2;
+        headerlines = 1;
+        code = HTTP_TEMPMOVED;
+        errordoc = NULL;
       }
-
-      header[0] = malloc(strlen(url)+11);
-      if (header[0])  sprintf(header[0], "Location: %s", url);
-
-      subs[0].name = "%NEWURL%";
-      subs[0].value = url;
-      subs[1].name = "%URL%";
-      subs[1].value = conn->uri;
-
-      subno = 2;
-      headerlines = 1;
-      code = HTTP_TEMPMOVED;
-      errordoc = NULL;
 
     }
   }
@@ -354,6 +437,13 @@ void report(struct connection *conn, int code, int subno, int headerlines) {
       close(conn->index, 0);
       return;
     }
+    // send the generated file - the buffer is released afterwards
+    conn->flags.releasefilebuffer = 1;
+    conn->filebuffer = buffer;
+    conn->filesize = size;
+    conn->file = NULL;
+    conn->fileused = 0;
+    conn->flags.is_cgi = 0;
   }
 
   if (conn->httpmajor >= 1) {
@@ -375,13 +465,6 @@ void report(struct connection *conn, int code, int subno, int headerlines) {
     }
     writestring(conn->socket, "\r\n");
   }
-  // send the generated file - the buffer is released afterwards
-  conn->flags.releasefilebuffer = 1;
-  conn->filebuffer = buffer;
-  conn->filesize = size;
-  conn->file = NULL;
-  conn->fileused = 0;
-  conn->flags.is_cgi = 0;
 }
 
 

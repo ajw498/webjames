@@ -128,7 +128,7 @@ void select_writing(int cn) {
 
 }
 
-static int uri_to_filename(char *uri, char *filename) {
+int uri_to_filename(char *uri, char *filename) {
 // swap '.' and '/'
 // returns non zero if illegal chars are present
   while (*uri) {
