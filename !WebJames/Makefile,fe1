@@ -27,4 +27,6 @@ Objects       = main.o webjames.o ip.o stat.o report.o write.o openclose.o read.
 	$(MemCheck) $(CC) $(CCFlags) $< -o $@
 
 # Dynamic dependencies:
+o.openclose: c.openclose h.cache h.webjames h.ip h.attributes C:regex.h.regex h.stat h.openclose h.resolve
+o.read: c.read h.webjames h.attributes C:regex.h.regex h.stat h.ip h.read h.report h.write h.coding
 o.cgiscript: c.cgiscript C:oslib.h.os C:oslib.h.types C:oslib.h.osfile C:oslib.h.fileswitch C:oslib.h.osfscontrol C:oslib.h.osmodule C:oslib.h.wimp C:oslib.h.osspriteop C:oslib.h.font h.webjames h.cgiscript h.openclose h.report h.stat h.ip h.write h.handler

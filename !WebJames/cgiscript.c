@@ -52,6 +52,9 @@ void cgiscript_start(struct connection *conn)
 
 	set_var_val("DOCUMENT_ROOT", configuration.site);
 
+	set_var_val("GATEWAY_INTERFACE", "CGI/1.1");
+	set_var_val("REQUEST_URI", conn->requesturi);
+
 	set_var_val("SCRIPT_NAME", conn->uri);
 	set_var_val("PATH_TRANSLATED", conn->filename);
 
@@ -172,6 +175,8 @@ void cgiscript_start(struct connection *conn)
 	remove_var("SERVER_NAME");
 	remove_var("SERVER_ADMIN");
 	remove_var("DOCUMENT_ROOT");
+	remove_var("GATEWAY_INTERFACE");
+	remove_var("REQUEST_URI");
 	remove_var("SCRIPT_NAME");
 	remove_var("PATH_TRANSLATED");
 	remove_var("QUERY_STRING");

@@ -182,7 +182,7 @@ void close(int cn, int force) {
 	if (conn->authorization) free(conn->authorization);
 	if ((conn->filebuffer) && (conn->flags.releasefilebuffer)) free(conn->filebuffer);
 	conn->filebuffer = conn->body = conn->header = NULL;
-	conn->type = conn->accept =  conn->uri = conn->cookie = NULL;
+	conn->type = conn->accept =  conn->uri =  conn->requesturi = conn->cookie = NULL;
 	conn->authorization = NULL;
 
 	/* free the linked list of custom error documents */

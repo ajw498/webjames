@@ -162,6 +162,7 @@ void pollread_header(struct connection *conn, int bytes) {
 		if (!conn->requestline) {
 
 			char *ptr, *file, *http;
+			int query=0;
 
 			/* save the requestline for the clf-log */
 			conn->requestline = malloc(strlen(line)+1);
@@ -205,11 +206,15 @@ void pollread_header(struct connection *conn, int bytes) {
 			}
 			conn->uri = malloc(strlen(file)+2);         /* get buffer for filename */
 			if (!conn->uri)  return;                    /* failed to get buffer */
+			conn->requesturi = malloc(strlen(file)+2);  /* get buffer for filename */
+			if (!conn->requesturi)  return;             /* failed to get buffer */
 
+			strcpy(conn->requesturi,file);
 			/*Copy uri*/
 			i=0;
 			do {
-				if (file[0]=='%' && isxdigit(file[1]) && isxdigit(file[2])) {
+				if (file[0]=='?') query=1; /*Don't convert %xx sequences in the query string part of the uri*/
+				if (!query && file[0]=='%' && isxdigit(file[1]) && isxdigit(file[2])) {
 					/* Treat next two chars as hex code of character */
 					char num[3],*end;
 					num[0] = file[1];
