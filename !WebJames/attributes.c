@@ -253,7 +253,7 @@ static struct attributes *create_attribute_structure(char *uri) {
 	attr->regex = NULL;
 	attr->defaultfiles = NULL;
 	attr->defaultfilescount = 0;
-	attr->next = NULL;
+	attr->attrnext = NULL;
 	attr->forbiddenhosts = attr->allowedhosts = NULL;
 	attr->forbiddenhostscount = attr->allowedhostscount = 0;
 	attr->forbiddenfiletypes = attr->allowedfiletypes = NULL;
@@ -422,7 +422,7 @@ static struct attributes *read_attributes_file(char *filename, char *base) {
 
 				if (match) {
 					/* Add to linked list */
-					attr->next = globallocations;
+					attr->attrnext = globallocations;
 					globallocations = attr;
 
 					attr->regex = malloc(sizeof(regex_t));
@@ -478,7 +478,7 @@ static struct attributes *read_attributes_file(char *filename, char *base) {
 
 				if (match) {
 					/* Add to linked list */
-					attr->next = globaldirectories;
+					attr->attrnext = globaldirectories;
 					globaldirectories = attr;
 
 					attr->regex = malloc(sizeof(regex_t));
@@ -501,7 +501,7 @@ static struct attributes *read_attributes_file(char *filename, char *base) {
 				if (section != section_NONE && section != section_DIRECTORY) continue; /* cannot have a files inside a location or another files section */
 
 				if (attr) {
-					fileslist = &(attr->next);
+					fileslist = &(attr->attrnext);
 				} else {
 					fileslist = &globalfiles;
 				}
@@ -525,7 +525,7 @@ static struct attributes *read_attributes_file(char *filename, char *base) {
 					fclose(file);
 					return NULL;
 				}
-				attr->next = *fileslist;
+				attr->attrnext = *fileslist;
 				*fileslist = attr;
 
 				if (match) {
@@ -1021,7 +1021,7 @@ static void check_regex(struct attributes *attr, char *match, struct connection 
 		} else if (strcmp(attr->uri,match) == 0) {
 			merge_attributes(conn,attr);
 		}
-		attr = attr->next;
+		attr = attr->attrnext;
 	}
 }
 
@@ -1032,6 +1032,7 @@ void get_attributes(char *uri, struct connection *conn) {
 	int found;
 	char buffer[256], path[256], *ptr, splitchar, *leafname, leafnamebuffer[256];
 	int len, last, first, key;
+	struct attributes *filesattrstart = NULL, *filesattrend = NULL;
 
 	if (uri[0] != '/') {
 		/* must be a directory */
@@ -1111,7 +1112,16 @@ void get_attributes(char *uri, struct connection *conn) {
 			if (strcmp(hash[key].uri,path) == 0) {
 				found = 1;
 				merge_attributes(conn,hash[key].attr);
-				if (leafname) check_regex(hash[key].attr->next,leafname,conn);
+				if (leafname) {
+					/* Add attr to end of linked list */
+					if (filesattrend == NULL) {
+						filesattrstart = hash[key].attr;
+					} else {
+						filesattrend->connnext = hash[key].attr;
+					}
+					hash[key].attr->connnext = NULL;
+					filesattrend = hash[key].attr;
+				}
 			}
 			key++;
 			if (key>=hashsize) key = 0;
@@ -1134,15 +1144,23 @@ void get_attributes(char *uri, struct connection *conn) {
 
 	} while (!last);
 
-	/* Check to see if the leafname matches any global <files> sections */
-	if (leafname) check_regex(globalfiles,leafname,conn);
-
 	if (uri[0] == '/') {
 		/* Check to see if the uri matches any <locationmatch> sections */
 		check_regex(globallocations,buffer,conn);
 	} else {
 		/* Check to see if the filename matches any <directorymatch> sections */
 		check_regex(globaldirectories,buffer,conn);
+	
+		if (leafname) {
+			/* Check to see if the leafname matches any global <files> sections */
+			check_regex(globalfiles,leafname,conn);
+
+			/* Check each attributes section in the linked list created whilst scanning through the directories */
+			while (filesattrstart != NULL) {
+				check_regex(filesattrstart,leafname,conn);
+				filesattrstart = filesattrstart->connnext;
+			}
+		}
 	}
 
 	if (conn->attrflags.hidden)  conn->attrflags.accessallowed = 0;

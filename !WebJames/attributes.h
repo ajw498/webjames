@@ -81,7 +81,8 @@ typedef struct attributes {
 		unsigned int forbiddenfiletypes : 1;
 	} defined;
 
-	struct attributes *next;
+	struct attributes *attrnext; /* next files/filesmatch section in attributes list */
+	struct attributes *connnext; /* next files/filesmatch section to try to apply in connection list */
 } attributes;
 
 
