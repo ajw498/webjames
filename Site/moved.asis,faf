@@ -1,5 +1,5 @@
 HTTP/1.0 301 This file has moved
-Location: http://localhost/examples.html
+Location: http://localhost/index.html
 Content-Type: text/html
 
 <html>
@@ -12,8 +12,7 @@ Content-Type: text/html
 <center>
 <h1>This file has moved</h1>
 
-<p>This file is now at http://localhost/examples.html
-
+<p>This file is now at http://localhost/index.html
 
 </body>
 </html>
