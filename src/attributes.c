@@ -1,5 +1,5 @@
 /*
-	$Id: attributes.c,v 1.5 2002/10/20 19:00:02 ajw Exp $
+	$Id: attributes.c,v 1.6 2003/10/19 15:53:54 ajw Exp $
 	Reading and using attributes files
 */
 
@@ -714,6 +714,8 @@ static struct attributes *read_attributes_file(char *filename, char *base, struc
 
 				/* change handler name to lowercase */
 				lower_case(value);
+
+				if (strchr(filetypetext, ' ')) webjames_writelog(LOGLEVEL_ATTRIBUTES, "Malformed handler attribute '%s' contains a space",filetypetext);
 
 				/*check for type-map - need to record extension for content negotiation*/
 				if (strcmp(value,"type-map")==0) content_recordextension(filetypetext);
