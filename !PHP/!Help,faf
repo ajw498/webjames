@@ -7,7 +7,7 @@
 <table bgcolor="#aaaaaa" width="99%"><tr>
 <td><center>
 <h1>
-PHP 4.0.7
+PHP 4.1.0
 </h1>
 </center>
 </td></tr>
@@ -275,6 +275,8 @@ The following extensions have been included with PHP:
 <li>ftp       FTP client
 <li>gd        Create/manipulate png/jpeg/wbpm images
 <li>session   Tracking site visitors
+<li>posix     POSIX functions
+<li>mysql     MySQL client functions
 <li>zlib      Compression functions
 <li>xml       XML parsing
 </ul>
@@ -305,6 +307,16 @@ popen, system, exec, passthru and other functions that run external programs do 
 if the child program being run was compiled with a recent version of UnixLib (September 2001 or later).
 The version of UnixLib supplied with GCC pre-release 3 is too old.
 Additionally, they will not work when running under the ANT server suite or unregistered versions of Netplex.
+<p>
+fopen("http://localhost/"); does not work (but other urls do), as PHP is a
+single tasking program, and so when it opens a connection to localhost,
+it sits around doing nothing until it gets some data back. However,
+the webserver will not be able to send any data back, as it never gets
+a chance to run because PHP is still running.
+However, any file you want to access via http://localhost can also be
+accesed by fopen with the pathname of the file relative to the current
+file, or an absolute pathname, which is faster anyway.
+
 <p>
 Any updates to the RISC OS port should be available from
 <a href="http://www.php.alexwaugh.com/">http://www.php.alexwaugh.com/</a>

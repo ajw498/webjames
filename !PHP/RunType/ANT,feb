@@ -1,4 +1,4 @@
-WimpSlot -Min 1700k -Max 1700k
+WimpSlot -Min 1800k -Max 1800k
 Set InetServ$CGIHeadered Yes
 Set SCRIPT_FILENAME %0
 Set PATH_TRANSLATED %0

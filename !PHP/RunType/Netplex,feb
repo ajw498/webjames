@@ -1,4 +1,4 @@
-WimpSlot -Min 1700k -Max 1700k
+WimpSlot -Min 1800k -Max 1800k
 Set SERVER_SOFTWARE <CGI$ServerSoftware>
 Set SERVER_NAME <CGI$ServerName>
 Set GATEWAY_INTERFACE <CGI$GatewayInterface>
