@@ -4,6 +4,7 @@
 
 #include "webjames.h"
 #include "report.h"
+#include "datetime.h"
 #include "cache.h"
 #include "sendasis.h"
 

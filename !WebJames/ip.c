@@ -65,12 +65,6 @@ int ip_write(int socket, char *buffer, int size) {
 }
 
 
-int ip_writestring(int socket, char *string) {
-
-	return ip_write(socket, string, strlen(string));
-}
-
-
 int ip_nonblocking(int socket) {
 /* returns 0 (failed) or 1 (ok) */
 

@@ -17,7 +17,6 @@
 #include "php_webjames.h"
 #endif
 
-
 static struct handlerentry handlers[] = {
 	{
 		"cgi-script",       /* name of handler */

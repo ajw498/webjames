@@ -8,17 +8,19 @@
 #include "attributes.h"
 #include "stat.h"
 #include "ip.h"
+#include "datetime.h"
 #include "read.h"
 #include "report.h"
 #include "write.h"
 #include "coding.h"
 
+static char line[HTTPBUFFERSIZE];
 
 /* must be called before calling report_XXXX() during reading */
 static void read_report(struct connection *conn) {
 
-	fd_clear(select_read, conn->socket);
-	readcount--;
+	fd_clear(serverinfo.select_read, conn->socket);
+	serverinfo.readcount--;
 
 	select_writing(conn->index);
 }
@@ -34,8 +36,8 @@ static void donereading(struct connection *conn) {
 	}
 
 	/* deselect the socket for reading */
-	fd_clear(select_read, conn->socket);
-	readcount--;
+	fd_clear(serverinfo.select_read, conn->socket);
+	serverinfo.readcount--;
 
 	send_file(conn);
 }
@@ -352,25 +354,23 @@ void pollread_header(struct connection *conn, int bytes) {
 			conn->cookie = malloc(strlen(line+8)+1);
 			strcpy(conn->cookie, line+8);
 
-#ifdef LOG
 		} else if (strncmp(upper, "REFERER: ", 9) == 0) {
 			if (conn->referer)  free(conn->referer);
 			conn->referer = malloc(strlen(line+9)+1);
 			if (conn->referer)  strcpy(conn->referer, line+9);
-			writelog(LOGLEVEL_REFERER, line);
+			webjames_writelog(LOGLEVEL_REFERER, line);
 
 		} else if (strncmp(upper, "FROM: ", 6) == 0) {
-			writelog(LOGLEVEL_FROM, line);
+			webjames_writelog(LOGLEVEL_FROM, line);
 
 		} else if (strncmp(upper, "USER-AGENT: ", 12) == 0) {
 			if (conn->useragent)  free(conn->useragent);
 			conn->useragent = malloc(strlen(line+12)+1);
 			if (conn->useragent)  strcpy(conn->useragent, line+12);
-			writelog(LOGLEVEL_USERAGENT, line);
+			webjames_writelog(LOGLEVEL_USERAGENT, line);
 
 		} else if (strncmp(upper, "HOST: ", 6) == 0) {
-			writelog(LOGLEVEL_FROM, line);
-#endif
+			webjames_writelog(LOGLEVEL_FROM, line);
 
 		} else if (strncmp(upper, "AUTHORIZATION: ", 15) == 0) {
 			int pos, bytes;
@@ -447,7 +447,7 @@ void pollread_header(struct connection *conn, int bytes) {
 #ifdef LOG
 		for (i=0;i<configuration.logheaders;i++) {
 			if (strncmp(upper, configuration.logheader[i], strlen(configuration.logheader[i])) == 0) {
-				writelog(LOGLEVEL_HEADER, line);
+				webjames_writelog(LOGLEVEL_HEADER, line);
 			}
 		}
 #endif

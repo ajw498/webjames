@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdarg.h>
 #include <string.h>
 #include <ctype.h>
 #include <time.h>
@@ -9,7 +10,6 @@
 #include "oslib/osfscontrol.h"
 #include "oslib/territory.h"
 
-#include "global.h"
 #include "cache.h"
 #include "webjames.h"
 #include "ip.h"
@@ -28,15 +28,12 @@
 struct config configuration;
 
 /* connection */
-struct serverinfo servers[8];
-int readcount, writecount, dnscount, slowdown;
-int activeconnections;
+struct globalserverinfo serverinfo;
 static int quitwhenidle;
 struct connection *connections[MAXCONNECTIONS];
-char select_read[32], select_write[32], select_except[32];
 
 /* various */
-char line[HTTPBUFFERSIZE], temp[HTTPBUFFERSIZE];
+char temp[HTTPBUFFERSIZE];
 static int serverscount;
 
 
@@ -62,6 +59,7 @@ int webjames_init(char *config) {
 	*configuration.clflog = *configuration.weblog = *configuration.webmaster = *configuration.site = *configuration.serverip = '\0';
 	*configuration.put_script = *configuration.delete_script = *configuration.htaccessfile = '\0';
 	*configuration.cgi_in = *configuration.cgi_out;
+	configuration.syslog=0;
 	configuration.loglevel = 5;
 	configuration.log_close_delay = 10; /* seconds */
 	configuration.log_max_copies = 0;
@@ -75,7 +73,7 @@ int webjames_init(char *config) {
 	read_config(config);
 
 	/* Supply defaults for cgi_in/out if the user hasn't specified them */
-	/* They must be canonicalised if possible as some programs (eg Perl) don't like <foo$dir> as arguments */ 
+	/* They must be canonicalised if possible as some programs (eg Perl) don't like <foo$dir> as arguments */
 	if (*configuration.cgi_in=='\0') {
 		if (xosfscontrol_canonicalise_path("<Wimp$ScrapDir>.WebJamesI",configuration.cgi_in,NULL,NULL,256,NULL)) strcpy(configuration.cgi_in,"<Wimp$ScrapDir>.WebJamesI");
 	}
@@ -92,12 +90,12 @@ int webjames_init(char *config) {
 	for (i = 0; i < REPORTCACHECOUNT; i++)  reports[i].report = -1;
 
 	for (i = 0; i < 32; i++) {
-		select_read[i] = 0;
-		select_write[i] = 0;
-		select_except[i] = 0;
+		serverinfo.select_read[i] = 0;
+		serverinfo.select_write[i] = 0;
+		serverinfo.select_except[i] = 0;
 	}
-	readcount = writecount = dnscount = 0;
-	activeconnections = 0;
+	serverinfo.readcount = serverinfo.writecount = serverinfo.dnscount = 0;
+	serverinfo.activeconnections = 0;
 
 	/* reset statistics */
 	init_statistics();
@@ -110,13 +108,11 @@ int webjames_init(char *config) {
 
 	/* slowdown is a delay (in cs) that is adjusted when the bandwidth */
 	/* exceeds the max allowed bandwidth */
-	slowdown = 0;
+	serverinfo.slowdown = 0;
 
 	/* initilise any handler modules */
 	if (!init_handlers()) {
-#ifdef LOG
-		writelog(LOGLEVEL_ALWAYS, "Couldn't initialise handlers...");
-#endif
+		webjames_writelog(LOGLEVEL_ALWAYS, "Couldn't initialise handlers...");
 		return 0;
 	}
 
@@ -126,14 +122,12 @@ int webjames_init(char *config) {
 
 	for (i = 0; i < serverscount; i++) {
 		int listen;
-		servers[i].socket = -1;
+		serverinfo.servers[i].socket = -1;
 
 		/* start listening */
 		listen = ip_create(0);
 		if (listen < 0) {
-#ifdef LOG
-			writelog(LOGLEVEL_ALWAYS, "Couldn't create socket...");
-#endif
+			webjames_writelog(LOGLEVEL_ALWAYS, "Couldn't create socket...");
 			continue;
 		}
 
@@ -142,34 +136,25 @@ int webjames_init(char *config) {
 
 		ip_linger(listen, 10*60);
 
-		if (!ip_bind(listen, 0, servers[i].port)) {
-#ifdef LOG
-			sprintf(temp, "Couldn't bind to port %d...", servers[i].port);
-			writelog(LOGLEVEL_ALWAYS, temp);
-#endif
+		if (!ip_bind(listen, 0, serverinfo.servers[i].port)) {
+			webjames_writelog(LOGLEVEL_ALWAYS, "Couldn't bind to port %d...", serverinfo.servers[i].port);
 			ip_close(listen);
 			continue;
 		}
 
 		if (!ip_listen(listen)) {
-#ifdef LOG
-			sprintf(temp, "Couldn't listen on socket %d...", listen);
-			writelog(LOGLEVEL_ALWAYS, temp);
-#endif
+			webjames_writelog(LOGLEVEL_ALWAYS, "Couldn't listen on socket %d...", listen);
 			ip_close(listen);
 			continue;
 		}
-#ifdef LOG
-		sprintf(temp, "LISTEN on port %d on socket %d", servers[i].port, listen);
-		writelog(LOGLEVEL_ALWAYS, temp);
-#endif
+		webjames_writelog(LOGLEVEL_ALWAYS, "LISTEN on port %d on socket %d", serverinfo.servers[i].port, listen);
 
-		servers[i].socket = listen;
+		serverinfo.servers[i].socket = listen;
 	}
 
 	active = 0;
 	for (i = 0; i < serverscount; i++)
-		if (servers[i].socket != -1)  active++;
+		if (serverinfo.servers[i].socket != -1)  active++;
 	if (active == 0)  return 0;
 
 	return 1;
@@ -185,26 +170,20 @@ void webjames_command(char *cmd, int release) {
 
 	if (strcmp(cmd, "closeall") == 0) {                       /* CLOSEALL */
 		int i;
-		for (i = 0; i < activeconnections; i++)
+		for (i = 0; i < serverinfo.activeconnections; i++)
 			if (connections[i]->socket >= 0)  connections[i]->close(connections[i], 1);
-#ifdef LOG
-		writelog(LOGLEVEL_CMD, "ALL CONNECTIONS CLOSED");
-#endif
+		webjames_writelog(LOGLEVEL_CMD, "ALL CONNECTIONS CLOSED");
 
 	} else if (strncmp(cmd, "flushcache", 10) == 0) {         /* FLUSHCACHE */
 		flushcache(NULL);
 		report_flushcache();
-#ifdef LOG
-		writelog(LOGLEVEL_CMD, "Cache has been flushed");
-#endif
+		webjames_writelog(LOGLEVEL_CMD, "Cache has been flushed");
 
 	} else if (strncmp(cmd, "quitwhenidle", 12) == 0) {       /* QUITWHENIDLE */
 		quitwhenidle = 1;
 
 	} else if (strncmp(cmd, "log ", 4) == 0) {                /* LOG */
-#ifdef LOG
-		if (cmd[4])  writelog(LOGLEVEL_CMD, cmd+4);
-#endif
+		if (cmd[4])  webjames_writelog(LOGLEVEL_CMD, cmd+4);
 
 	} else if (strncmp(cmd, "clf ", 4) == 0) {                /* CLF */
 		int bytes, code;
@@ -241,17 +220,15 @@ void webjames_kill() {
 	kill_cache();
 
 	/* close all open sockets */
-	for (i = 0; i < activeconnections; i++)
+	for (i = 0; i < serverinfo.activeconnections; i++)
 		if (connections[i]->socket >= 0)  connections[i]->close(connections[i], 1);
 
-#ifdef LOG
 	close_log();
-#endif
 
 	/* close all servers */
 	for (i = 0; i < serverscount; i++)
-		if (servers[i].socket >= 0)
-			ip_close(servers[i].socket);
+		if (serverinfo.servers[i].socket >= 0)
+			ip_close(serverinfo.servers[i].socket);
 	serverscount = 0;
 }
 
@@ -266,19 +243,19 @@ int webjames_poll() {
 	char host[16], select[32];
 
 	/* are there any reverse-dns lookups in progress? */
-	if (dnscount) {
+	if (serverinfo.dnscount) {
 
 		/* attempt to reverse dns the connections */
-		for (i = 0; i < activeconnections; i++)
+		for (i = 0; i < serverinfo.activeconnections; i++)
 			if (connections[i]->dnsstatus == DNS_TRYING)
 				resolver_poll(connections[i]);
 	}
 
 	/* are we reading from any sockets? */
-	if (readcount) {
-		for (i = 0; i < 8; i++)  ((int *)select)[i] = ((int *)select_read)[i];
+	if (serverinfo.readcount) {
+		for (i = 0; i < 8; i++)  ((int *)select)[i] = ((int *)serverinfo.select_read)[i];
 		if (ip_select(256, select, NULL, NULL) > 0) {
-			for (i = 0; i < activeconnections; i++) {
+			for (i = 0; i < serverinfo.activeconnections; i++) {
 				if ((connections[i]->status == WJ_STATUS_HEADER) ||
 						(connections[i]->status == WJ_STATUS_BODY))     pollread(i);
 			}
@@ -286,20 +263,20 @@ int webjames_poll() {
 	}
 
 	/* are we writing to any sockets? */
-	if (writecount) {
-		for (i = 0; i < 8; i++)  ((int *)select)[i] = ((int *)select_write)[i];
+	if (serverinfo.writecount) {
+		for (i = 0; i < 8; i++)  ((int *)select)[i] = ((int *)serverinfo.select_write)[i];
 		if (ip_select(256, NULL, select, NULL) > 0) {
-			for (i = 0; i < activeconnections; i++)
+			for (i = 0; i < serverinfo.activeconnections; i++)
 				if (connections[i]->status == WJ_STATUS_WRITING)
 					pollwrite(i);
 		}
 	}
 
-	if (readcount + writecount) {
+	if (serverinfo.readcount + serverinfo.writecount) {
 		/* check if any connections have timed out */
 		int clk;
 		clk = clock();
-		for (i = 0; i < activeconnections; i++) {
+		for (i = 0; i < serverinfo.activeconnections; i++) {
 			if ( ((connections[i]->status == WJ_STATUS_HEADER)  ||
 						(connections[i]->status == WJ_STATUS_BODY)    ||
 						(connections[i]->status == WJ_STATUS_WRITING)) &&
@@ -310,7 +287,7 @@ int webjames_poll() {
 
 	xos_read_monotonic_time(&statistics.currenttime);
 
-	/* calculate slowdown */
+	/* calculate serverinfo.slowdown */
 	if ((statistics.currenttime > statistics.adjusttime) && (configuration.bandwidth > 0)) {
 		int used, secs, bytes;
 
@@ -319,12 +296,12 @@ int webjames_poll() {
 		secs = (statistics.currenttime - statistics.time)/100 + 60;
 		used = 60*bytes / secs;
 		if (used > configuration.bandwidth)
-			slowdown += 5;
+			serverinfo.slowdown += 5;
 		else if (used < configuration.bandwidth/2)
-			slowdown = 0;
-		else if (slowdown > 5)
-			slowdown -= 5;
-		if (slowdown > 20)  slowdown = 20;
+			serverinfo.slowdown = 0;
+		else if (serverinfo.slowdown > 5)
+			serverinfo.slowdown -= 5;
+		if (serverinfo.slowdown > 20)  serverinfo.slowdown = 20;
 	}
 
 	/* update statistics every minute */
@@ -335,33 +312,33 @@ int webjames_poll() {
 
 	/* if all slots are used, new connections cannot be accepted; also, use */
 	/* as much CPU as possible to clear the backlog */
-	if (activeconnections == MAXCONNECTIONS)  return slowdown;
+	if (serverinfo.activeconnections == MAXCONNECTIONS)  return serverinfo.slowdown;
 
 	/* are there any new connections? */
 	for (srv = 0; srv < serverscount; srv++) {
 		for (i = 0; i < 8; i++)  ((int *)select)[i] = 0;
-		select[servers[srv].socket>>3] |= 1 << (servers[srv].socket &7);
+		select[serverinfo.servers[srv].socket>>3] |= 1 << (serverinfo.servers[srv].socket &7);
 
 		do {
 			socket = -1;
 			if (ip_select(256, select, NULL, NULL) > 0) {
-				socket = ip_accept(servers[srv].socket, host);
+				socket = ip_accept(serverinfo.servers[srv].socket, host);
 				if (socket >= 0) {
 					ip_nonblocking(socket);
-					open_connection(socket, host, servers[srv].port);
+					open_connection(socket, host, serverinfo.servers[srv].port);
 				}
 			}
 		} while (socket >= 0);
 	}
 
 
-	if ((activeconnections == 0) && (quitwhenidle))  quit = 1;
+	if ((serverinfo.activeconnections == 0) && (quitwhenidle)) return -1;
 
 	/* calc when to return */
 	cs = 10;
-	if (activeconnections)      cs = 1;
-	if (activeconnections > 1)  cs = 0;
-	return cs+slowdown;
+	if (serverinfo.activeconnections)      cs = 1;
+	if (serverinfo.activeconnections > 1)  cs = 0;
+	return cs+serverinfo.slowdown;
 }
 
 
@@ -375,7 +352,7 @@ void abort_reverse_dns(struct connection *conn, int newstatus) {
 /* newstatus        new dns status */
 
 	conn->dnsstatus = newstatus;
-	dnscount--;
+	serverinfo.dnscount--;
 	if (conn->status == WJ_STATUS_DNS)   conn->close(conn, 1);
 }
 
@@ -383,20 +360,47 @@ void abort_reverse_dns(struct connection *conn, int newstatus) {
 /* ------------------------------------------------ */
 
 
-void writestring(int socket, char *string) {
-/* write a string to a socket */
+int webjames_writestring(int socket, char *string)
+/* write a string to a socket, and update statistics */
+{
+	int len;
 
-	statistics.written += strlen(string);
-	ip_writestring(socket, string);
+	len=strlen(string);
+	len = ip_write(socket, string, len);
+	if (len>0) statistics.written += len;
+	return len;
+}
+
+int webjames_writebuffer(int socket, char *buffer, int size)
+/* write a block of memory to a socket, and update statistics */
+{
+	size = ip_write(socket, buffer, size);
+	if (size>0) statistics.written += size;
+	return size;
 }
 
 
-void read_config(char *config) {
+void webjames_writelog(int level, char *fmt, ...)
+{
+#ifdef LOG
+	va_list ap;
+	char temp[256];
+
+	va_start(ap,fmt);
+	vsprintf(temp,fmt,ap);
+	va_end(ap);
+
+	writelog(level, temp);
+#endif
+}
+
+void read_config(char *config)
 /* read all config-options from the config file */
 /* config           configuration file name */
-
+{
 	FILE *file;
 	char *cmd, *val;
+	char line[256];
 
 	file = fopen(config, "r");
 	if (!file)  return;
@@ -430,10 +434,10 @@ void read_config(char *config) {
 					port = atoi(val);
 					unused = 1;                             /* check if port already used */
 					for (i = 0; i < serverscount; i++)
-						if (servers[i].port == port)  unused = 0;
+						if (serverinfo.servers[i].port == port)  unused = 0;
 
 					if ((unused) && (port > 0) && (port <= 65535)) { /* unused port, so grab it! */
-						servers[serverscount].port = port;
+						serverinfo.servers[serverscount].port = port;
 						serverscount++;
 					}
 
@@ -461,6 +465,9 @@ void read_config(char *config) {
 
 			else if (strcmp(cmd, "logbuffersize") == 0)
 				configuration.logbuffersize = atoi(val);
+
+			else if (strcmp(cmd, "syslog") == 0)
+				configuration.syslog = atoi(val);
 
 			else if (strcmp(cmd, "log-rotate") == 0) {
 				int age, size, copies;
@@ -538,10 +545,8 @@ void read_config(char *config) {
 			else if (strcmp(cmd, "serverip") == 0)
 				strncpy(configuration.serverip, val, 255);
 
-#ifdef ANTRESOLVER
 			else if (strcmp(cmd, "reversedns") == 0)
 				configuration.reversedns = atoi(val);
-#endif
 
 			else if (strcmp(cmd, "webmaster") == 0)
 				strcpy(configuration.webmaster, val);
@@ -573,198 +578,4 @@ void read_config(char *config) {
 		}
 	}
 }
-
-
-/* ------------------------------------------- */
-
-int compare_time(struct tm *time1, struct tm *time2) {
-/* compare to tm structures */
-/* return either -1 (time1<time2), 0 (time1==time2) or 1 (time1>time2) */
-	if (time1->tm_year < time2->tm_year)  return -1;
-	if (time1->tm_year > time2->tm_year)  return 1;
-	if (time1->tm_mon  < time2->tm_mon)   return -1;
-	if (time1->tm_mon  > time2->tm_mon)   return 1;
-	if (time1->tm_mday < time2->tm_mday)  return -1;
-	if (time1->tm_mday > time2->tm_mday)  return 1;
-	if (time1->tm_hour < time2->tm_hour)  return -1;
-	if (time1->tm_hour > time2->tm_hour)  return 1;
-	if (time1->tm_min  < time2->tm_min)   return -1;
-	if (time1->tm_min  > time2->tm_min)   return 1;
-	if (time1->tm_sec  < time2->tm_sec)   return -1;
-	if (time1->tm_sec  > time2->tm_sec)   return 1;
-	return 0;
-}
-
-
-void utc_to_time(os_date_and_time *utc, struct tm *time) {
-/* converts 5 byte UTC to tm structure */
-
-/* utc              char[5] holding the utc value */
-/* time             tm structure to fill in */
-	territory_ordinals ordinals;
-
-	xterritory_convert_time_to_utc_ordinals(utc, &ordinals);
-	time->tm_sec   = ordinals.second;
-	time->tm_min   = ordinals.minute;
-	time->tm_hour  = ordinals.hour;
-	time->tm_mday  = ordinals.date;
-	time->tm_mon   = ordinals.month - 1;
-	time->tm_year  = ordinals.year - 1900;
-	time->tm_wday  = ordinals.weekday - 1;
-	time->tm_yday  = ordinals.yearday - 1;
-	time->tm_isdst = 0;
-}
-
-void utc_to_localtime(os_date_and_time *utc, struct tm *time) {
-/* converts 5 byte UTC to tm structure */
-
-/* utc              char[5] holding the utc value */
-/* time             tm structure to fill in */
-	territory_ordinals ordinals;
-
-	xterritory_convert_time_to_ordinals(territory_CURRENT,utc, &ordinals);
-	time->tm_sec   = ordinals.second;
-	time->tm_min   = ordinals.minute;
-	time->tm_hour  = ordinals.hour;
-	time->tm_mday  = ordinals.date;
-	time->tm_mon   = ordinals.month - 1;
-	time->tm_year  = ordinals.year - 1900;
-	time->tm_wday  = ordinals.weekday - 1;
-	time->tm_yday  = ordinals.yearday - 1;
-	time->tm_isdst = 0;
-}
-
-
-void rfc_to_time(char *rfc, struct tm *time) {
-/* converts a RFC timestring to a tm structure */
-
-/* rfc              pointer to string */
-/* time             tm structure to fill in */
-	char *start, days[12];
-	int date, month, year, hour, min, sec, letter1, letter2, letter3;
-	int wday, yday, m;
-
-	/* array holding (the number days in the month)-28 */
-	strcpy(days, "303232332323");
-
-	date = 0;
-	month = 6;
-	year = 1998;
-	hour = 0;
-	min = 0;
-	sec = 0;
-	wday = 0;
-	yday = 0;
-
-	start = rfc;
-	while (*start == ' ')  start++;
-	letter1 = toupper(start[0]);
-	letter2 = toupper(start[1]);
-	letter3 = toupper(start[2]);
-
-	if (letter1 == 'M')
-		wday = 0;
-	else if ((letter1 == 'T') && (letter2 == 'U'))
-		wday = 1;
-	else if (letter1 == 'W')
-		wday = 2;
-	else if (letter1 == 'T')
-		wday = 3;
-	else if (letter1 == 'F')
-		wday = 4;
-	else if ((letter1 == 'S') && (letter2 == 'A'))
-		wday = 5;
-	else if (letter1 == 'S')
-		wday = 6;
-
-	start = strchr(rfc, ',');
-	if (start == NULL)  start = rfc;
-
-	while ((!isdigit(*start)) && (*start))  start++;
-	if (!(*start))  return;
-	date = atoi(start) - 1;
-
-	while ((!isalpha(*start)) && (*start))  start++;
-	if (!(*start))  return;
-
-	letter1 = toupper(start[0]);
-	letter2 = toupper(start[1]);
-	letter3 = toupper(start[2]);
-	if ((letter1 == 'J') && (letter2 == 'A'))
-		month = 0;
-	else if (letter1 == 'F')
-		month = 1;
-	else if ((letter1 == 'M') && (letter3 == 'R'))
-		month = 2;
-	else if ((letter1 == 'A') && (letter2 == 'P'))
-		month = 3;
-	else if (letter1 == 'M')
-		month = 4;
-	else if ((letter1 == 'J') && (letter3 == 'N'))
-		month = 5;
-	else if (letter1 == 'J')
-		month = 6;
-	else if (letter1 == 'A')
-		month = 7;
-	else if (letter1 == 'S')
-		month = 8;
-	else if (letter1 == 'O')
-		month = 9;
-	else if (letter1 == 'N')
-		month = 10;
-	else if (letter1 == 'D')
-		month = 11;
-
-	while ((!isdigit(*start)) && (*start))  start++;
-	if (!(*start))  return;
-
-	year = atoi(start);
-	if (year < 40)
-		year += 2000;
-	else if (year < 100)
-		year += 1900;
-	if (year < 1990)  year = 1990;
-
-	while ((*start != ' ') && (*start))  start++;
-	if (!(*start))  return;
-
-	hour = atoi(start);
-	start = strchr(start, ':');
-	if (start == NULL)  return;
-	start++;
-
-	min = atoi(start);
-	start = strchr(start, ':');
-	if (start == NULL)  return;
-	sec = atoi(start+1);
-
-	/* adjust the days[] array if it's a leap year */
-	if ((year%4 == 0) && ((year%100 != 0) || (year%400 == 0)) )
-		days[1] = '1';
-
-	yday = date;
-	for (m = 0; m < month; m++)
-		yday += 28+days[m]-'0';
-
-	time->tm_sec = sec;
-	time->tm_min = min;
-	time->tm_hour = hour;
-	time->tm_mday = date;
-	time->tm_mon = month;
-	time->tm_year = year-1900;
-	time->tm_wday = wday;
-	time->tm_yday = yday;
-	time->tm_isdst = 0;
-}
-
-
-void time_to_rfc(struct tm *time, char *out) {
-/* converts a tm structure to a RFC timestring */
-
-/* time             tm structure */
-/* out              char-array to hold result, at least 26 bytes */
-
-	strftime(out, 26, "%a, %d %b %Y %H:%M:%S", time);
-}
-
 

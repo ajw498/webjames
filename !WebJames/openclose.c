@@ -66,6 +66,7 @@ struct connection *create_conn(void) {
 	conn->starttime = clock();
 
 	conn->close=close_real;
+	conn->handlerinfo=NULL;
 
 	return conn;
 }
@@ -86,26 +87,23 @@ void open_connection(int socket, char *host, int port) {
 	/* no empty entries */
 	if (!conn) {
 		/* can't use report_busy() as we haven't allocated a connection-structure */
-		writestring(socket, "HTTP/1.0 503 Server is busy\r\nContent-type: text/html\r\n\r\n<html><head><title>Server is busy</title><body><h1>The server is busy</h1>Please try again later...</body></html>");
+		webjames_writestring(socket, "HTTP/1.0 503 Server is busy\r\nContent-type: text/html\r\n\r\n<html><head><title>Server is busy</title><body><h1>The server is busy</h1>Please try again later...</body></html>");
 		ip_close(socket);
 		return;
 	}
 
-#ifdef LOG
-	sprintf(temp, "OPEN request from %d.%d.%d.%d", host[4], host[5], host[6], host[7]);
-	writelog(LOGLEVEL_OPEN, temp);
-#endif
+	webjames_writelog(LOGLEVEL_OPEN, "OPEN request from %d.%d.%d.%d", host[4], host[5], host[6], host[7]);
 
-	conn->index = activeconnections;
-	connections[activeconnections++] = conn;
+	conn->index = serverinfo.activeconnections;
+	connections[serverinfo.activeconnections++] = conn;
 
 	/* update statistics */
 	statistics.access++;
 
 	/* set up for reading the header */
 	conn->status = WJ_STATUS_HEADER;
-	fd_set(select_read, socket);
-	readcount++;
+	fd_set(serverinfo.select_read, socket);
+	serverinfo.readcount++;
 
 	/* fill in the structure */
 	conn->socket = socket;
@@ -120,7 +118,7 @@ void open_connection(int socket, char *host, int port) {
 	if (configuration.reversedns >= 0) {
 		conn->dnsstatus = DNS_TRYING;
 		conn->dnsendtime = 0x7fffffff;      /* indefinately! */
-		dnscount++;
+		serverinfo.dnscount++;
 		resolver_poll(conn);                /* in case the name is cached */
 	} else
 		conn->dnsstatus = DNS_FAILED;
@@ -144,13 +142,13 @@ void close_connection(struct connection *conn, int force, int real) {
 		/* close socket and make sure it is no longer 'selected' */
 		socket = conn->socket;
 		if (conn->socket != -1) {
-			if (fd_is_set(select_read, socket)) {
-				fd_clear(select_read, socket);
-				readcount--;
+			if (fd_is_set(serverinfo.select_read, socket)) {
+				fd_clear(serverinfo.select_read, socket);
+				serverinfo.readcount--;
 			}
-			if (fd_is_set(select_write, socket)) {
-				fd_clear(select_write, socket);
-				writecount--;
+			if (fd_is_set(serverinfo.select_write, socket)) {
+				fd_clear(serverinfo.select_write, socket);
+				serverinfo.writecount--;
 			}
 			ip_close(conn->socket);
 			conn->socket = -1;
@@ -175,7 +173,7 @@ void close_connection(struct connection *conn, int force, int real) {
 				sprintf(temp, "CLOSE %s (%d kb/sec)", ptr, bps>>10);
 		} else
 			sprintf(temp, "CLOSE %s", conn->uri);
-		writelog(LOGLEVEL_OPEN, temp);
+		webjames_writelog(LOGLEVEL_OPEN, temp);
 #endif
     }
 
@@ -216,12 +214,18 @@ void close_connection(struct connection *conn, int force, int real) {
 		conn->cache = NULL;
 	}
 
+	/* free any memory allocated by the handler */
+	if (conn->handlerinfo) {
+		free(conn->handlerinfo);
+		conn->handlerinfo=NULL;
+	}
+
 	if (real && conn->dnsstatus == DNS_TRYING) {
 		/* if we're still trying to do reverse dns... */
 		if (force) {
 			/* abort reverse dns */
 			conn->dnsstatus = DNS_FAILED;
-			dnscount--;
+			serverinfo.dnscount--;
 		} else {
 			/* do only reverse dns */
 			conn->status = WJ_STATUS_DNS;
@@ -245,12 +249,12 @@ void close_connection(struct connection *conn, int force, int real) {
 	free(conn);
 
 	if (real) {
-		activeconnections--;
+		serverinfo.activeconnections--;
 		/* make sure it's the bottom entries in the stack that are used */
-		connections[cn] = connections[activeconnections];
-		connections[activeconnections] = NULL;
+		connections[cn] = connections[serverinfo.activeconnections];
+		connections[serverinfo.activeconnections] = NULL;
 
-		for (i = 0; i < activeconnections; i++)  connections[i]->index = i;
+		for (i = 0; i < serverinfo.activeconnections; i++)  connections[i]->index = i;
 	}
 }
 

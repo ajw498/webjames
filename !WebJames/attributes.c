@@ -440,7 +440,7 @@ static struct attributes *read_attributes_file(char *filename, char *base) {
 						char temp[256] = "Error in attributes file: ";
 
 						regerror(ret, attr->regex, temp+26, 256-26);
-						writelog(LOGLEVEL_ATTRIBUTES,temp);
+						webjames_writelog(LOGLEVEL_ATTRIBUTES,temp);
 						free(attr->regex);
 						attr->regex = NULL;
 					}
@@ -501,7 +501,7 @@ static struct attributes *read_attributes_file(char *filename, char *base) {
 						char temp[256] = "Error in attributes file: ";
 
 						regerror(ret, attr->regex, temp+26, 256-26);
-						writelog(LOGLEVEL_ATTRIBUTES,temp);
+						webjames_writelog(LOGLEVEL_ATTRIBUTES,temp);
 						free(attr->regex);
 						attr->regex = NULL;
 					}
@@ -553,7 +553,7 @@ static struct attributes *read_attributes_file(char *filename, char *base) {
 						char temp[256] = "Error in attributes file: ";
 
 						regerror(ret, attr->regex, temp+26, 256-26);
-						writelog(LOGLEVEL_ATTRIBUTES,temp);
+						webjames_writelog(LOGLEVEL_ATTRIBUTES,temp);
 						free(attr->regex);
 						attr->regex = NULL;
 					}
@@ -641,10 +641,7 @@ static struct attributes *read_attributes_file(char *filename, char *base) {
 				}
 
 				if (notfound) {
-					char temp[256];
-
-					sprintf(temp,"Filetype '%s' unknown, ignoring handler for this filetype",filetypetext);
-					writelog(LOGLEVEL_ATTRIBUTES,temp);
+					webjames_writelog(LOGLEVEL_ATTRIBUTES, "Filetype '%s' unknown, ignoring handler for this filetype",filetypetext);
 				} else {
 					newhandler = malloc(sizeof(struct handlerlist));
 					if (newhandler == NULL) {

@@ -6,7 +6,7 @@
 #include "webjames.h"
 #include "cache.h"
 #include "stat.h"
-#include "ip.h"
+#include "datetime.h"
 #include "openclose.h"
 #include "report.h"
 #include "write.h"
@@ -252,18 +252,18 @@ static void report_quickanddirty(struct connection *conn, int report) {
 
 		name = get_report_name(report);
 		sprintf(temp, "HTTP/1.0 %d %s\r\n", report, name);
-		writestring(conn->socket, temp);
+		webjames_writestring(conn->socket, temp);
 		if (configuration.server[0]) sprintf(temp, "Server: %s\r\n", configuration.server);
-		writestring(conn->socket, temp);
+		webjames_writestring(conn->socket, temp);
 		time(&now);
 		time_to_rfc(localtime(&now),rfcnow);
 		sprintf(temp, "Date: %s\r\n", rfcnow);
-		writestring(conn->socket, "Content-Type: text/html\r\n");
+		webjames_writestring(conn->socket, "Content-Type: text/html\r\n");
 		sprintf(temp, "Content-Length: %d\r\n\r\n", strlen(configuration.panic));
-		writestring(conn->socket, temp);
-		writestring(conn->socket, temp);
+		webjames_writestring(conn->socket, temp);
+		webjames_writestring(conn->socket, temp);
 	}
-	writestring(conn->socket, configuration.panic);
+	webjames_writestring(conn->socket, configuration.panic);
 	statistics.written += strlen(configuration.panic);
 }
 
@@ -289,13 +289,12 @@ void report(struct connection *conn, int code, int subno, int headerlines, char 
 	conn->statuscode = code;
 
 	reportname = get_report_name(code);
-#ifdef LOG
-	if (conn->uri)
-		sprintf(temp, "REPORT %d %s (%s) %s", code, reportname, conn->uri, comment);
-	else
-		sprintf(temp, "REPORT %d %s %s", code, reportname, comment);
-	writelog(LOGLEVEL_REPORT, temp);
-#endif
+
+	if (conn->uri) {
+		webjames_writelog(LOGLEVEL_REPORT, "REPORT %d %s (%s) %s", code, reportname, conn->uri, comment);
+	} else {
+		webjames_writelog(LOGLEVEL_REPORT, "REPORT %d %s %s", code, reportname, comment);
+	}
 
 	/* see if there is an error report/redirection specified for this directory */
 	errordoc = conn->errordocs;
@@ -463,26 +462,26 @@ void report(struct connection *conn, int code, int subno, int headerlines, char 
 		char rfcnow[50];
 
 		sprintf(temp, "HTTP/1.0 %d %s\r\n", code, reportname);
-		writestring(conn->socket, temp);
-		writestring(conn->socket, "Content-Type: text/html\r\n");
+		webjames_writestring(conn->socket, temp);
+		webjames_writestring(conn->socket, "Content-Type: text/html\r\n");
 		/* if no substitution was required, simply send the cached file */
 		sprintf(temp, "Content-Length: %d\r\n", size);
-		writestring(conn->socket, temp);
+		webjames_writestring(conn->socket, temp);
 		if (configuration.server[0]) sprintf(temp, "Server: %s\r\n", configuration.server);
-		writestring(conn->socket, temp);
+		webjames_writestring(conn->socket, temp);
 		time(&now);
 		time_to_rfc(localtime(&now),rfcnow);
 		sprintf(temp, "Date: %s\r\n", rfcnow);
-		writestring(conn->socket, temp);
+		webjames_writestring(conn->socket, temp);
 		for (i = 0; i < headerlines; i++) {
 			if (header[i]) {
-				writestring(conn->socket, header[i]);
+				webjames_writestring(conn->socket, header[i]);
 				free(header[i]);
 				header[i] = NULL;
-				writestring(conn->socket, "\r\n");
+				webjames_writestring(conn->socket, "\r\n");
 			}
 		}
-		writestring(conn->socket, "\r\n");
+		webjames_writestring(conn->socket, "\r\n");
 	}
 
 	conn->handler = get_handler("static-content");

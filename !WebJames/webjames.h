@@ -1,14 +1,15 @@
 #ifndef WEBJAMES_H
 #define WEBJAMES_H
 
-#define WEBJAMES_H_REVISION "$Revision: 1.22 $"
+#define WEBJAMES_H_REVISION "$Revision: 1.23 $"
 
 #define WEBJAMES_VERSION "0.31"
-#define WEBJAMES_DATE "5/8/01"
+#define WEBJAMES_DATE "14/8/01"
 #define WEBJAMES_SERVER_SOFTWARE "WebJames/" WEBJAMES_VERSION
 
 #define MAXCONNECTIONS    100
 #define HTTPBUFFERSIZE    4096
+#define TEMPBUFFERSIZE    4096
 
 #define WJ_STATUS_HEADER  1
 #define WJ_STATUS_BODY    2
@@ -42,34 +43,10 @@
 #define DNS_TRYING        1
 #define DNS_OK            2
 
-#ifndef ERRORDOC
-#define ERRORDOC
-
-typedef struct errordoc {
-	int status; /* http status code */
-	char *report; /* text to use, or url to redirect to */
-	struct errordoc *next; /* only used in conn structures, not in attributes structures */
-} errordoc;
-
-#endif
-
-typedef struct serverinfo {
+typedef struct listeninfo {
 	int port;
 	int socket;
-} serverinfo;
-
-enum serverparsed_status {
-	status_BODY, /*In the body, not a command*/
-	status_OPEN1, /*we have reached a "<"*/
-	status_OPEN2, /*we have reached "<!"*/
-	status_OPEN3, /*we have reached "<!-"*/
-	status_OPEN4, /*we have reached "<!--"*/
-	status_COMMAND, /*we have reached "<!--#"*/
-	status_ARGS, /*we have reached the command arguments*/
-	status_QUOTEDARGS,
-	status_CLOSE1, /*we have reached "-"*/
-	status_CLOSE2  /*we have reached "--"*/
-};
+} listeninfo;
 
 typedef struct connection {
 
@@ -169,26 +146,13 @@ typedef struct connection {
 	int pwd; /* if if the file is password-protected */
 	char *args; /* arguments passed to script */
 
-	struct {
-		char *errmsg;
-		int abbrev;
-		char *timefmt;
-		int output; /*whether normal body text of the page should be output (used by #if etc)*/
-		int conditionmet; /*whether any if the if/elif conditions have been met yet*/
-		char command[256], args[256];
-		int commandlength,argslength;
-		enum serverparsed_status status;
-		struct connection *child; /*set if we should wait for annother connection to finish first before continuing*/ 
-
-	} serverparsedinfo;
+	void *handlerinfo; /*ptr to a structure that holds information specific to the handler used*/
 
 	void (*close)(struct connection *conn, int force); /*function to call to close the connection*/
 
 } connection;
 
 typedef	void (*closefn)(struct connection *conn, int force); /*function to call to close the connection*/
-
-extern struct connection *connections[MAXCONNECTIONS];
 
 /* configuration */
 typedef struct config {
@@ -206,6 +170,7 @@ typedef struct config {
 	int readaheadbuffer, maxrequestsize;
 
 	char weblog[256], clflog[256], rename_cmd[256];
+	int syslog;
 	int clfupdatetime;
 	int loglevel, log_close_delay;
 	int log_max_age, log_max_copies, log_max_size;
@@ -214,17 +179,25 @@ typedef struct config {
 	char *webjames_h_revision;
 } config;
 
+typedef struct globalserverinfo {
+	struct listeninfo servers[8];
+	int readcount;
+	int writecount;
+	int slowdown;
+	int dnscount;
+	int activeconnections;
+	char select_read[32], select_write[32], select_except[32];
+} globalserverinfo;
+
+#ifndef WEBJAMES_PHP_ONLY
+
+/*globals*/
 extern struct config configuration;
+extern struct connection *connections[MAXCONNECTIONS];
+extern struct globalserverinfo serverinfo;
 
-extern struct serverinfo servers[8];
+extern char temp[HTTPBUFFERSIZE];
 
-extern int readcount, writecount, dnscount, slowdown;
-extern int activeconnections;
-extern char select_read[32], select_write[32], select_except[32];
-
-extern char line[HTTPBUFFERSIZE], temp[HTTPBUFFERSIZE];
-
-#ifndef NO_FUNCTIONS
 
 #include "oslib/os.h"
 
@@ -233,16 +206,14 @@ void webjames_kill(void);
 int webjames_poll(void);
 void webjames_command(char *cmd, int release);
 
-void writestring(int socket, char *string);
 void abort_reverse_dns(struct connection *conn, int newstatus);
 void read_config(char *config);
 
-void time_to_rfc(struct tm *time, char *out);
-void rfc_to_time(char *rfc, struct tm *time);
-void utc_to_time(os_date_and_time *utc, struct tm *time);
-void utc_to_localtime(os_date_and_time *utc, struct tm *time);
-int compare_time(struct tm *time1, struct tm *time2);
+#endif /*WEBJAMES_PHP_ONLY*/
 
-#endif
+int webjames_writestring(int socket, char *string);
+int webjames_writebuffer(int socket, char *buffer, int size);
 
-#endif
+void webjames_writelog(int level, char *fmt, ...);
+
+#endif /*WEBJAMES_H*/

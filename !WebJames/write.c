@@ -12,6 +12,7 @@
 #include "webjames.h"
 #include "cache.h"
 #include "ip.h"
+#include "datetime.h"
 #include "openclose.h"
 #include "stat.h"
 #include "attributes.h"
@@ -24,34 +25,29 @@
 void pollwrite(int cn) {
 /* attempt to write a chunk of data from the file (bandwidth-limited) */
 /* close the connection if EOF is reached */
-	int bytes, maxbytes=0;
+	int maxbytes=0;
 
 	/* limit bandwidth */
-	if (slowdown) {
+	if (serverinfo.slowdown) {
 		int maxbps, secs, written;
 		written = statistics.written + statistics.written2;
 		secs = (statistics.currenttime - statistics.time)/100 + 60;
 		/* calculate the max bandwidth for the immediate future */
 		maxbps = configuration.bandwidth - 60*written/secs;
 		if (maxbps < 0)  return;
-		maxbps = maxbps/writecount;  /* spread even across all connections */
-		maxbytes = slowdown * maxbps/100;
+		maxbps = maxbps/serverinfo.writecount;  /* spread even across all connections */
+		maxbytes = serverinfo.slowdown * maxbps/100;
 		if (maxbytes < 100)  return;
 	}
 
-	bytes = handler_poll(connections[cn],maxbytes);
-
-	if (bytes > 0) {
-		/* update statistics */
-		statistics.written += bytes;
-	}
+	handler_poll(connections[cn],maxbytes);
 }
 
 
 void select_writing(int cn) {
 /* mark a connection as writing */
-	fd_set(select_write, connections[cn]->socket);
-	writecount++;
+	fd_set(serverinfo.select_write, connections[cn]->socket);
+	serverinfo.writecount++;
 	connections[cn]->status = WJ_STATUS_WRITING;
 
 }
@@ -111,11 +107,7 @@ void send_file(struct connection *conn) {
 		return;
 	}
 
-#ifdef LOG
-	sprintf(temp, "URI %s", conn->uri);
-	writelog(LOGLEVEL_REQUEST, temp);
-#endif
-
+	webjames_writelog(LOGLEVEL_REQUEST, "URI %s", conn->uri);
 
 	/* build RISCOS filename */
 	name = conn->filename;
@@ -315,13 +307,9 @@ int check_access(struct connection *conn, char *authorization) {
 		}
 		fclose(file);
 		report_unauthorized(conn, conn->realm);
+	} else {
+		webjames_writelog(LOGLEVEL_ALWAYS, "ERR the password file %s wouldn't open", line);
 	}
-#ifdef LOG
-	else {
-		sprintf(temp, "ERR the password file %s wouldn't open", line);
-		writelog(LOGLEVEL_ALWAYS, temp);
-	}
-#endif
 	return ACCESS_FAILED;
 }
 
@@ -368,7 +356,7 @@ int get_file_info(char *filename, char *mimetype, struct tm *date, int *size, in
 	bits load, exec, filetype;
 	fileswitch_attr attr;
 
-	if (xosfile_read_stamped_no_path(filename, &objtype, &load, &exec, size,&attr, &filetype))  return FILE_ERROR;
+	if (xosfile_read_no_path(filename, &objtype, &load, &exec, size,&attr))  return FILE_ERROR;
 	if (objtype == 0)  return FILE_DOESNT_EXIST;
 
 	if (checkcase && configuration.casesensitive) {
@@ -378,8 +366,8 @@ int get_file_info(char *filename, char *mimetype, struct tm *date, int *size, in
 
 	if (objtype == 2)  return OBJECT_IS_DIRECTORY;
 	if (!(attr &1))  return FILE_LOCKED;
-	if (filetype == -1)  return FILE_NO_MIMETYPE;
-
+	if ((load & 0xFFF00000) != 0xFFF00000)  return FILE_NO_MIMETYPE;
+	filetype=(load & 0x000FFF00) >> 8;
 	if (date) {
 		utc[4] = load &255;
 		utc[3] = (exec>>24) &255;
@@ -390,7 +378,17 @@ int get_file_info(char *filename, char *mimetype, struct tm *date, int *size, in
 	}
 
 	if (mimetype) {
-		if (xmimemaptranslate_filetype_to_mime_type(filetype, typename)) return FILE_NO_MIMETYPE + filetype;
+		char temp[256];
+		os_error *err;
+		sprintf(temp,"Filetype: %x",filetype);
+		webjames_writelog(0,temp);
+		if ((err=xmimemaptranslate_filetype_to_mime_type(filetype, typename))) {
+			sprintf(temp,"Error: %s",err->errmess);
+			webjames_writelog(0,temp);
+			return FILE_NO_MIMETYPE + filetype;
+		}
+		sprintf(temp,"MimeType: %s",typename);
+		webjames_writelog(0,temp);
 		strcpy(mimetype, typename);
 	}
 	return filetype;

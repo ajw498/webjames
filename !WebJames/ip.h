@@ -9,7 +9,6 @@
 #define IPADDR_DUMMY  8
 
 
-int ip_writestring(int socket, char *string);
 void ip_close(int socket);
 int ip_create(int udp);
 int ip_bind(int socket, int addr, int port);

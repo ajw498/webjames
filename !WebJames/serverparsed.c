@@ -1,4 +1,7 @@
-/* serverparsed - support for Server Side Includes (SSI) */
+/*
+	$Id: serverparsed.c,v 1.7 2001/08/31 10:48:47 AJW Exp $
+	Support for Server Side Includes (SSI)
+*/
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -17,6 +20,7 @@
 #include "openclose.h"
 #include "write.h"
 #include "stat.h"
+#include "datetime.h"
 #include "attributes.h"
 #include "report.h"
 #include "cache.h"
@@ -33,18 +37,50 @@
 
 /*There should be no globals in this file as the handler must be re-entrant to cope with SSI files #including other SSI files*/
 
+enum serverparsed_status {
+	status_BODY, /*In the body, not a command*/
+	status_OPEN1, /*we have reached a "<"*/
+	status_OPEN2, /*we have reached "<!"*/
+	status_OPEN3, /*we have reached "<!-"*/
+	status_OPEN4, /*we have reached "<!--"*/
+	status_COMMAND, /*we have reached "<!--#"*/
+	status_ARGS, /*we have reached the command arguments*/
+	status_QUOTEDARGS,
+	status_CLOSE1, /*we have reached "-"*/
+	status_CLOSE2  /*we have reached "--"*/
+};
+
+typedef struct serverparsedinfo {
+	char *errmsg;
+	int abbrev;
+	char *timefmt;
+	int output; /*whether normal body text of the page should be output (used by #if etc)*/
+	int conditionmet; /*whether any if the if/elif conditions have been met yet*/
+	char command[256], args[256];
+	int commandlength,argslength;
+	enum serverparsed_status status;
+	struct connection *child; /*set if we should wait for annother connection to finish first before continuing*/
+} serverparsedinfo;
+
 void serverparsed_start(struct connection *conn)
 /*start the handler*/
 {
+	struct serverparsedinfo *info;
 	char *leafname;
-	
-	conn->serverparsedinfo.status=status_BODY;
+
+	info=malloc(sizeof(struct serverparsedinfo));
+	conn->handlerinfo=info;
+	if (info==NULL) {
+		report_servererr(conn,"Out of memory");
+		return;
+	}
+	info->status=status_BODY;
 	conn->fileused = 0;
-	conn->serverparsedinfo.timefmt=conn->serverparsedinfo.errmsg=NULL;
-	conn->serverparsedinfo.abbrev=0;
-	conn->serverparsedinfo.output=1;
-	conn->serverparsedinfo.conditionmet=1;
-	conn->serverparsedinfo.child=NULL;
+	info->timefmt=info->errmsg=NULL;
+	info->abbrev=0;
+	info->output=1;
+	info->conditionmet=1;
+	info->child=NULL;
 	if (conn->cache) {
 		conn->filebuffer = conn->cache->buffer;
 		conn->fileinfo.size = conn->cache->size;
@@ -74,24 +110,24 @@ void serverparsed_start(struct connection *conn)
 		char rfcnow[50];
 
 		/* write header */
-		writestring(conn->socket, "HTTP/1.0 200 OK\r\n");
+		webjames_writestring(conn->socket, "HTTP/1.0 200 OK\r\n");
 		/* we can't give a content length as we don't know it until the entire doc has been parsed*/
 		sprintf(temp, "Content-Type: %s\r\n", conn->fileinfo.mimetype);
-		writestring(conn->socket, temp);
+		webjames_writestring(conn->socket, temp);
 		time(&now);
 		time_to_rfc(localtime(&now),rfcnow);
 		sprintf(temp, "Date: %s\r\n", rfcnow);
-		writestring(conn->socket, temp);
+		webjames_writestring(conn->socket, temp);
 		if (conn->vary[0]) {
 			sprintf(temp, "Vary:%s\r\n", conn->vary);
-			writestring(conn->socket, temp);
+			webjames_writestring(conn->socket, temp);
 		}
 		for (i = 0; i < configuration.xheaders; i++) {
-			writestring(conn->socket, configuration.xheader[i]);
-			writestring(conn->socket, "\r\n");
+			webjames_writestring(conn->socket, configuration.xheader[i]);
+			webjames_writestring(conn->socket, "\r\n");
 		}
 		sprintf(temp, "Server: %s\r\n\r\n", configuration.server);
-		writestring(conn->socket, temp);
+		webjames_writestring(conn->socket, temp);
 	}
 
 	/*environment vars are the same as for a CGI script, with a few additions*/
@@ -109,10 +145,12 @@ void serverparsed_start(struct connection *conn)
 static void serverparsed_writeerror(struct connection *conn,char *msg)
 /*write an error to the socket, using the configured error message if there is one*/
 {
-	if (conn->serverparsedinfo.errmsg) {
-		writestring(conn->socket,conn->serverparsedinfo.errmsg);
+	struct serverparsedinfo *info=(struct serverparsedinfo *)conn->handlerinfo;
+
+	if (info->errmsg) {
+		webjames_writestring(conn->socket,info->errmsg);
 	} else {
-		writestring(conn->socket,msg);
+		webjames_writestring(conn->socket,msg);
 	}
 }
 
@@ -203,6 +241,7 @@ static char *serverparsed_getvar(struct connection *conn,char *var)
 /*get an environment var, treat dates as special cases*/
 {
 	static char *result=NULL;
+	struct serverparsedinfo *info=(struct serverparsedinfo *)conn->handlerinfo;
 
 	if (result) free(result);
 	result=NULL;
@@ -214,7 +253,7 @@ static char *serverparsed_getvar(struct connection *conn,char *var)
 		if (result) {
 			time(&tm1);
 			tm2=gmtime(&tm1);
-			if (conn->serverparsedinfo.timefmt==NULL) time_to_rfc(tm2,result); else strftime(result,49,conn->serverparsedinfo.timefmt,tm2);
+			if (info->timefmt==NULL) time_to_rfc(tm2,result); else strftime(result,49,info->timefmt,tm2);
 			result[49]='\0';
 		}
 	} else if (strcmp(var,"DATE_LOCAL")==0) {
@@ -225,7 +264,7 @@ static char *serverparsed_getvar(struct connection *conn,char *var)
 		if (result) {
 			time(&tm1);
 			tm2=localtime(&tm1);
-			if (conn->serverparsedinfo.timefmt==NULL) time_to_rfc(tm2,result); else strftime(result,49,conn->serverparsedinfo.timefmt,tm2);
+			if (info->timefmt==NULL) time_to_rfc(tm2,result); else strftime(result,49,info->timefmt,tm2);
 			result[49]='\0';
 		}
 	} else if (strcmp(var,"LAST_MODIFIED")==0) {
@@ -233,7 +272,7 @@ static char *serverparsed_getvar(struct connection *conn,char *var)
 		fileswitch_object_type objtype;
 		bits load,exec,filetype;
 
-		err=xosfile_read_stamped_no_path(conn->filename,&objtype,&load,&exec,NULL,NULL,&filetype);
+		err=xosfile_read_stamped_no_path(conn->filename,&objtype,&load,&exec,NULL,NULL,&filetype); {int fixme;/*image files?*/}
 		if (err) {
 			serverparsed_writeerror(conn,err->errmess);
 		} else if (objtype==fileswitch_NOT_FOUND) {
@@ -253,7 +292,7 @@ static char *serverparsed_getvar(struct connection *conn,char *var)
 
 			result=malloc(50);
 			if (result) {
-				if (conn->serverparsedinfo.timefmt==NULL) time_to_rfc(&time,result); else strftime(result,49,conn->serverparsedinfo.timefmt,&time);
+				if (info->timefmt==NULL) time_to_rfc(&time,result); else strftime(result,49,info->timefmt,&time);
 				result[49]='\0';
 			}
 		}
@@ -573,7 +612,7 @@ static void serverparsed_close(struct connection *conn,int force)
 	if (force) {
 		parent->close(parent,force);
 	} else {
-		parent->serverparsedinfo.child=NULL;
+		((struct serverparsedinfo *)parent->handlerinfo)->child=NULL;
 		cgiscript_setvars(parent); /*some vars (eg PATH_TRANSLATED) need resetting to suitable values for the parent*/
 	}
 }
@@ -599,6 +638,7 @@ static void serverparsed_includevirtual(struct connection *conn,char *reluri)
 /*create a child connection structure, fake the relevant fields then pretend it */
 /* is a new connection and invoke a suitable handler (which could be serverparsed again)*/
 {
+	struct serverparsedinfo *info=(struct serverparsedinfo *)conn->handlerinfo;
 	char *uri;
 	struct connection *newconn;
 	size_t len;
@@ -659,7 +699,7 @@ static void serverparsed_includevirtual(struct connection *conn,char *reluri)
 	newconn->flags.outputheaders=0;
     newconn->close=serverparsed_close;
 	newconn->parent=conn;
-	conn->serverparsedinfo.child=newconn;
+	info->child=newconn;
     send_file(newconn);
 }
 
@@ -696,6 +736,7 @@ static char *serverparsed_virtualtofilename(struct connection *conn,char *virt)
 static void serverparsed_fsize(struct connection *conn,char *filename)
 /*output the filesize of the given file, according to the configured sizefmt*/
 {
+	struct serverparsedinfo *info=(struct serverparsedinfo *)conn->handlerinfo;
 	os_error *err;
 	fileswitch_object_type objtype;
 	int size;
@@ -708,7 +749,7 @@ static void serverparsed_fsize(struct connection *conn,char *filename)
 	} else {
 		char buf[12];
 
-		if (conn->serverparsedinfo.abbrev) {
+		if (info->abbrev) {
 			if (size<1024) sprintf(buf,"%d bytes",size);
 			else if (size<1024*10) sprintf(buf,"%.1f KB",(double)size/1024);
 			else if (size<1024*1024) sprintf(buf,"%d KB",size/1024);
@@ -717,13 +758,14 @@ static void serverparsed_fsize(struct connection *conn,char *filename)
 		} else {
 			sprintf(buf,"%d",size);
 		}
-		writestring(conn->socket,buf);
+		webjames_writestring(conn->socket,buf);
 	}
 }
 
 static void serverparsed_flastmod(struct connection *conn,char *filename)
 /*output the date/time the given file was last modified*/
 {
+	struct serverparsedinfo *info=(struct serverparsedinfo *)conn->handlerinfo;
 	os_error *err;
 	fileswitch_object_type objtype;
 	bits load,exec,filetype;
@@ -746,14 +788,15 @@ static void serverparsed_flastmod(struct connection *conn,char *filename)
 		utc[1] = (exec>>8) &255;
 		utc[0] = exec &255;
 		utc_to_localtime(&utc,&time);
-		if (conn->serverparsedinfo.timefmt==NULL) time_to_rfc(&time,str); else strftime(str,49,conn->serverparsedinfo.timefmt,&time);
-		writestring(conn->socket,str);
+		if (info->timefmt==NULL) time_to_rfc(&time,str); else strftime(str,49,info->timefmt,&time);
+		webjames_writestring(conn->socket,str);
 	}
 }
 
 static void serverparsed_execcommand(struct connection *conn,char *cmd)
 /*execute a *command as if it were a CGI script*/
 {
+	struct serverparsedinfo *info=(struct serverparsedinfo *)conn->handlerinfo;
 	struct connection *newconn;
 	static struct handler cmdhandler;
 
@@ -782,7 +825,7 @@ static void serverparsed_execcommand(struct connection *conn,char *cmd)
 	newconn->flags.outputheaders=0;
     newconn->close=serverparsed_close;
 	newconn->parent=conn;
-	conn->serverparsedinfo.child=newconn;
+	info->child=newconn;
 
 	handler_start(newconn);
 }
@@ -790,6 +833,7 @@ static void serverparsed_execcommand(struct connection *conn,char *cmd)
 static void serverparsed_command(struct connection *conn,char *command,char *args)
 /*execute an SSI command*/
 {
+	struct serverparsedinfo *info=(struct serverparsedinfo *)conn->handlerinfo;
 	char *attrs[MAX_ARGS];
 	char *vals[MAX_ARGS];
 	int i=0;
@@ -821,47 +865,47 @@ static void serverparsed_command(struct connection *conn,char *command,char *arg
 		if (attrs[0]==NULL || strcmp(attrs[0],"expr")!=0) {
 			serverparsed_writeerror(conn,"Syntax error");
 		} else {
-			conn->serverparsedinfo.output=conn->serverparsedinfo.conditionmet=serverparsed_evaluateexpression(conn,vals[0]);
+			info->output=info->conditionmet=serverparsed_evaluateexpression(conn,vals[0]);
 		}
 	} else if (strcmp(command,"elif")==0) {
-		if (conn->serverparsedinfo.conditionmet) {
-			conn->serverparsedinfo.output=0;
+		if (info->conditionmet) {
+			info->output=0;
 		} else {
 			if (attrs[0]==NULL || strcmp(attrs[0],"expr")!=0) {
 				serverparsed_writeerror(conn,"Syntax error");
 			} else {
-				conn->serverparsedinfo.output=conn->serverparsedinfo.conditionmet=serverparsed_evaluateexpression(conn,vals[0]);
+				info->output=info->conditionmet=serverparsed_evaluateexpression(conn,vals[0]);
 			}
 		}
 	} else if (strcmp(command,"else")==0) {
-		if (conn->serverparsedinfo.conditionmet) conn->serverparsedinfo.output=0; else conn->serverparsedinfo.output=1;
+		if (info->conditionmet) info->output=0; else info->output=1;
 	} else if (strcmp(command,"endif")==0) {
-		conn->serverparsedinfo.output=1;
+		info->output=1;
 	} else {
-		if (conn->serverparsedinfo.output) {
+		if (info->output) {
 			/*Don't execute any commands within an #if block unless the #if condition is true*/
 			if (strcmp(command,"config")==0) {
 				for (i=0;i<MAX_ARGS && attrs[i];i++) {
 					vals[i]=serverparsed_expandvars(conn,vals[i]);
 					if (strcmp(attrs[i],"errmsg")==0) {
 						size_t len=strlen(vals[i]);
-						if (conn->serverparsedinfo.errmsg) free(conn->serverparsedinfo.errmsg);
-						conn->serverparsedinfo.errmsg=malloc(len+1);
-						if (conn->serverparsedinfo.errmsg) memcpy(conn->serverparsedinfo.errmsg,vals[i],len+1);
+						if (info->errmsg) free(info->errmsg);
+						info->errmsg=malloc(len+1);
+						if (info->errmsg) memcpy(info->errmsg,vals[i],len+1);
 					} else if (strcmp(attrs[i],"sizefmt")==0) {
 						lower_case(vals[i]);
 						if (strcmp(vals[i],"bytes")==0) {
-							conn->serverparsedinfo.abbrev=0;
+							info->abbrev=0;
 						} else if (strcmp(vals[i],"abbrev")==0) {
-							conn->serverparsedinfo.abbrev=1;
+							info->abbrev=1;
 						} else {
 							serverparsed_writeerror(conn,"Unknown value for sizefmt");
 						}
 					} else if (strcmp(attrs[i],"timefmt")==0) {
 						size_t len=strlen(vals[i]);
-						if (conn->serverparsedinfo.timefmt) free(conn->serverparsedinfo.timefmt);
-						conn->serverparsedinfo.timefmt=malloc(len+1);
-						if (conn->serverparsedinfo.timefmt) memcpy(conn->serverparsedinfo.timefmt,vals[i],len+1);
+						if (info->timefmt) free(info->timefmt);
+						info->timefmt=malloc(len+1);
+						if (info->timefmt) memcpy(info->timefmt,vals[i],len+1);
 					} else if (attrs[i][0]=='\0') {
 						/*ignore*/
 					} else {
@@ -874,7 +918,7 @@ static void serverparsed_command(struct connection *conn,char *command,char *arg
 		
 					var=serverparsed_getvar(conn,vals[0]);
 					if (var==NULL) var="(none)";
-					writestring(conn->socket,var);
+					webjames_writestring(conn->socket,var);
 				} else {
 					serverparsed_writeerror(conn,"Syntax error");
 				}
@@ -942,7 +986,7 @@ static void serverparsed_command(struct connection *conn,char *command,char *arg
 					newconn->flags.outputheaders=0;
 				    newconn->close=serverparsed_close;
 					newconn->parent=conn;
-					conn->serverparsedinfo.child=newconn;
+					info->child=newconn;
 
 					/* check if object is cached */
 					newconn->cache = get_file_through_cache(newconn);
@@ -988,10 +1032,11 @@ static void serverparsed_command(struct connection *conn,char *command,char *arg
 /*write the contents of the output buffer to the socket*/\
 	int bytes=o-outputbuffer;\
 	int bytessent;\
-	if (!conn->serverparsedinfo.output) {\
+	if (!info->output) {\
 		o=outputbuffer;\
 	} else if (bytes>0) {\
-		bytessent = ip_write(conn->socket, outputbuffer, bytes);\
+		int fixme;\
+		bytessent = webjames_writebuffer(conn->socket, outputbuffer, bytes);\
 		byteswritten+=bytessent;\
 		if (bytessent<0) return bytessent; /*does this return error if it would block?*/ \
 		if (bytessent==0) return byteswritten; /*would this ever happen? we would lose the contents of outputbuffer if it does*/ \
@@ -1008,6 +1053,7 @@ static int serverparsed_parse(struct connection *conn, char *buffer, int bytesle
 /*parse some characters from the buffer*/
 /*implemented as a state machine, as there might only be part of a tag in the buffer*/
 {
+	struct serverparsedinfo *info=(struct serverparsedinfo *)conn->handlerinfo;
 	char *p=buffer;
 	char outputbuffer[OUTPUT_BUFFERSIZE];
 	char *o=outputbuffer;
@@ -1015,13 +1061,13 @@ static int serverparsed_parse(struct connection *conn, char *buffer, int bytesle
 	int byteswritten=0;
 	int bytestowrite=bytesleft;
 
-	while (bytesleft>0 && conn->serverparsedinfo.child==NULL) {
-		switch (conn->serverparsedinfo.status) {
+	while (bytesleft>0 && info->child==NULL) {
+		switch (info->status) {
 			case status_BODY:
 				if (*p=='<') {
 					p++;
 					bytesleft--;
-					conn->serverparsedinfo.status=status_OPEN1;
+					info->status=status_OPEN1;
 				} else {
 					*o++=*p++;
 					bytesleft--;
@@ -1032,10 +1078,10 @@ static int serverparsed_parse(struct connection *conn, char *buffer, int bytesle
 				if (*p=='!') {
 					p++;
 					bytesleft--;
-					conn->serverparsedinfo.status=status_OPEN2;
+					info->status=status_OPEN2;
 				} else {
 					*o++='<';
-					conn->serverparsedinfo.status=status_BODY;
+					info->status=status_BODY;
 					if (o>oend) WRITEBUFFER;
 				}
 				break;
@@ -1043,12 +1089,12 @@ static int serverparsed_parse(struct connection *conn, char *buffer, int bytesle
 				if (*p=='-') {
 					p++;
 					bytesleft--;
-					conn->serverparsedinfo.status=status_OPEN3;
+					info->status=status_OPEN3;
 				} else {
 					*o++='<';
 					if (o>oend) WRITEBUFFER;
 					*o++='!';
-					conn->serverparsedinfo.status=status_BODY;
+					info->status=status_BODY;
 					if (o>oend) WRITEBUFFER;
 				}
 				break;
@@ -1056,14 +1102,14 @@ static int serverparsed_parse(struct connection *conn, char *buffer, int bytesle
 				if (*p=='-') {
 					p++;
 					bytesleft--;
-					conn->serverparsedinfo.status=status_OPEN4;
+					info->status=status_OPEN4;
 				} else {
 					*o++='<';
 					if (o>oend) WRITEBUFFER;
 					*o++='!';
 					if (o>oend) WRITEBUFFER;
 					*o++='-';
-					conn->serverparsedinfo.status=status_BODY;
+					info->status=status_BODY;
 					if (o>oend) WRITEBUFFER;
 				}
 				break;
@@ -1071,11 +1117,11 @@ static int serverparsed_parse(struct connection *conn, char *buffer, int bytesle
 				if (*p=='#') {
 					p++;
 					bytesleft--;
-					conn->serverparsedinfo.status=status_COMMAND;
-					conn->serverparsedinfo.commandlength=0;
-					conn->serverparsedinfo.argslength=0;
+					info->status=status_COMMAND;
+					info->commandlength=0;
+					info->argslength=0;
 				} else {
-					conn->serverparsedinfo.status=status_BODY;
+					info->status=status_BODY;
 					*o++='<';
 					if (o>oend) WRITEBUFFER;
 					*o++='!';
@@ -1088,10 +1134,10 @@ static int serverparsed_parse(struct connection *conn, char *buffer, int bytesle
 				break;
 			case status_COMMAND:
 				if (isspace(*p)) {
-					conn->serverparsedinfo.command[conn->serverparsedinfo.commandlength]='\0';
-					conn->serverparsedinfo.status=status_ARGS;
+					info->command[info->commandlength]='\0';
+					info->status=status_ARGS;
 				} else {
-					conn->serverparsedinfo.command[conn->serverparsedinfo.commandlength++]=*p++;
+					info->command[info->commandlength++]=*p++;
 					/*check commandlength is within limits*/
 					bytesleft--;
 				}
@@ -1100,26 +1146,26 @@ static int serverparsed_parse(struct connection *conn, char *buffer, int bytesle
 				if (*p=='-') {
 					p++;
 					bytesleft--;
-					conn->serverparsedinfo.args[conn->serverparsedinfo.argslength]='\0';
-					conn->serverparsedinfo.status=status_CLOSE1;
+					info->args[info->argslength]='\0';
+					info->status=status_CLOSE1;
 				} else if (*p=='"') {
-					conn->serverparsedinfo.status=status_QUOTEDARGS;
-					conn->serverparsedinfo.args[conn->serverparsedinfo.argslength++]=*p++;
+					info->status=status_QUOTEDARGS;
+					info->args[info->argslength++]=*p++;
 					bytesleft--;
 				} else {
-					conn->serverparsedinfo.args[conn->serverparsedinfo.argslength++]=*p++;
-					if (conn->serverparsedinfo.argslength>255) conn->serverparsedinfo.argslength=255; /*ignore the end of any command that wont fit in the buffer*/
+					info->args[info->argslength++]=*p++;
+					if (info->argslength>255) info->argslength=255; /*ignore the end of any command that wont fit in the buffer*/
 					bytesleft--;
 				}
 				break;
 			case status_QUOTEDARGS:
 				if (*p=='"') {
-					conn->serverparsedinfo.status=status_ARGS;
-					conn->serverparsedinfo.args[conn->serverparsedinfo.argslength++]=*p++;
+					info->status=status_ARGS;
+					info->args[info->argslength++]=*p++;
 					bytesleft--;
 				} else {
-					conn->serverparsedinfo.args[conn->serverparsedinfo.argslength++]=*p++;
-					if (conn->serverparsedinfo.argslength>255) conn->serverparsedinfo.argslength=255; /*ignore any args that wont fit in the buffer*/
+					info->args[info->argslength++]=*p++;
+					if (info->argslength>255) info->argslength=255; /*ignore any args that wont fit in the buffer*/
 					bytesleft--;
 				}
 				break;
@@ -1127,25 +1173,25 @@ static int serverparsed_parse(struct connection *conn, char *buffer, int bytesle
 				if (*p=='-') {
 					p++;
 					bytesleft--;
-					conn->serverparsedinfo.status=status_CLOSE2;
+					info->status=status_CLOSE2;
 				} else {
-					conn->serverparsedinfo.args[conn->serverparsedinfo.argslength++]='-';
-					if (conn->serverparsedinfo.argslength>255) conn->serverparsedinfo.argslength=255;
-					conn->serverparsedinfo.status=status_ARGS;
+					info->args[info->argslength++]='-';
+					if (info->argslength>255) info->argslength=255;
+					info->status=status_ARGS;
 				}
 				break;
 			case status_CLOSE2:
 				if (*p=='>') {
 					p++;
 					bytesleft--;
-					conn->serverparsedinfo.status=status_BODY;
+					info->status=status_BODY;
 					WRITEBUFFER; /*ensure that the buffer is empty before executing the command, as the commands output directly to the socket*/
-					serverparsed_command(conn,conn->serverparsedinfo.command,conn->serverparsedinfo.args);
+					serverparsed_command(conn,info->command,info->args);
 				} else {
-					conn->serverparsedinfo.status=status_ARGS;
-					conn->serverparsedinfo.args[conn->serverparsedinfo.argslength++]='-';
-					if (conn->serverparsedinfo.argslength>254) conn->serverparsedinfo.argslength=254;
-					conn->serverparsedinfo.args[conn->serverparsedinfo.argslength++]='-';
+					info->status=status_ARGS;
+					info->args[info->argslength++]='-';
+					if (info->argslength>254) info->argslength=254;
+					info->args[info->argslength++]='-';
 				}
 				break;
 		}
@@ -1161,14 +1207,16 @@ static void serverparsed_tidyup(void)
 	remove_var("DOCUMENT_URI");
 }
 
-int serverparsed_poll(struct connection *conn,int maxbytes) {
+int serverparsed_poll(struct connection *conn,int maxbytes)
 /* attempt to write a chunk of data from the file (bandwidth-limited) */
 /* close the connection if EOF is reached */
 /* return the number of bytes written */
+{
+	struct serverparsedinfo *info=(struct serverparsedinfo *)conn->handlerinfo;
 	int bytes = 0;
 	char temp[HTTPBUFFERSIZE];
 
-	if (conn->serverparsedinfo.child) return handler_poll(conn->serverparsedinfo.child,maxbytes);
+	if (info->child) return handler_poll(info->child,maxbytes);
 
 	if (conn->fileused < conn->fileinfo.size) {
 		/* send a bit more of the file or buffered data */
@@ -1212,9 +1260,7 @@ int serverparsed_poll(struct connection *conn,int maxbytes) {
 			*temp = '\0';
 			switch (-bytes) {
 			case IPERR_BROKENPIPE:
-#ifdef LOG
-				writelog(LOGLEVEL_ABORT, "ABORT connection closed by client");
-#endif
+				webjames_writelog(LOGLEVEL_ABORT, "ABORT connection closed by client");
 				break;
 			}
 			serverparsed_tidyup();

@@ -11,6 +11,7 @@
 #include "oslib/wimp.h"
 
 #include "webjames.h"
+#include "datetime.h"
 #include "cgiscript.h"
 #include "openclose.h"
 #include "report.h"
@@ -179,13 +180,11 @@ void cgiscript_start(struct connection *conn)
 	if (xwimp_start_task(cmd, &task)) {
 		/* failed to start cgi-script */
 		if (input) remove(configuration.cgi_in);
-		report_badrequest(conn, "script couldn't be started");
+		report_servererr(conn, "script couldn't be started");
 		return;
 	}
 
-#ifdef LOG
-	writelog(LOGLEVEL_CGISTART, cmd);
-#endif
+	webjames_writelog(LOGLEVEL_CGISTART, cmd);
 
 	/* remove cgi-spool-input file (if any) */
 	if (input) remove(configuration.cgi_in);
@@ -197,9 +196,9 @@ void cgiscript_start(struct connection *conn)
 	if (conn->flags.setcsd) xosfscontrol_back();
 
 	/* disable reading */
-	if (fd_is_set(select_read, conn->socket)) {
-		fd_clear(select_read, conn->socket);
-		readcount--;
+	if (fd_is_set(serverinfo.select_read, conn->socket)) {
+		fd_clear(serverinfo.select_read, conn->socket);
+		serverinfo.readcount--;
 	}
 
 	/* already set up for writing (this is done in write.c) */
@@ -307,33 +306,33 @@ void cgiscript_start(struct connection *conn)
 			} else {
 				sprintf(temp,"HTTP/1.0 %s\r\n",status);
 			}
-			writestring(conn->socket,temp);
+			webjames_writestring(conn->socket,temp);
 		} else if (location) {
-			writestring(conn->socket, "HTTP/1.0 302 Moved Temporarily\r\n");
+			webjames_writestring(conn->socket, "HTTP/1.0 302 Moved Temporarily\r\n");
 		} else {
-			writestring(conn->socket, "HTTP/1.0 200 OK\r\n");
+			webjames_writestring(conn->socket, "HTTP/1.0 200 OK\r\n");
 		}
 
 		time(&now);
 		time_to_rfc(localtime(&now),rfcnow);
 		sprintf(temp, "Date: %s\r\n", rfcnow);
-		writestring(conn->socket, temp);
+		webjames_writestring(conn->socket, temp);
 		if (conn->vary[0]) {
 			sprintf(temp, "Vary:%s\r\n", conn->vary);
-			writestring(conn->socket, temp);
+			webjames_writestring(conn->socket, temp);
 		}
 		for (i = 0; i < configuration.xheaders; i++) {
-			writestring(conn->socket, configuration.xheader[i]);
-			writestring(conn->socket, "\r\n");
+			webjames_writestring(conn->socket, configuration.xheader[i]);
+			webjames_writestring(conn->socket, "\r\n");
 		}
 		for (i=0;i<MAXHEADERS;i++) {
 			if (headers[i]) {
 				sprintf(temp,"%s\r\n",headers[i]);
-				writestring(conn->socket,temp);
+				webjames_writestring(conn->socket,temp);
 			}
 		}
 		if (configuration.server[0]) sprintf(temp, "Server: %s\r\n\r\n", configuration.server);
-		writestring(conn->socket, temp);
+		webjames_writestring(conn->socket, temp);
 	}
 }
 

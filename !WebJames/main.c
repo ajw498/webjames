@@ -13,12 +13,9 @@
 
 #include "main.h"
 #include "webjames.h"
-#include "global.h"
-
-/* global variables */
-int quit;
 
 /* local variables */
+static int quit;
 static int wimp[64];
 static int polldelay;
 

@@ -110,6 +110,11 @@ maxcachefilesize=100
 # logging/statistics
 # ------------------
 
+# syslog - whether to use the SysLog module for logging
+# 1  use SysLog module
+# 0  use logfile specified in the log entry below
+syslog=0
+
 # log - log file
 # remove the line to disable logging
 log=<webjames$dir>.log
@@ -127,7 +132,7 @@ clf=<webjames$dir>.clf
 # 0     only do reverse dns until all data has been sent
 # > 0   attempt reverse dns for this many seconds after all data has been
 # sent currently, reverse dns requires the ANT/Acorn resolver module
-reversedns=10
+reversedns=-1
 
 # logbuffersize - buffer the logfile output, only write to file when the
 # buffer is full. set to zero to disable buffering.

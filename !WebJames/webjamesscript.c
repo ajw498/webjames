@@ -69,9 +69,7 @@ void webjamesscript_start(struct connection *conn)
 		strcat(temp, conn->authorization);
 	}
 
-#ifdef LOG
-	writelog(LOGLEVEL_CGISTART, temp);
-#endif
+	webjames_writelog(LOGLEVEL_CGISTART, temp);
 
 	if (xwimp_start_task(temp, &handle)) {
 		/* failed to start cgi-script */
@@ -85,13 +83,13 @@ void webjamesscript_start(struct connection *conn)
 #endif
 
 	/* cgi-script started ok, so let the cgi-script close the socket */
-	if (fd_is_set(select_read, conn->socket)) {
-		fd_clear(select_read, conn->socket);
-		readcount--;
+	if (fd_is_set(serverinfo.select_read, conn->socket)) {
+		fd_clear(serverinfo.select_read, conn->socket);
+		serverinfo.readcount--;
 	}
-	if (fd_is_set(select_write, conn->socket)) {
-		fd_clear(select_write, conn->socket);
-		writecount--;
+	if (fd_is_set(serverinfo.select_write, conn->socket)) {
+		fd_clear(serverinfo.select_write, conn->socket);
+		serverinfo.writecount--;
 	}
 	conn->socket = -1;
 	conn->flags.is_cgi = 1;

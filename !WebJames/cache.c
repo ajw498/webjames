@@ -14,6 +14,7 @@
 #include "oslib/osfscontrol.h"
 
 #include "webjames.h"
+#include "datetime.h"
 #include "cache.h"
 #include "write.h"
 #include "cacheheap.h"
@@ -53,10 +54,7 @@ struct cache *get_file_through_cache(struct connection *conn)
 		if ( (cachedfiles[i]->checksum != checksum) || (cachedfiles[i]->namelen != namelen) )  continue;
 		if (strcmp(name, cachedfiles[i]->name)) continue;
 		if (compare_time(&cachedfiles[i]->date, &conn->fileinfo.date) < 0) {
-#ifdef LOG
-			sprintf(temp, "UN-CACHING %s", cachedfiles[i]->name);
-			writelog(LOGLEVEL_CACHE, temp);
-#endif
+			webjames_writelog(LOGLEVEL_CACHE, "UN-CACHING %s", cachedfiles[i]->name);
 			cachedfiles[i]->removewhenidle = 1;         /* flush when possible */
 			i = MAXCACHEFILES;                          /* abort */
 
@@ -87,10 +85,7 @@ struct cache *get_file_through_cache(struct connection *conn)
 		}
 		if (use == -1)  return NULL;        /* no suitable entry found */
 
-#ifdef LOG
-		sprintf(temp, "UN-CACHING %s", cachedfiles[use]->name);
-		writelog(LOGLEVEL_CACHE, temp);
-#endif
+		webjames_writelog(LOGLEVEL_CACHE, "UN-CACHING %s", cachedfiles[use]->name);
 		remove_from_cache(use);
 
 		freesize = heap_largest();
@@ -132,10 +127,7 @@ struct cache *get_file_through_cache(struct connection *conn)
 	cachedfiles[use]->removewhenidle = 0;
 	strcpy(cachedfiles[use]->name, name);
 
-#ifdef LOG
-	sprintf(temp, "CACHING %s", name);
-	writelog(LOGLEVEL_CACHE, temp);
-#endif
+	webjames_writelog(LOGLEVEL_CACHE, "CACHING %s", name);
 
 	return cachedfiles[use];
 }
