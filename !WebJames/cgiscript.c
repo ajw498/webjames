@@ -120,8 +120,9 @@ void cgiscript_removevars(void)
 void cgiscript_start(struct connection *conn)
 /* start a CGI script with redirection */
 {
-	char tempfile[256], input[256], cmd[256], cmdformat[256], temp[HTTPBUFFERSIZE+1];
+	char cmd[256], cmdformat[256], temp[HTTPBUFFERSIZE+1];
 	int size, unix;
+	int input=0; /*whether an input file was created*/
 	FILE *file;
 	wimp_t task;
 	char *headers[MAXHEADERS];
@@ -146,16 +147,6 @@ void cgiscript_start(struct connection *conn)
 	/* set up the system variables */
 	cgiscript_setvars(conn);
 
-	input[0] = '\0';                      /* clear spool-input filename */
-
-	/* get unique, temporary file */
-	if (*configuration.cgi_out) {
-		strcpy(tempfile, configuration.cgi_out);
-	} else {
-		strcpy(tempfile,"<Wimp$Scrap>");
-		/*tmpnam(tempfile);*/
-	}
-
 	strcpy(cmdformat,"*%s");
 	unix = 0;
 	if (conn->handler) {
@@ -168,31 +159,26 @@ void cgiscript_start(struct connection *conn)
 	}
 
 	if (conn->method == METHOD_POST) {
-		if (*configuration.cgi_in) {
-			strcpy(input, configuration.cgi_in);
-		} else {
-			tmpnam(input);
-		}
 		/* generate input filename */
-		xosfile_save_stamped(input, 0xfff, (byte *)conn->body, (byte *)conn->body+conn->bodysize);
+		xosfile_save_stamped(configuration.cgi_in, 0xfff, (byte *)conn->body, (byte *)conn->body+conn->bodysize);
+		input=1;
 		/* build command with redirection */
 		if (unix) strcat(cmdformat," < %s > %s"); else strcat(cmdformat," { < %s > %s }");
-		sprintf(cmd, cmdformat, conn->filename, input, tempfile);
+		sprintf(cmd, cmdformat, conn->filename, configuration.cgi_in, configuration.cgi_out);
 	} else {
 		if (strchr(cmdformat,'%')) {
 			if (unix) strcat(cmdformat," > %s"); else strcat(cmdformat," { > %s }");
-			sprintf(cmd, cmdformat, conn->filename, tempfile);
+			sprintf(cmd, cmdformat, conn->filename, configuration.cgi_out);
 		} else {
 			if (unix) strcat(cmdformat," > %s"); else strcat(cmdformat," { > %s }");
-			sprintf(cmd, cmdformat, tempfile);
+			sprintf(cmd, cmdformat, configuration.cgi_out);
 		}
-		input[0] = '\0';                    /* no file with input for the cgi-script */
 	}
 
 	/* execute the cgi-script */
 	if (xwimp_start_task(cmd, &task)) {
 		/* failed to start cgi-script */
-		if (input[0])   remove(input);
+		if (input) remove(configuration.cgi_in);
 		report_badrequest(conn, "script couldn't be started");
 		return;
 	}
@@ -202,7 +188,7 @@ void cgiscript_start(struct connection *conn)
 #endif
 
 	/* remove cgi-spool-input file (if any) */
-	if (input[0])   remove(input);
+	if (input) remove(configuration.cgi_in);
 
 	/* Remove all system variables that were set */
 	cgiscript_removevars();
@@ -219,13 +205,13 @@ void cgiscript_start(struct connection *conn)
 	/* already set up for writing (this is done in write.c) */
 
 	/* read filesize */
-	if (get_file_info(tempfile, NULL, NULL, &size, 0) < 0) {
-		report_badrequest(conn, "error occured when reading file info");
+	if (get_file_info(configuration.cgi_out, NULL, NULL, &size, 0) < 0) {
+		report_servererr(conn, "error occured when reading file info");
 		return;
 	}
 
 	/* open file for reading */
-	file = fopen(tempfile, "rb");
+	file = fopen(configuration.cgi_out, "rb");
 	if (!file) {
 		report_notfound(conn);
 		return;
@@ -239,7 +225,7 @@ void cgiscript_start(struct connection *conn)
 	conn->leftinbuffer = 0;
 
 	conn->flags.deletefile = 1;           /* delete the file when done */
-	strcpy(conn->filename, tempfile);
+	strcpy(conn->filename, configuration.cgi_out);
 
 	conn->flags.is_cgi = 0;               /* make close() output clf-info */
 
@@ -314,7 +300,7 @@ void cgiscript_start(struct connection *conn)
 			}
 		}
 
-		/*if there was a Location: header, then output the status as 302, unless the script explicitly gave a status code*/ 
+		/*if there was a Location: header, then output the status as 302, unless the script explicitly gave a status code*/
 		if (status) {
 			if (Strnicmp(status,"HTTP/",5)==0) {
 				sprintf(temp,"%s\r\n",status);

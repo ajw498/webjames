@@ -255,12 +255,12 @@ static void report_quickanddirty(struct connection *conn, int report) {
 		writestring(conn->socket, temp);
 		if (configuration.server[0]) sprintf(temp, "Server: %s\r\n", configuration.server);
 		writestring(conn->socket, temp);
-		writestring(conn->socket, "Content-Type: text/html\r\n");
-		sprintf(temp, "Content-Length: %d\r\n\r\n", strlen(configuration.panic));
-		writestring(conn->socket, temp);
 		time(&now);
 		time_to_rfc(localtime(&now),rfcnow);
 		sprintf(temp, "Date: %s\r\n", rfcnow);
+		writestring(conn->socket, "Content-Type: text/html\r\n");
+		sprintf(temp, "Content-Length: %d\r\n\r\n", strlen(configuration.panic));
+		writestring(conn->socket, temp);
 		writestring(conn->socket, temp);
 	}
 	writestring(conn->socket, configuration.panic);
@@ -677,7 +677,7 @@ void report_busy(struct connection *conn, char *text) {
 }
 
 
-void report_servererr(struct connection *conn) {
+void report_servererr(struct connection *conn, char *info) {
 
-	report(conn, HTTP_SERVERERR, 0, 0, "");
+	report(conn, HTTP_SERVERERR, 0, 0, info);
 }

@@ -1,7 +1,7 @@
 #ifndef WEBJAMES_H
 #define WEBJAMES_H
 
-#define WEBJAMES_H_REVISION "$Revision: 1.21 $"
+#define WEBJAMES_H_REVISION "$Revision: 1.22 $"
 
 #define WEBJAMES_VERSION "0.31"
 #define WEBJAMES_DATE "5/8/01"
@@ -224,6 +224,9 @@ extern char select_read[32], select_write[32], select_except[32];
 
 extern char line[HTTPBUFFERSIZE], temp[HTTPBUFFERSIZE];
 
+#ifndef NO_FUNCTIONS
+
+#include "oslib/os.h"
 
 int webjames_init(char *config);
 void webjames_kill(void);
@@ -236,8 +239,10 @@ void read_config(char *config);
 
 void time_to_rfc(struct tm *time, char *out);
 void rfc_to_time(char *rfc, struct tm *time);
-void utc_to_time(char *utc, struct tm *time);
-void utc_to_localtime(char *utc, struct tm *time);
+void utc_to_time(os_date_and_time *utc, struct tm *time);
+void utc_to_localtime(os_date_and_time *utc, struct tm *time);
 int compare_time(struct tm *time1, struct tm *time2);
+
+#endif
 
 #endif

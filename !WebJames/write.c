@@ -7,6 +7,7 @@
 #include "oslib/osfile.h"
 #include "oslib/osgbpb.h"
 #include "oslib/osfscontrol.h"
+#include "oslib/mimemap.h"
 
 #include "webjames.h"
 #include "cache.h"
@@ -16,7 +17,6 @@
 #include "attributes.h"
 #include "report.h"
 #include "write.h"
-#include "mimemap.h"
 #include "handler.h"
 #include "content.h"
 
@@ -361,7 +361,8 @@ int check_case(char *filename)
 int get_file_info(char *filename, char *mimetype, struct tm *date, int *size, int checkcase) {
 /* return filetype or error-code, fill in date (secs since 1990) and mimetype */
 
-	char utc[5], typename[128];
+	os_date_and_time utc;
+	char typename[128];
 	char buffer[256];
 	fileswitch_object_type objtype;
 	bits load, exec, filetype;
@@ -385,14 +386,12 @@ int get_file_info(char *filename, char *mimetype, struct tm *date, int *size, in
 		utc[2] = (exec>>16) &255;
 		utc[1] = (exec>>8) &255;
 		utc[0] = exec &255;
-		utc_to_time(utc, date);
+		utc_to_time(&utc, date);
 	}
 
 	if (mimetype) {
-		if (mimemap_fromfiletype(filetype, MMM_TYPE_MIME, typename) == typename)
-			strcpy(mimetype, typename);
-		else
-			return FILE_NO_MIMETYPE + filetype;
+		if (xmimemaptranslate_filetype_to_mime_type(filetype, typename)) return FILE_NO_MIMETYPE + filetype;
+		strcpy(mimetype, typename);
 	}
 	return filetype;
 }

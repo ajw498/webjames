@@ -4,7 +4,7 @@
 #include <string.h>
 
 #ifdef SYSLOG
-#include "swis.h"
+#include "kernel.h"
 #endif
 
 #include "oslib/os.h"
@@ -220,11 +220,16 @@ void writelog(int level, char *string) {
 #define SysLog_LogMessage 0x4c880
 
 #ifdef SYSLOG
+	_kernel_swi_regs regs;
+
 	if (level > configuration.loglevel)  return;
 	level = (level<<8)/LOGLEVEL_NEVER;
 	if (level > 255)  level = 255;
 
-	_swix(SysLog_LogMessage, _IN(0)|_IN(1)|_IN(2), "WebJames", string, level);
+	regs.r[0]=(int)"WebJames";
+	regs.r[1]=(int)string;
+	regs.r[2]=level;
+	_kernel_swi(SysLog_LogMessage, &regs,&regs);
 
 #else
 	int newclock;

@@ -214,6 +214,8 @@ static int content_updatescores(struct varmap *map,char *line,enum field field)
 								str=map->charset;
 								if (str==NULL) str="iso-8859-1";
 								break;
+							default:
+								break;
 						}
 						if (strcmp(str,accept->type)==0) {
 							match=1;
@@ -324,7 +326,7 @@ static struct varmap *content_readmap(char *filename)
 	char date[5];
 	int valid=0,i;
 
-	if (xosfile_read_stamped_no_path(filename, &objtype, &load, &exec, NULL,NULL, NULL) || objtype&1!=1)  return NULL;
+	if (xosfile_read_stamped_no_path(filename, &objtype, &load, &exec, NULL,NULL, NULL) || (objtype & 1)!=1)  return NULL;
 
 	if (configuration.casesensitive) {
 		if (xosfscontrol_canonicalise_path(filename,line,0,0,256,NULL)) return NULL;

@@ -1,30 +1,106 @@
-
 # Makefile for WebJames the web server
+#
+# This has been written for use with AMU 5.16 or later, or GNU Make
+# It should work with other make programs, but you may need to replace the
+# include lines with the contents of the relevant files
 
-CC            = cc
+# Build type
+#
+# Possible files:
+# build.normal    normal build, using Norcroft cc
+# build.debug     include debug information for DDT
+# build.memcheck  enable memory access checking with MemCheck
+# build.gcc       compile with gcc and link with UnixLib - You must use this build if you wish to link with PHP
+# build/cross     cross compile with the gccsdk
 
-#MemCheck = MemCheck.cc
+include build.gcc
 
-# possible flags:
+# Compile time options
+#
+# Possible flags:
 # ANTRESOLVER     use the ANT resolver module API for reverse DNS
 # LOG             enable logging
 # SYSLOG          use SysLog instead of internal log
-Flags         = -DLOG
-#Flags         = -DANTRESOLVER -DLOG -DSYSLOG
+FLAGS = -DLOG
 
-CCFlags       = -c -throwback -depend !Depend -IC: -strict -fah -Otime $(Flags)
-#CCFlags       = -c -throwback -depend !Depend -IC: -g -strict -fah $(Flags) -Wg
-LinkFlags     = -o $@
-
-Libs          = C:OSLib.o.OSLib C:o.Stubs C:o.socklib MemCheck:o.MC C:regex.a.libregex
-Objects       = main.o webjames.o ip.o stat.o report.o write.o openclose.o read.o cache.o coding.o mimemap.o attributes.o resolve.o cacheheap.o handler.o staticcontent.o webjamesscript.o cgiscript.o sendasis.o content.o serverparsed.o
-
-!RunImage:    $(Objects)
-	Link $(Linkflags) $(Objects) $(Libs)
-	Squeeze -f -v !RunImage
-
-.c.o:
-	$(MemCheck) $(CC) $(CCFlags) $< -o $@
+# Include other files, these should not need to be changed
+# build.php will be empty unless you are linking with PHP
+include build.php
+include build.common
 
 # Dynamic dependencies:
-o.serverparsed: c.serverparsed C:h.kernel C:oslib.h.osfile C:oslib.h.types C:oslib.h.os C:oslib.h.fileswitch C:regex.h.regex h.webjames h.ip h.openclose h.webjames h.write h.stat h.attributes C:regex.h.regex h.report h.content h.cache h.webjames h.handler h.staticcontent h.cgiscript h.serverparsed
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+o.main: c.main Unix:h.time Unix:h.stddef Unix:unixlib.h.types Unix:h.ctype Unix:h.stdio Unix:unixlib.h.features Unix:h.string Unix:h.stdlib Unix:h.alloca L:oslib.h.os L:oslib.h.types L:oslib.h.wimp L:oslib.h.osspriteop L:oslib.h.font h.main h.webjames h.global
+
+
+o.ip: c.ip Unix:h.stdio Unix:unixlib.h.features Unix:unixlib.h.types Unix:h.stddef Unix:h.string Unix:h.stdlib Unix:h.alloca L:oslib.h.socket L:oslib.h.types L:oslib.h.os h.ip
+
+o.stat: c.stat Unix:h.time Unix:h.stddef Unix:unixlib.h.types Unix:h.stdio Unix:unixlib.h.features Unix:h.stdlib Unix:h.alloca Unix:h.string L:oslib.h.os L:oslib.h.types h.webjames h.stat h.ip
+
+
+
+o.openclose: c.openclose Unix:h.stdio Unix:unixlib.h.features Unix:unixlib.h.types Unix:h.stddef Unix:h.stdlib Unix:h.alloca Unix:h.string Unix:h.ctype Unix:h.time h.cache h.webjames L:oslib.h.os L:oslib.h.types h.ip h.attributes L:regex.h.regex h.stat h.openclose h.resolve
+
+
+o.cache: c.cache Unix:h.stdio Unix:unixlib.h.features Unix:unixlib.h.types Unix:h.stddef Unix:h.stdlib Unix:h.alloca Unix:h.string Unix:h.time L:oslib.h.os L:oslib.h.types L:oslib.h.wimp L:oslib.h.osspriteop L:oslib.h.font L:oslib.h.fileswitch L:oslib.h.osfile L:oslib.h.osfscontrol h.webjames h.cache h.write h.cacheheap h.stat
+
+o.attributes: c.attributes Unix:h.stdio Unix:unixlib.h.features Unix:unixlib.h.types Unix:h.stddef Unix:h.stdlib Unix:h.alloca Unix:h.string Unix:h.ctype Unix:h.time h.webjames L:oslib.h.os L:oslib.h.types h.write h.attributes L:regex.h.regex h.stat h.handler h.content L:oslib.h.osfscontrol L:oslib.h.fileswitch
+
+o.resolve: c.resolve Unix:h.string Unix:h.stddef Unix:h.stdio Unix:unixlib.h.features Unix:unixlib.h.types Unix:h.time h.stat h.webjames L:oslib.h.os L:oslib.h.types h.resolve h.ip
+
+o.cacheheap: c.cacheheap L:oslib.h.osheap L:oslib.h.types L:oslib.h.os h.cacheheap
+
+
+
+
+
+
+
+
+o.webjames: c.webjames Unix:h.stdio Unix:unixlib.h.features Unix:unixlib.h.types Unix:h.stddef Unix:h.stdlib Unix:h.alloca Unix:h.string Unix:h.ctype Unix:h.time L:oslib.h.os L:oslib.h.types L:oslib.h.osmodule L:oslib.h.osfscontrol L:oslib.h.fileswitch L:oslib.h.territory h.global h.cache h.webjames h.ip h.stat h.report h.content h.write h.read h.openclose h.attributes L:regex.h.regex h.resolve h.handler
+
+o.report: c.report Unix:h.stdio Unix:unixlib.h.features Unix:unixlib.h.types Unix:h.stddef Unix:h.string Unix:h.time Unix:h.stdlib Unix:h.alloca h.webjames L:oslib.h.os L:oslib.h.types h.cache h.stat h.ip h.openclose h.report h.content h.write h.attributes L:regex.h.regex h.handler
+
+o.write: c.write Unix:h.stdio Unix:unixlib.h.features Unix:unixlib.h.types Unix:h.stddef Unix:h.stdlib Unix:h.alloca Unix:h.string Unix:h.ctype Unix:h.time L:oslib.h.osfile L:oslib.h.types L:oslib.h.os L:oslib.h.fileswitch L:oslib.h.osgbpb L:oslib.h.osfscontrol L:oslib.h.mimemap h.webjames h.cache h.ip h.openclose h.stat h.attributes L:regex.h.regex h.report h.content h.write h.handler
+
+o.read: c.read Unix:h.stdio Unix:unixlib.h.features Unix:unixlib.h.types Unix:h.stddef Unix:h.stdlib Unix:h.alloca Unix:h.string Unix:h.ctype Unix:h.time h.webjames L:oslib.h.os L:oslib.h.types h.attributes L:regex.h.regex h.stat h.ip h.read h.report h.content h.write h.coding
+
+o.handler: c.handler Unix:h.stdio Unix:unixlib.h.features Unix:unixlib.h.types Unix:h.stddef Unix:h.stdlib Unix:h.alloca Unix:h.string Unix:h.time h.webjames L:oslib.h.os L:oslib.h.types h.handler h.report h.content h.staticcontent h.sendasis h.cgiscript h.webjamesscript h.serverparsed h.php_webjames
+
+o.staticcontent: c.staticcontent Unix:h.stdio Unix:unixlib.h.features Unix:unixlib.h.types Unix:h.stddef Unix:h.stdlib Unix:h.alloca Unix:h.string Unix:h.ctype Unix:h.time h.webjames L:oslib.h.os L:oslib.h.types h.ip h.openclose h.stat h.report h.content h.cache h.staticcontent
+
+o.webjamesscript: c.webjamesscript Unix:h.stdio Unix:unixlib.h.features Unix:unixlib.h.types Unix:h.stddef Unix:h.stdlib Unix:h.alloca Unix:h.string Unix:h.ctype Unix:h.time L:oslib.h.os L:oslib.h.types L:oslib.h.osfile L:oslib.h.fileswitch L:oslib.h.osfscontrol L:oslib.h.osmodule L:oslib.h.wimp L:oslib.h.osspriteop L:oslib.h.font h.webjames h.webjamesscript h.openclose h.report h.content h.stat h.ip h.write
+
+o.cgiscript: c.cgiscript Unix:h.stdio Unix:unixlib.h.features Unix:unixlib.h.types Unix:h.stddef Unix:h.stdlib Unix:h.alloca Unix:h.string Unix:h.ctype Unix:h.time L:oslib.h.os L:oslib.h.types L:oslib.h.osfile L:oslib.h.fileswitch L:oslib.h.osfscontrol L:oslib.h.osmodule L:oslib.h.wimp L:oslib.h.osspriteop L:oslib.h.font h.webjames h.cgiscript h.openclose h.report h.content h.stat h.ip h.write h.handler
+
+o.sendasis: c.sendasis Unix:h.stdio Unix:unixlib.h.features Unix:unixlib.h.types Unix:h.stddef Unix:h.stdlib Unix:h.alloca Unix:h.time h.webjames L:oslib.h.os L:oslib.h.types h.report h.content h.cache h.sendasis
+
+o.content: c.content Unix:h.stdio Unix:unixlib.h.features Unix:unixlib.h.types Unix:h.stddef Unix:h.stdlib Unix:h.alloca Unix:h.string Unix:h.time Unix:h.ctype L:oslib.h.osfile L:oslib.h.types L:oslib.h.os L:oslib.h.fileswitch L:oslib.h.osfscontrol L:oslib.h.osgbpb L:oslib.h.mimemap h.webjames h.write h.report h.content
+
+o.serverparsed: c.serverparsed Unix:h.stdio Unix:unixlib.h.features Unix:unixlib.h.types Unix:h.stddef Unix:h.stdlib Unix:h.alloca Unix:h.string Unix:h.ctype Unix:h.time Unix:h.kernel L:oslib.h.osfile L:oslib.h.types L:oslib.h.os L:oslib.h.fileswitch L:regex.h.regex h.webjames h.ip h.openclose h.write h.stat h.attributes h.report h.content h.cache h.handler h.staticcontent h.cgiscript h.serverparsed
+

@@ -18,7 +18,6 @@
 #include "write.h"
 #include "cacheheap.h"
 #include "stat.h"
-#include "mimemap.h"
 
 
 static os_dynamic_area_no cachedynamicarea = -1;

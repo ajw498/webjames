@@ -38,6 +38,6 @@ void report_unauthorized(struct connection *conn, char *realm);
 void report_forbidden(struct connection *conn);
 void report_notfound(struct connection *conn);
 void report_busy(struct connection *conn, char *text);
-void report_servererr(struct connection *conn);
+void report_servererr(struct connection *conn, char *info);
 void report_notimplemented(struct connection *conn, char *request);
 void report_flushcache(void);

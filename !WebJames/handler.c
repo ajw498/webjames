@@ -12,7 +12,10 @@
 #include "cgiscript.h"
 #include "webjamesscript.h"
 #include "serverparsed.h"
-#include "WJPHP:sapi.webjames.h.php_webjames"
+
+#ifdef PHP
+#include "php_webjames.h"
+#endif
 
 
 static struct handlerentry handlers[] = {
@@ -56,7 +59,7 @@ static struct handlerentry handlers[] = {
 		serverparsed_poll,
 		NULL
 	},
-#ifdef PHP_HANDLER
+#ifdef PHP
 	{
 		"php-script",
 		0,
@@ -173,7 +176,7 @@ int init_handlers(void)
 		struct handler *newhandler;
 	
 		newhandler = malloc(sizeof(struct handler));
-		if (newhandler == NULL) return;
+		if (newhandler == NULL) return 0;
 	
 		newhandler->name = handlers[i].name;
 		newhandler->command = NULL;

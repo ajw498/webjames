@@ -242,14 +242,14 @@ static char *serverparsed_getvar(struct connection *conn,char *var)
 			serverparsed_writeerror(conn,"File does not have a datestamp");
 		} else {
 			struct tm time;
-			char utc[5];
+			os_date_and_time utc;
 
 			utc[4] = load &255;
 			utc[3] = (exec>>24) &255;
 			utc[2] = (exec>>16) &255;
 			utc[1] = (exec>>8) &255;
 			utc[0] = exec &255;
-			utc_to_localtime(utc,&time);
+			utc_to_localtime(&utc,&time);
 
 			result=malloc(50);
 			if (result) {
@@ -737,7 +737,7 @@ static void serverparsed_flastmod(struct connection *conn,char *filename)
 		serverparsed_writeerror(conn,"File does not have a datestamp");
 	} else {
 		struct tm time;
-		char utc[5];
+		os_date_and_time utc;
 		char str[50]="";
 
 		utc[4] = load &255;
@@ -745,7 +745,7 @@ static void serverparsed_flastmod(struct connection *conn,char *filename)
 		utc[2] = (exec>>16) &255;
 		utc[1] = (exec>>8) &255;
 		utc[0] = exec &255;
-		utc_to_localtime(utc,&time);
+		utc_to_localtime(&utc,&time);
 		if (conn->serverparsedinfo.timefmt==NULL) time_to_rfc(&time,str); else strftime(str,49,conn->serverparsedinfo.timefmt,&time);
 		writestring(conn->socket,str);
 	}

@@ -99,9 +99,9 @@ void closedown() {
 
 
 
-int main(int argc, char *argv[]) {
-/* first argument should be the configuration file */
-
+int main(int argc, char *argv[])
+{
+	char *configfile;
 #ifdef MemCheck_MEMCHECK
 	MemCheck_Init();
 	MemCheck_RegisterArgs(argc,argv);
@@ -110,13 +110,14 @@ int main(int argc, char *argv[]) {
 	MemCheck_SetAutoOutputBlocksInfo(0);
 	MemCheck_SetWriteQuitting(0);
 #endif
-
-	if (argc != 2)  return 0;
+	/* first argument should be the configuration file */
+	if (argc >= 2) configfile=argv[1]; else configfile="<WebJames$Dir>.config";
 
 	init_task();
 	if (!quit)
-		if (!webjames_init(argv[1]))  quit = 1;
+		if (!webjames_init(configfile))  quit = 1;
 	while (!quit)   poll();
 	webjames_kill();
 	closedown();
+	return EXIT_SUCCESS;
 }

@@ -31,7 +31,7 @@ struct config configuration;
 struct serverinfo servers[8];
 int readcount, writecount, dnscount, slowdown;
 int activeconnections;
-static quitwhenidle;
+static int quitwhenidle;
 struct connection *connections[MAXCONNECTIONS];
 char select_read[32], select_write[32], select_except[32];
 
@@ -59,8 +59,9 @@ int webjames_init(char *config) {
 	configuration.bandwidth = 0;
 	configuration.reversedns = -1;
 	configuration.casesensitive=0;
-	*configuration.clflog = *configuration.weblog = *configuration.webmaster = *configuration.site = *configuration.serverip = *configuration.cgi_in = *configuration.cgi_out = '\0';
+	*configuration.clflog = *configuration.weblog = *configuration.webmaster = *configuration.site = *configuration.serverip = '\0';
 	*configuration.put_script = *configuration.delete_script = *configuration.htaccessfile = '\0';
+	*configuration.cgi_in = *configuration.cgi_out;
 	configuration.loglevel = 5;
 	configuration.log_close_delay = 10; /* seconds */
 	configuration.log_max_copies = 0;
@@ -72,6 +73,16 @@ int webjames_init(char *config) {
 	strcpy(configuration.server, WEBJAMES_SERVER_SOFTWARE);
 	configuration.webjames_h_revision=WEBJAMES_H_REVISION; /*used by PHP module to ensure that it was compiled with the correct version of webjames.h */
 	read_config(config);
+
+	/* Supply defaults for cgi_in/out if the user hasn't specified them */
+	/* They must be canonicalised if possible as some programs (eg Perl) don't like <foo$dir> as arguments */ 
+	if (*configuration.cgi_in=='\0') {
+		if (xosfscontrol_canonicalise_path("<Wimp$ScrapDir>.WebJamesI",configuration.cgi_in,NULL,NULL,256,NULL)) strcpy(configuration.cgi_in,"<Wimp$ScrapDir>.WebJamesI");
+	}
+	if (*configuration.cgi_out=='\0') {
+		if (xosfscontrol_canonicalise_path("<Wimp$ScrapDir>.WebJamesO",configuration.cgi_out,NULL,NULL,256,NULL)) strcpy(configuration.cgi_out,"<Wimp$ScrapDir>.WebJamesO");
+	}
+
 	if ((*configuration.site == '\0') || (serverscount == 0) || (configuration.timeout < 0))
 		return 0;
 
@@ -585,14 +596,14 @@ int compare_time(struct tm *time1, struct tm *time2) {
 }
 
 
-void utc_to_time(char *utc, struct tm *time) {
+void utc_to_time(os_date_and_time *utc, struct tm *time) {
 /* converts 5 byte UTC to tm structure */
 
 /* utc              char[5] holding the utc value */
 /* time             tm structure to fill in */
 	territory_ordinals ordinals;
 
-	if (xterritory_convert_time_to_utc_ordinals((os_date_and_time *)utc, &ordinals));
+	xterritory_convert_time_to_utc_ordinals(utc, &ordinals);
 	time->tm_sec   = ordinals.second;
 	time->tm_min   = ordinals.minute;
 	time->tm_hour  = ordinals.hour;
@@ -604,14 +615,14 @@ void utc_to_time(char *utc, struct tm *time) {
 	time->tm_isdst = 0;
 }
 
-void utc_to_localtime(char *utc, struct tm *time) {
+void utc_to_localtime(os_date_and_time *utc, struct tm *time) {
 /* converts 5 byte UTC to tm structure */
 
 /* utc              char[5] holding the utc value */
 /* time             tm structure to fill in */
 	territory_ordinals ordinals;
 
-	if (xterritory_convert_time_to_ordinals(territory_CURRENT,(os_date_and_time *)utc, &ordinals));
+	xterritory_convert_time_to_ordinals(territory_CURRENT,utc, &ordinals);
 	time->tm_sec   = ordinals.second;
 	time->tm_min   = ordinals.minute;
 	time->tm_hour  = ordinals.hour;
