@@ -14,12 +14,14 @@
 </td></tr></table>
 </h3>
 
-<i>0.34 (??/1/2002)</i>
+<i>0.34 (10/1/2002)</i>
 
 <ul>
   <li>now outputs <code>Content-Location:</code> and <code>Content-Language:</code> headers when appropriate.
   <li>fix for UnixLib bug that prevented filenames with top bit set characters from working.
   <li>workaround for bug that prevents report files from being found after the PHP handler had been invoked.
+  <li>workaround for bug that prevented image filing system files to be served correctly when compiled with UnixLib.
+  <li>now sets PHP filetype and sprite as if !PHP had not been seen then this would not get done and thus the PHP handler may fail to work.
 
 </ul>
 
