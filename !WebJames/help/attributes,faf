@@ -165,7 +165,16 @@
   The quotes around the regular expression are optional.
  
  <p>
+ Matched subexpressions within the regex may be substituted into documentroot or overridename attributes inside locationmatch sections, using \1 for the first pattern, \2 for the second, upto a maximum of 9 patterns.
+ <pre>
+ # this matches html files in the stuff directory and changes the
+ # extension to shtml
+ &lt;locationmatch "^/stuff/(.*)\.html$"&gt;
+ overridename /stuff/\1.shtml
+ &lt;/locationmatch&gt;
+ </pre>
 
+ <p>
  <h5>The order of section matching</h5>
  <p>
   The order in which a request is processed is as follows:
@@ -221,6 +230,11 @@
  <tr>
  <td><code>HomeDir</code></td>
  <td>An alias for DocumentRoot</td>
+ </tr>
+
+ <tr>
+ <td><code>OverrideName</code></td>
+ <td>Allows the remainder of the URI, after removing the part corresponding to the documentroot, to be replaced with an alternate name. This is mainly of use with regex substitution in locationmatch sections.</td>
  </tr>
 
  <tr>
@@ -504,12 +518,12 @@
  <pre>
  # main attributes file
  &lt;location /~joe/&gt;
- more-attributes=&lt;WebJames$Dir&gt;.sites.joe.~attributs
- &lt;/location&gt
+ more-attributes=&lt;WebJames$Dir&gt;.sites.joe.~attributes
+ &lt;/location&gt;
 
  &lt;location /~bob/&gt;
- more-attributes=&lt;WebJames$Dir&gt;.sites.bob.~attributs
- &lt;/location&gt
+ more-attributes=&lt;WebJames$Dir&gt;.sites.bob.~attributes
+ &lt;/location&gt;
  </pre>
 
  The attributes-file (<code>&lt;WebJames$Dir&gt;.sites.joe.~attributes</code>)
@@ -522,12 +536,12 @@
  # set the base-directory for joe's site
  &lt;location /&gt;
  homedir=&lt;WebJames$Dir&gt;.sites.joe
- &lt;/location&gt
+ &lt;/location&gt;
 
  # hide the attributes file for joe's site
  &lt;location /~attributes&gt;
  hidden
- &lt;/location&gt
+ &lt;/location&gt;
  </pre>
 
   All requests for URIs starting with <code>/~joe/</code> would then access

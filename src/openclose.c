@@ -60,6 +60,8 @@ struct connection *create_conn(void)
 	conn->errordocs = NULL;
 	conn->handlers = NULL;
 	conn->handler = NULL;
+	conn->overridefilename = NULL;
+	conn->regexmatch = NULL;
 
 	conn->flags.releasefilebuffer = 0;
 	conn->flags.outputheaders = 1;
@@ -204,11 +206,13 @@ void close_connection(struct connection *conn, int force, int real) {
 	if (conn->authorization)  free(conn->authorization);
 	if (conn->contentlocation)  free(conn->contentlocation);
 	if (conn->contentlanguage)  free(conn->contentlanguage);
+	if (conn->regexmatch)       free(conn->regexmatch);
 	if ((conn->filebuffer) && (conn->flags.releasefilebuffer)) free(conn->filebuffer);
 	conn->filebuffer = conn->body = conn->header = conn->type = NULL;
 	conn->accept = conn->acceptlanguage = conn->acceptcharset = conn->acceptencoding = NULL;
 	conn->uri = conn->host = conn->requesturi = conn->cookie = conn->authorization = NULL;
 	conn->contentlocation = conn->contentlanguage = NULL;
+	conn->regexmatch = NULL;
 
 	/* free the linked list of custom error documents */
 	errordocs = conn->errordocs;

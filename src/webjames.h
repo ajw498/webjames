@@ -18,6 +18,7 @@ typedef int socket_s;
 #include "oslib/socket.h"
 #include <stdarg.h>
 #include "snprintf.h"
+#include <regex.h>
 
 #endif
 
@@ -157,6 +158,8 @@ typedef struct connection {
 		unsigned int hidden : 1;
 	} attrflags;
 	char cgi_api;
+	char *overridefilename;
+	regmatch_t *regexmatch;
 
 	struct cache *cache;        /* pointer to cache entry or NULL */
 

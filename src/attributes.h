@@ -3,6 +3,8 @@
 #define CGI_API_WEBJAMES      0
 #define CGI_API_REDIRECT      1
 
+#define MAX_REGEX_MATCHES 9
+
 #ifndef ERRORDOC
 #define ERRORDOC
 
@@ -62,6 +64,7 @@ typedef struct attributes {
 	struct handlerlist *handlers; /* linked list of handlers to apply */
 
 	regex_t *regex; /* ptr to compiled regex */
+	char *overridefilename;
 
 	struct {
 		unsigned int accessfile         : 1;
@@ -83,6 +86,7 @@ typedef struct attributes {
 		unsigned int defaultfile        : 1;
 		unsigned int allowedfiletypes   : 1;
 		unsigned int forbiddenfiletypes : 1;
+		unsigned int overridefilename   : 1;
 	} defined;
 
 	struct attributes *attrnext; /* next files/filesmatch section in attributes list */

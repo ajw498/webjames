@@ -1,5 +1,5 @@
 /*
-	$Id: webjames.c,v 1.5 2003/06/25 21:54:50 ajw Exp $
+	$Id$
 	General functions for WebJames
 */
 
@@ -17,6 +17,7 @@
 #include "oslib/osfscontrol.h"
 #include "oslib/osfile.h"
 #include "oslib/territory.h"
+#include "oslib/wimp.h"
 
 #include "webjames.h"
 #include "wjstring.h"
@@ -170,7 +171,11 @@ int webjames_init(char *config)
 	active = 0;
 	for (i = 0; i < serverinfo.serverscount; i++)
 		if (serverinfo.servers[i].socket != socket_CLOSED)  active++;
-	if (active == 0)  return 0;
+	if (active == 0) {
+		os_error err = { 1, "Unable to listen on any sockets, exiting"};
+		xwimp_report_error(&err, wimp_ERROR_BOX_OK_ICON, "WebJames", NULL);
+		return 0;
+	}
 
 	return 1;
 }

@@ -282,6 +282,7 @@ static struct attributes *create_attribute_structure(char *uri) {
 	attr->errordocs = NULL;
 	attr->errordocscount = 0;
 	attr->handlers = NULL;
+	attr->overridefilename = NULL;
 	attr->methods = (1<<METHOD_GET)|(1<<METHOD_HEAD)|(1<<METHOD_POST);
 	/* the flags indicate which attributes are defined for an URI */
 	/* this is necessary as attributes may be NULL, so it is not */
@@ -290,7 +291,8 @@ static struct attributes *create_attribute_structure(char *uri) {
 		attr->defined.moved = attr->defined.tempmoved = attr->defined.cacheable =
 		attr->defined.homedir = attr->defined.is_cgi = attr->defined.cgi_api =
 		attr->defined.methods = attr->defined.port = attr->defined.hidden =
-		attr->defined.defaultfile = attr->defined.allowedfiletypes = attr->defined.forbiddenfiletypes =
+		attr->defined.defaultfile = attr->defined.allowedfiletypes =
+		attr->defined.forbiddenfiletypes = attr->defined.overridefilename =
 		attr->defined.stripextensions = attr->defined.multiviews =
 		attr->defined.setcsd = attr->defined.autoindex = 0;
 
@@ -522,7 +524,7 @@ static struct attributes *read_attributes_file(char *filename, char *base, struc
 						return NULL;
 					}
 
-					if ((ret=regcomp(attr->regex,ptr,REG_EXTENDED | REG_NOSUB | (configuration.casesensitive ? 0 : REG_ICASE)))!=0) {
+					if ((ret=regcomp(attr->regex,ptr,REG_EXTENDED | (configuration.casesensitive ? 0 : REG_ICASE)))!=0) {
 						char temp[256] = "Error in attributes file: ";
 
 						regerror(ret, attr->regex, temp+26, 256-26);
@@ -585,7 +587,7 @@ static struct attributes *read_attributes_file(char *filename, char *base, struc
 						return NULL;
 					}
 
-					if ((ret=regcomp(attr->regex,ptr,REG_EXTENDED | REG_NOSUB))!=0) {
+					if ((ret=regcomp(attr->regex,ptr,REG_EXTENDED))!=0) {
 						char temp[256] = "Error in attributes file: ";
 
 						regerror(ret, attr->regex, temp+26, 256-26);
@@ -639,7 +641,7 @@ static struct attributes *read_attributes_file(char *filename, char *base, struc
 						fclose(file);
 						return NULL;
 					}
-					if ((ret=regcomp(attr->regex,ptr,REG_EXTENDED | REG_NOSUB))!=0) {
+					if ((ret=regcomp(attr->regex,ptr,REG_EXTENDED))!=0) {
 						char temp[256] = "Error in attributes file: ";
 
 						regerror(ret, attr->regex, temp+26, 256-26);
@@ -782,8 +784,6 @@ static struct attributes *read_attributes_file(char *filename, char *base, struc
 				int size;
 				char *buffer = value;
 
-				if (section == section_LOCATION && attr->uri[attr->urilen-1] != '/') continue;
-
 				/* Don't free it as it is probably pointing to the configuration structure */
 
 				if (!configuration.casesensitive) lower_case(value);
@@ -818,6 +818,13 @@ static struct attributes *read_attributes_file(char *filename, char *base, struc
 					if (section == section_LOCATION && attr->uri[attr->urilen-1] != '/') continue;
 					scan_defaultfiles_list(value,attr);
 					if (value) free(value);
+
+				} else if (strcmp(attribute, "overridename") == 0) {
+					if (section != section_LOCATION || attr->regex == NULL) continue;
+
+					if (attr->overridefilename)  free(attr->overridefilename);
+					attr->defined.overridefilename = 1;
+					attr->overridefilename = value;
 
 				} else if (strcmp(attribute, "moved") == 0) {
 					/* URI has been changed */
@@ -1092,13 +1099,14 @@ static void merge_attributes1(struct connection *conn, struct attributes *attr) 
 		conn->homedirignore = attr->ignore;
 	}
 	if (attr->defined.defaultfile) {
-		conn->defaultfiles     = attr->defaultfiles;
-		conn->defaultfilescount     = attr->defaultfilescount;
+		conn->defaultfiles      = attr->defaultfiles;
+		conn->defaultfilescount = attr->defaultfilescount;
 	}
-	if (attr->defined.cacheable)    conn->flags.cacheable = attr->cacheable;
-	if (attr->defined.moved)        conn->moved           = attr->moved;
-	if (attr->defined.tempmoved)    conn->tempmoved       = attr->tempmoved;
-	if (attr->defined.multiviews)      conn->flags.multiviews       = attr->multiviews;
+	if (attr->defined.cacheable)        conn->flags.cacheable  = attr->cacheable;
+	if (attr->defined.moved)            conn->moved            = attr->moved;
+	if (attr->defined.tempmoved)        conn->tempmoved        = attr->tempmoved;
+	if (attr->defined.multiviews)       conn->flags.multiviews = attr->multiviews;
+	if (attr->defined.overridefilename) conn->overridefilename = attr->overridefilename;
 }
 
 static void merge_handlers(struct handlerlist *head, struct connection *conn)
@@ -1190,10 +1198,15 @@ void find_handler(struct connection *conn)
 
 static void check_regex(struct attributes *attr, char *match, struct connection *conn)
 {
+	regmatch_t pmatch[MAX_REGEX_MATCHES];
+
 	while (attr != NULL) {
 		if (attr->regex) {
-			switch (regexec(attr->regex,match,0,NULL,0)) {
+			switch (regexec(attr->regex,match,MAX_REGEX_MATCHES,pmatch,0)) {
 				case REG_OKAY:
+					if (conn->regexmatch == NULL) conn->regexmatch = EM(malloc(sizeof(regmatch_t) * MAX_REGEX_MATCHES));
+					if (conn->regexmatch) memmove(conn->regexmatch, pmatch, sizeof(regmatch_t) * MAX_REGEX_MATCHES);
+					/* Use memmove rather than memcpy to avoid a bug in Norcroft 5.54 */
 					merge_attributes(conn,attr);
 					break;
 				case REG_NOMATCH:

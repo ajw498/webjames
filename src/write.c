@@ -28,9 +28,10 @@
 #include "content.h"
 
 
-void pollwrite(int cn) {
-/* attempt to write a chunk of data from the file (bandwidth-limited) */
-/* close the connection if EOF is reached */
+void pollwrite(int cn)
+{
+	/* attempt to write a chunk of data from the file (bandwidth-limited) */
+	/* close the connection if EOF is reached */
 	int maxbytes=0;
 
 	/* limit bandwidth */
@@ -50,18 +51,20 @@ void pollwrite(int cn) {
 }
 
 
-void select_writing(int cn) {
-/* mark a connection as writing */
+void select_writing(int cn)
+{
+	/* mark a connection as writing */
 	ip_fd_set(serverinfo.select_write, connections[cn]->socket);
 	serverinfo.writecount++;
 	connections[cn]->status = WJ_STATUS_WRITING;
 
 }
 
-int uri_to_filename(char *uri, char *filename, int stripextension) {
-/* swap '.' and '/' */
-/* returns non zero if illegal chars are present */
-/* optionally removes the leafname extension */
+int uri_to_filename(char *uri, char *filename, int stripextension)
+{
+	/* swap '.' and '/' */
+	/* returns non zero if illegal chars are present */
+	/* optionally removes the leafname extension */
 	char *lastdot = NULL;
 	while (*uri) {
 		if (*uri == '/') {
@@ -86,10 +89,42 @@ int uri_to_filename(char *uri, char *filename, int stripextension) {
 	return 0;
 }
 
-void send_file(struct connection *conn) {
-/* parse the header, find file, do the job etc. */
+static void copyandsubst(char *dest, char *src, int len, char *match, regmatch_t *pmatch)
+{
+	while (len > 0 && *src) {
+		if (*src == '\\') {
+			src++;
+			if (*src >= '0' && *src <= '9') {
+				if (pmatch[*src - '0'].rm_so != -1) {
+					regoff_t i;
+
+					for (i = pmatch[*src - '0'].rm_so; i < pmatch[*src - '0'].rm_eo && len > 0; i++) {
+						*dest++ = match[i];
+						len--;
+					}
+				}
+				src++;
+			} else {
+				if (*src) {
+					*dest++ = *src++;
+					len--;
+				}
+			}
+		} else {
+			*dest++ = *src++;
+			len--;
+		}
+	}
+	dest[len == 0 ? -1 : 0] = '\0';
+}
+
+
+void send_file(struct connection *conn)
+{
+	/* parse the header, find file, do the job etc. */
 	int len;
 	char *ptr, *name;
+	char buffer[MAX_FILENAME];
 
 	/* select the socket for writing */
 	select_writing(conn->index);
@@ -119,11 +154,16 @@ void send_file(struct connection *conn) {
 
 	/* build RISCOS filename */
 	name = conn->filename;
-	wjstrncpy(name, conn->homedir, MAX_FILENAME);
-	name += strlen(name);
+	copyandsubst(name, conn->homedir, MAX_FILENAME, conn->uri, conn->regexmatch);
+	len = strlen(name);
+	name += len;
 	ptr = conn->uri + conn->homedirignore;
+	if (conn->overridefilename) ptr = conn->overridefilename;
+
+	copyandsubst(buffer, ptr, MAX_FILENAME - len, conn->uri, conn->regexmatch);
+
 	/* append requested URI, with . and / switched */
-	if (uri_to_filename(ptr,name,conn->flags.stripextensions)) {
+	if (uri_to_filename(buffer, name, conn->flags.stripextensions)) {
 		report_badrequest(conn, "filename includes illegal characters");
 		return;
 	}
@@ -272,16 +312,17 @@ void send_file(struct connection *conn) {
 
 
 
-int check_access(struct connection *conn, char *authorization) {
-/* check if the file is password-protected */
-/* returns: */
-/*  2 if the file is password-protected and the user doesn't have access */
-/*    in which case a suitable report will have been returned */
-/*  1 if the file is password-protected and the user has access */
-/*  0 if the file isn't password-protected */
+int check_access(struct connection *conn, char *authorization)
+{
+	/* check if the file is password-protected */
+	/* returns: */
+	/*  2 if the file is password-protected and the user doesn't have access */
+	/*    in which case a suitable report will have been returned */
+	/*  1 if the file is password-protected and the user has access */
+	/*  0 if the file isn't password-protected */
 
-/* conn       connections structure with uri-attributes */
-/* autho..    username:password or NULL */
+	/* conn       connections structure with uri-attributes */
+	/* autho..    username:password or NULL */
 
 
 	FILE *file;
@@ -330,10 +371,10 @@ int check_access(struct connection *conn, char *authorization) {
 }
 
 int check_case(char *filename)
-/* Check that the given filename matches (case sensitive) with an actual file */
-/* It is a bit inefficient, but the only way I can think of */
-/* If only osfscontrol_canonicalise_path returned the correct case... */
 {
+	/* Check that the given filename matches (case sensitive) with an actual file */
+	/* It is a bit inefficient, but the only way I can think of */
+	/* If only osfscontrol_canonicalise_path returned the correct case... */
 	int count, more, found;
 	int end;
 	char leafname[MAX_FILENAME], buffer[MAX_FILENAME];
@@ -363,8 +404,8 @@ int check_case(char *filename)
 }
 
 int get_file_info(char *filename, char *mimetype, struct tm *date, os_date_and_time *utcdate, int *size, int checkcase)
-/* return filetype or error-code, fill in date (secs since 1990) and mimetype */
 {
+	/* return filetype or error-code, fill in date (secs since 1990) and mimetype */
 	os_date_and_time utc;
 	char typename[MAX_MIMETYPE];
 	char buffer[MAX_FILENAME];
