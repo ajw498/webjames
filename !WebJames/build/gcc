@@ -21,7 +21,7 @@ DEPEND = -mamu
 WARNINGS = -Wall -Wundef -Wpointer-arith -Wmissing-prototypes
 OPTIMISATION = -O2
 DEBUG = -mpoke-function-name
-INCLUDE = -IL: -IOSLib
+INCLUDE = -IL: -IOSLib:
 
 #Linker flags
 LINKDEBUG =
