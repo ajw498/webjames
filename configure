@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# $Id: configure,v 1.7 2002/10/05 16:18:20 ajw Exp $
+# $Id: configure,v 1.8 2003/02/08 19:01:02 ajw Exp $
 #
 
 # Make sure everything is pristine
@@ -15,7 +15,7 @@ SSI=-DSSI
 SENDASIS=-DSENDASIS
 CONTENT=-DCONTENT
 PHP=
-LIBDIR=/home/riscos/cross/local
+LIBDIR=$(PREFIX)
 
 for X in "$@"; do
   case $X in
