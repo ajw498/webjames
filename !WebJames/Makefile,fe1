@@ -4,24 +4,24 @@
 CC            = cc
 
 #MemCheck = MemCheck.cc
+
 # possible flags:
 # ANTRESOLVER     use the ANT resolver module API for reverse DNS
 # LOG             enable logging
 # SYSLOG          use SysLog instead of internal log
+Flags         = -DLOG
+#Flags         = -DANTRESOLVER -DLOG -DSYSLOG
 
-#CCFlags       = -c -throwback -depend !Depend -IC: -strict -fah -IOSLib: -DANTRESOLVER -DLOG -DSYSLOG -Otime
-#CCFlags       = -c -throwback -depend !Depend -IC: -strict -fah -IOSLib: -DLOG -DSYSLOG -Otime
-#CCFlags       = -c -throwback -depend !Depend -IC: -strict -fah -IOSLib: -DLOG -Otime
-CCFlags       = -c -throwback -depend !Depend -IC: -g -strict -fah -IOSLib: -DLOG
+CCFlags       = -c -throwback -depend !Depend -IC: -strict -fah -IOSLib: -Otime $(Flags)
+#CCFlags       = -c -throwback -depend !Depend -IC: -g -strict -fah -IOSLib: $(Flags)
 LinkFlags     = -o $@
 
 Libs          = OSLib:o.OSLib C:o.Stubs C:o.socklib MemCheck:o.MC C:regex.a.libregex
 Objects       = main.o webjames.o ip.o stat.o report.o write.o openclose.o read.o cache.o coding.o mimemap.o attributes.o resolve.o cacheheap.o handler.o staticcontent.o webjamesscript.o cgiscript.o sendasis.o
 
 !RunImage:    $(Objects)
-              DrLink -d $(Linkflags) $(Objects) $(Libs)
-
-#              Squeeze -f -v !RunImage
+              Link $(Linkflags) $(Objects) $(Libs)
+              Squeeze -f -v !RunImage
 
 .c.o:
 	$(MemCheck) $(CC) $(CCFlags) $< -o $@
@@ -158,6 +158,13 @@ o.cacheheap:	c.cacheheap
 o.cacheheap:	C:h.swis
 o.cacheheap:	C:h.kernel
 o.cacheheap:	h.cacheheap
+o.handler:	c.handler
+o.handler:	h.webjames
+o.handler:	h.handler
+o.handler:	h.staticcontent
+o.handler:	h.sendasis
+o.handler:	h.cgiscript
+o.handler:	h.webjamesscript
 o.staticcontent:	c.staticcontent
 o.staticcontent:	h.webjames
 o.staticcontent:	h.ip
@@ -202,13 +209,6 @@ o.cgiscript:	h.stat
 o.cgiscript:	h.ip
 o.cgiscript:	h.write
 o.cgiscript:	h.handler
-o.handler:	c.handler
-o.handler:	h.webjames
-o.handler:	h.handler
-o.handler:	h.staticcontent
-o.handler:	h.sendasis
-o.handler:	h.cgiscript
-o.handler:	h.webjamesscript
 o.sendasis:	c.sendasis
 o.sendasis:	h.webjames
 o.sendasis:	h.report

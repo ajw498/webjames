@@ -54,14 +54,13 @@
 #  URIs and filenames are case-insensitive in WebJames, unless the casesensitive option is set in the config file
 
 # global atttributes
-# Allow PHP scripts to be run as cgi, all other files served normally
 <location />
-
+defaultfile index.php index.html index
 </location>
 
 # Set up some handlers for specific filetypes
 Action perl-script perl %f %u
-Action php-script  php %f %u
+Action php-script php %f %u
 
 # These allow all PHP and Perl files to be run as cgi scripts, wherever they are, unless specifically overridden
 AddFiletypeHandler php-script  PHP

@@ -1161,9 +1161,10 @@ void get_attributes(char *uri, struct connection *conn) {
 				filesattrstart = filesattrstart->connnext;
 			}
 		}
+
+		if (conn->attrflags.hidden)  conn->attrflags.accessallowed = 0;
 	}
 
-	if (conn->attrflags.hidden)  conn->attrflags.accessallowed = 0;
 
 }
 

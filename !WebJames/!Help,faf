@@ -1495,7 +1495,7 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 </td></tr></table>
 </h3>
 
-<i>0.27 (24/12/2000)</i>
+<i>0.27 (27/12/2000)</i>
 
 <ul>
   <li>added support for <code>&lt;files&gt;</code> sections in <a href="#attr">attributes</a> file
@@ -1861,7 +1861,9 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
   The <code>ANTRESOLVER</code> switch enables reverse-DNS using the
  ANT/Acorn resolver module interface.
 
-
+ <p>
+  If you don't have MemCheck, then comment out all function calls begginning with MemCheck_
+ and it should compile fine.
 
 </body>
 </html>
