@@ -9,9 +9,10 @@ CC            = cc
 # SYSLOG          use SysLog instead of internal log
 # CASESENSITIVE   use case-sensitive filename matching
 
-# CCFlags       = -c -throwback -IC: -IOSLib: -DANTRESOLVER -DLOG -DSYSLOG -Otime
-# CCFlags       = -c -throwback -IC: -IOSLib: -DLOG -DSYSLOG -Otime
-CCFlags       = -c -throwback -IC: -g -fah -IOSLib: -DLOG
+#CCFlags       = -c -throwback -IC: -IOSLib: -DANTRESOLVER -DLOG -DSYSLOG -Otime
+#CCFlags       = -c -throwback -IC: -fah -IOSLib: -DLOG -DSYSLOG -Otime
+CCFlags       = -c -throwback -IC: -fah -IOSLib: -DLOG -Otime
+#CCFlags       = -c -throwback -IC: -g -fah -IOSLib: -DLOG
 LinkFlags     = -o $@
 
 Libs          = OSLib:o.OSLib C:o.Stubs C:o.socklib MemCheck:o.MC

@@ -17,7 +17,7 @@ webmaster=i.havent@changed.the.emailaddress.com
 serverip=
 
 # server - included in the Server: fields when replying
-server=WebJames/0.25
+server=WebJames/0.26
 
 # port - http port number
 # Webjames can accept connections on up to 8 ports simultaneously - simply
@@ -25,11 +25,13 @@ server=WebJames/0.25
 port=80
 
 # homedir - directory holding the files
-homedir=<webjames$dir>.site
+homedir=<WebJames$Dir>.^.Site
 
 # attributes - name of attributes file
-attributes=<webjames$dir>.attributes
+attributes=<WebJames$Dir>.attributes
 
+# name of file to look for directory specific attributes
+accessfilename=/htaccess
 
 # connection control
 # ------------------

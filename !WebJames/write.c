@@ -225,6 +225,7 @@ void send_file(struct connection *conn) {
     int i;
 
     strcpy(testfile,conn->filename);
+    strcat(testfile,"index/html"); // incase the list is empty
     for(i=0; i<conn->defaultfilescount; i++) {
       uri_to_filename(conn->defaultfiles[i], testfile+len);
       type = get_file_info(testfile,NULL,NULL,&size);
