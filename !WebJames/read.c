@@ -1,5 +1,5 @@
 /*
-	$Id: read.c,v 1.18 2001/09/03 22:04:06 AJW Exp $
+	$Id: read.c,v 1.19 2001/11/17 12:06:31 AJW Exp $
 	Reading requests
 */
 
@@ -234,7 +234,7 @@ void pollread_header(struct connection *conn, int bytes)
 			wjstrncpy(conn->requesturi,file,len);
 			/*Copy uri*/
 			i=0;
-			do {
+			while (*file!='\0') {
 				if (file[0]=='?') query=1; /*Don't convert %xx sequences in the query string part of the uri*/
 				if (!query && file[0]=='%' && isxdigit(file[1]) && isxdigit(file[2])) {
 					/* Treat next two chars as hex code of character */
@@ -247,7 +247,7 @@ void pollread_header(struct connection *conn, int bytes)
 				} else {
 					conn->uri[i++]=*(file++);
 				}
-			} while (*file!='\0');
+			}
 			conn->uri[i] = '\0';
 
 			if (!configuration.casesensitive) {
