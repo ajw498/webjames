@@ -12,6 +12,7 @@ MEMCHECK =
 SQUEEZE =
 SETTYPE =
 LN_S = ln -s
+RM = rm -f
 
 #Libraries
 MEMCHECKLIB =

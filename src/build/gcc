@@ -9,6 +9,7 @@ CC = gcc
 GCC = gcc
 LINK = gcc
 LN_S = @echo ln -s
+RM = remove
 MEMCHECK =
 SQUEEZE = Squeeze -f $@
 SETTYPE = SetType $@ Obey

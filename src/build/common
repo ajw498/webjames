@@ -88,7 +88,7 @@ $(WJPHPMAIL): PHPMail.c
 	$(GCC) $(GCCINCLUDE) -o $@ PHPMail.c $(OSLIB)
 
 $(WJPHPHELP): $(PHPHELP)
-	-rm -f $(WJPHPHELP)
+	-$(RM) $(WJPHPHELP)
 	$(LN_S) $(UP)$(DIRSEP)$(PHPHELP) $(WJPHPHELP)
 
 $(PHPGUI): PHPFrontEnd.c
@@ -96,17 +96,17 @@ $(PHPGUI): PHPFrontEnd.c
 
 
 clean:
-	-rm -f $(WJTARGET)
-	-rm -f $(WJRUN)
-	-rm -f $(WJCONFIG)
-	-rm -f $(WJATTRIBUTES)
-	-rm -f $(WJDIR)log
-	-rm -f $(WJDIR)clf
-	-rm -f $(WJDIR)stderr
-	-rm -f $(WJPHPMAIL)
-	-rm -f $(WJPHPHELP)
-	-rm -f $(PHPDIR)php$(EXT_FF8)
-	-rm -f $(PHPGUI) $(PHPSETRUNTYPE)
-	-rm -f $(WJOBJECTS) PHPMail.o
+	-$(RM) $(WJTARGET)
+	-$(RM) $(WJRUN)
+	-$(RM) $(WJCONFIG)
+	-$(RM) $(WJATTRIBUTES)
+	-$(RM) $(WJDIR)log
+	-$(RM) $(WJDIR)clf
+	-$(RM) $(WJDIR)stderr
+	-$(RM) $(WJPHPMAIL)
+	-$(RM) $(WJPHPHELP)
+	-$(RM) $(PHPDIR)php$(EXT_FF8)
+	-$(RM) $(PHPGUI) $(PHPSETRUNTYPE)
+	-$(RM) $(WJOBJECTS) PHPMail.o
 
 
