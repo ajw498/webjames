@@ -14,10 +14,11 @@
 </td></tr></table>
 </h3>
 
-<i>0.?? (?/??/2003)</i>
+<i>0.39 (18/6/2003)</i>
 
 <ul>
   <li>Minor improvments to the build system.
+  <li>Correctly interpret error numbers from RISC OS 5 internet SWIs.
 </ul>
 
 <i>0.38 (9/12/2002)</i>
