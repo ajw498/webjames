@@ -14,7 +14,7 @@
 </td></tr></table>
 </h3>
 
-<i>0.37-dev (??/??/2002)</i>
+<i>0.37-dev (29/10/2002)</i>
 
 <ul>
   <li>Fixed corruption when serving some imagefs files in UnixLib builds.

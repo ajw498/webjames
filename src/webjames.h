@@ -1,10 +1,10 @@
 #ifndef WEBJAMES_H
 #define WEBJAMES_H
 
-#define WEBJAMES_H_REVISION "$Revision: 1.8 $"
+#define WEBJAMES_H_REVISION "$Revision: 1.9 $"
 
-#define WEBJAMES_VERSION "0.37-dev"
-#define WEBJAMES_DATE "22/7/02"
+#define WEBJAMES_VERSION "0.37"
+#define WEBJAMES_DATE "29/10/02"
 #define WEBJAMES_SERVER_SOFTWARE "WebJames/" WEBJAMES_VERSION
 
 #ifdef WEBJAMES_PHP_ONLY
