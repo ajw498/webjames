@@ -2,7 +2,7 @@
 	PHPMail
 	Copyright © Alex Waugh 2001
 
-	$Id: PHPMail.c,v 1.1 2001/08/28 12:06:13 AJW Exp $
+	$Id: PHPMail.c,v 1.2 2001/08/28 13:09:55 AJW Exp $
 
 	PHPMail provides a wrapper for Justin Fletcher's GMail to allow it to be called from PHP
 	It should be linked with a build of UnixLib that is more recent than 16/8/2001
@@ -51,11 +51,9 @@ int main(void)
 	fclose(file);
 
 	/*Let the user override the default output file (null:) for debugging*/
-	if (xos_read_var_val_size(SYS_VAR,0,os_VARTYPE_STRING,&used,NULL,NULL)==NULL && used!=0) {
-		if (xos_read_var_val(SYS_VAR,str,BUF_SIZE,0,os_VARTYPE_STRING,&used,NULL,NULL)==NULL) {
-			str[used]='\0';
-			strcpy(output,str);
-		}
+	if (xos_read_var_val(SYS_VAR,str,BUF_SIZE,0,os_VARTYPE_STRING,&used,NULL,NULL)==NULL) {
+		str[used]='\0';
+		strcpy(output,str);
 	}
 
 	sprintf(str,"mail -x < " IPFILE " > %s",output);
