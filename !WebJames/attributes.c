@@ -1176,7 +1176,7 @@ void get_attributes(char *uri, struct connection *conn) {
 
 		if (!found && uri[0] != '/' && *configuration.htaccessfile && strchr(path,'$')) {
 			struct attributes *newattr;
-			char htaccessfile[256];
+			char htaccessfile[MAX_FILENAME];
 
 			snprintf(htaccessfile,MAX_FILENAME,"%s.%s",path,configuration.htaccessfile);
 			newattr=read_attributes_file(htaccessfile, path);
