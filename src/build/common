@@ -1,6 +1,6 @@
 # Makefile for WebJames the web server
 #
-# $Id: common,v 1.9 2002/02/24 12:34:52 ajw Exp $
+# $Id: common,v 1.10 2002/02/24 12:37:26 ajw Exp $
 #
 # Parts common to all builds
 
@@ -109,7 +109,7 @@ clean:
 	-rm -f $(WJPHPMAIL)
 	-rm -f $(WJPHPHELP)
 	-rm -f $(PHPDIR)php$(EXT_FF8)
-	-rm -f $(PHPGUI)
+	-rm -f $(PHPGUI) $(PHPSETRUNTYPE)
 	-rm -f $(WJOBJECTS) PHPMail.o
 
 
