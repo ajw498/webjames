@@ -621,10 +621,21 @@ static struct attributes *read_attributes_file(char *filename, char *base) {
 					if (value) free(value);
 
 				} else if ((strcmp(attribute, "homedir") == 0)) {
+					int size;
+					char *buffer = value;
+
 					if (section == section_LOCATION && attr->uri[attr->urilen-1] == '/') continue;
 					/* define where on the harddisc the directory is stored */
 					if (attr->homedir)  free(attr->homedir);
-					attr->homedir = value;
+					/* canonicalise the path, so <WebJames$Dir> etc are expanded, otherwise they can cause problems */
+					if (xosfscontrol_canonicalise_path(value,NULL,NULL,NULL,0,&size) == NULL) {
+						buffer = malloc(-size);
+						if (xosfscontrol_canonicalise_path(value,buffer,NULL,NULL,-size,&size) != NULL) {
+							free(buffer);
+							buffer = value;
+						}
+					}
+					attr->homedir = buffer;
 					attr->defined.homedir = 1;
 					if (attr->homedir)
 						/* calc how many chars at the start of the URI will be */

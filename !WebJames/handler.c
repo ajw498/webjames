@@ -1,58 +1,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <ctype.h>
 #include <time.h>
 
 #include "webjames.h"
 #include "handler.h"
+
 #include "staticcontent.h"
 #include "cgiscript.h"
 #include "webjamesscript.h"
-
-
-static handler *handlerslist=NULL;
-
-void handler_start(struct connection *conn)
-{
-	if (conn->handler != NULL) if (conn->handler->startfn != NULL) conn->handler->startfn(conn);
-}
-
-int handler_poll(struct connection *conn,int maxbytes)
-{
-	if (conn->handler != NULL) if (conn->handler->pollfn != NULL) return conn->handler->pollfn(conn,maxbytes);
-	return 0;
-}
-
-void add_handler(char *name, char *command)
-{
-	struct handler *new;
-
-	new = malloc(sizeof(struct handler));
-	if (new == NULL) return;
-
-	new->name = malloc(strlen(name)+1);
-	if (new->name == NULL) return;
-	new->command = malloc(strlen(command)+1);
-	if (new->command == NULL) return;
-	new->startfn = NULL;
-	new->pollfn = NULL;
-	new->next = handlerslist;
-	handlerslist = new;
-}
-
-struct handler *get_handler(char *name)
-/* Get a pointer to the handler structure from a handler name */
-{
-	struct handler *test;
-
-	test = handlerslist;
-	while (test) {
-		if (strcmp(test->name,name) == 0) return test;
-		test = test->next;
-	}
-	return NULL;
-}
 
 static struct handlerentry handlers[] = {
 	{
@@ -84,6 +40,81 @@ static struct handlerentry handlers[] = {
 		NULL
 	}
 };
+
+static handler *handlerslist=NULL;
+
+void handler_start(struct connection *conn)
+{
+	if (conn->handler != NULL) if (conn->handler->startfn != NULL) conn->handler->startfn(conn);
+}
+
+int handler_poll(struct connection *conn,int maxbytes)
+{
+	if (conn->handler != NULL) if (conn->handler->pollfn != NULL) return conn->handler->pollfn(conn,maxbytes);
+	return 0;
+}
+
+void add_handler(char *name, char *command)
+{
+	struct handler *new;
+	int ffound;
+	char *percent;
+
+	new = malloc(sizeof(struct handler));
+	if (new == NULL) return;
+
+	new->name = malloc(strlen(name)+1);
+	if (new->name == NULL) return;
+	strcpy(new->name,name);
+	new->command = malloc(strlen(command)+1);
+	if (new->command == NULL) return;
+	strcpy(new->command,command);
+	new->unix = 0;
+	percent = strchr(new->command,'%');
+	ffound = 0;
+	while (percent) {
+		switch (percent[1]) {
+			case '%':
+				/* %% is ok */
+				break;
+			case 'f':
+				/* filename */
+				percent[1] = 's';
+				if (ffound) return; /* can't have two %f in command */
+				ffound = 1;
+				break;
+			case 'u':
+				/* unix style redirection should be used */
+				/* %u should always be at the end of the line */
+				percent[0] = '\0';
+				percent[1] = '\0';
+				new->unix = 1;
+				break;
+			default:
+				/* an illegal % sequence, so ignore the handler */
+				return;
+				break;
+		}
+		percent = strchr(percent+1,'%');
+	}
+	new->startfn = cgiscript_start;
+	new->pollfn = staticcontent_poll;
+	new->next = handlerslist;
+	handlerslist = new;
+}
+
+struct handler *get_handler(char *name)
+/* Get a pointer to the handler structure from a handler name */
+{
+	struct handler *test;
+
+	test = handlerslist;
+	while (test) {
+		if (strcmp(test->name,name) == 0) return test;
+		test = test->next;
+	}
+	return NULL;
+}
 
 void init_handlers(void)
 {

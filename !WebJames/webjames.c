@@ -480,10 +480,11 @@ void read_config(char *config) {
 			else if (strcmp(cmd, "rename-cmd") == 0)
 				strcpy(rename_cmd, val);
 
-			else if (strcmp(cmd, "homedir") == 0)
-				strcpy(configuration.site,val);
-
-			else if (strcmp(cmd, "put-script") == 0)
+			else if (strcmp(cmd, "homedir") == 0) {
+				/* canonicalise the path, so <WebJames$Dir> etc are expanded, otherwise they can cause problems */
+				if (xosfscontrol_canonicalise_path(val,configuration.site,NULL,NULL,255,NULL) != NULL) strcpy(configuration.site,val);
+				
+			} else if (strcmp(cmd, "put-script") == 0)
 				strncpy(configuration.put_script, val, 255);
 
 			else if (strcmp(cmd, "delete-script") == 0)

@@ -66,9 +66,11 @@
 #allowed-filetypes=18a
 </location>
 
-addhandler cgi-script .php
+action perl-script perl %f %u
+
+addfiletypehandler cgi-script 18a
 addhandler cgi-script obey
-#addhandler cgi-script
+addfiletypehandler perl-script perl
 addhandler static-content .html
 
 #<filesmatch web.+php>

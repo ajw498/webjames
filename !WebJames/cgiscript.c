@@ -17,6 +17,7 @@
 #include "stat.h"
 #include "ip.h"
 #include "write.h"
+#include "handler.h"
 
 #define remove_var(name) xos_set_var_val(name,NULL,-1,0,os_VARTYPE_STRING,NULL,NULL)
 #define set_var_val(name,value) xos_set_var_val(name, (byte *)value, strlen(value), 0, 4, NULL, NULL)
@@ -24,13 +25,12 @@
 void cgiscript_start(struct connection *conn)
 /* start a CGI script with redirection */
 {
-	char tempfile[256], input[256], cmd[256], temp[HTTPBUFFERSIZE+1];
-	int size;
+	char tempfile[256], input[256], cmd[256], cmdformat[256], temp[HTTPBUFFERSIZE+1];
+	int size, unix;
 	FILE *file;
 	wimp_t task;
 
-	/* set up the system variables */
-
+	/* change currently selected directory if required */
 	if (conn->flags.setcsd) {
 		char dirname[256], *dot;
 
@@ -41,6 +41,8 @@ void cgiscript_start(struct connection *conn)
 			xosfscontrol_dir(dirname);
 		}
 	}
+
+	/* set up the system variables */
 
 	if (configuration.server[0])  set_var_val("SERVER_SOFTWARE", configuration.server);
 	set_var_val("SERVER_PORT", "80");
@@ -112,22 +114,37 @@ void cgiscript_start(struct connection *conn)
 	input[0] = '\0';                      /* clear spool-input filename */
 
 	/* get unique, temporary file */
-	if (*configuration.cgi_out)
+	if (*configuration.cgi_out) {
 		strcpy(tempfile, configuration.cgi_out);
-	else
+	} else {
 		tmpnam(tempfile);
+	}
+
+	strcpy(cmdformat,"*%s");
+	unix = 0;
+	if (conn->handler) {
+		if (conn->handler->unix) {
+			unix = 1;
+		}
+		if (conn->handler->command) {
+			strcpy(cmdformat,conn->handler->command);
+		}
+	}
 
 	if (conn->method == METHOD_POST) {
-		if (*configuration.cgi_in)
+		if (*configuration.cgi_in) {
 			strcpy(input, configuration.cgi_in);
-		else
+		} else {
 			tmpnam(input);
+		}
 		/* generate input filename */
 		xosfile_save_stamped(input, 0xfff, (byte *)conn->body, (byte *)conn->body+conn->bodysize);
 		/* build command with redirection */
-		sprintf(cmd, "*%s { < %s > %s }", conn->filename, input, tempfile);
+		if (unix) strcat(cmdformat," < %s > %s"); else strcat(cmdformat," { < %s > %s }");
+		sprintf(cmd, cmdformat, conn->filename, input, tempfile);
 	} else {
-		sprintf(cmd, "*%s { > %s }", conn->filename, tempfile);
+		if (unix) strcat(cmdformat," > %s"); else strcat(cmdformat," { > %s }");
+		sprintf(cmd, cmdformat, conn->filename, tempfile);
 		input[0] = '\0';                    /* no file with input for the cgi-script */
 	}
 
