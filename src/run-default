@@ -1,7 +1,7 @@
 | Run file for WebJames
 
 Set WebJames$Dir <Obey$Dir>
-
+Set WebJames$Scrap <Wimp$ScrapDir>.WebJames
 If "<PHP$Mail>"="" Then Set PHP$Mail <WebJames$Dir>.PHPMail
 Set File$Type_18A PHP
 

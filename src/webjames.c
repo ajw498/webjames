@@ -1,5 +1,5 @@
 /*
-	$Id: webjames.c,v 1.1 2002/02/17 22:50:10 ajw Exp $
+	$Id: webjames.c,v 1.1.2.1 2002/02/26 22:15:06 ajw Exp $
 	General functions for WebJames
 */
 
@@ -49,13 +49,12 @@ void *webjames_last_malloc;
 /* ------------------------------------------------ */
 /* init, kill, poll */
 
-int webjames_init(char *config)
+int webjames_init(char *config) {
 /* initialise the webserver */
 /* config           name of configuration file */
 /* returns 1 (ok) or 0 (failed) */
-{
+
 	int i, arg, active;
-	char buffer[MAX_FILENAME];
 
 	quitwhenidle = 0;
 
@@ -68,7 +67,7 @@ int webjames_init(char *config)
 	configuration.casesensitive=0;
 	*configuration.clflog = *configuration.weblog = *configuration.webmaster = *configuration.site = *configuration.serverip = '\0';
 	*configuration.put_script = *configuration.delete_script = *configuration.htaccessfile = '\0';
-	*configuration.cgi_in = *configuration.cgi_out = '\0';
+	*configuration.cgi_in = *configuration.cgi_out;
 	configuration.numimagedirs=0;
 	configuration.syslog=0;
 	configuration.loglevel = 5;
@@ -83,12 +82,16 @@ int webjames_init(char *config)
 	configuration.webjames_h_revision=WEBJAMES_H_REVISION; /*used by PHP module to ensure that it was compiled with the correct version of webjames.h */
 	read_config(config);
 
-	/* Supply default for cgi_dir if the user hasn't specified it */
-	if (*configuration.cgi_dir == '\0') wjstrncpy(configuration.cgi_dir,"<Wimp$ScrapDir>.WebJames",MAX_FILENAME);
-	/* Must be canonicalised if possible as some programs (eg Perl) don't like <foo$dir> as arguments */
-	if (!E(xosfscontrol_canonicalise_path(configuration.cgi_dir,buffer,NULL,NULL,MAX_FILENAME,NULL))) wjstrncpy(configuration.cgi_dir,buffer,MAX_FILENAME);
 	/* create out directory in !Scrap (or wherever) */
-	EV(xosfile_create_dir(configuration.cgi_dir,0));
+	EV(xosfile_create_dir("<WebJames$Scrap>",0));
+	/* Supply defaults for cgi_in/out if the user hasn't specified them */
+	/* They must be canonicalised if possible as some programs (eg Perl) don't like <foo$dir> as arguments */
+	if (*configuration.cgi_in=='\0') {
+		if (E(xosfscontrol_canonicalise_path("<WebJames$Scrap>.In",configuration.cgi_in,NULL,NULL,256,NULL))) wjstrncpy(configuration.cgi_in,"<WebJames$Scrap>.In",MAX_FILENAME);
+	}
+	if (*configuration.cgi_out=='\0') {
+		if (E(xosfscontrol_canonicalise_path("<WebJames$Scrap>.Out",configuration.cgi_out,NULL,NULL,256,NULL))) wjstrncpy(configuration.cgi_out,"<WebJames$Scrap>.Out",MAX_FILENAME);
+	}
 
 	if ((*configuration.site == '\0') || (serverinfo.serverscount == 0) || (configuration.timeout < 0))
 		return 0;
@@ -171,11 +174,12 @@ int webjames_init(char *config)
 
 
 
-void webjames_command(char *cmd, int release)
+void webjames_command(char *cmd, int release) {
 /* parse command from external program */
+
 /* cmd              command-string */
 /* release          when == 1, SYS OS_Module,7,,cmd is called on exit */
-{
+
 	if (strncmp(cmd, "closeall", 8) == 0) {                       /* CLOSEALL */
 		int i;
 		for (i = 0; i < serverinfo.activeconnections; i++)
@@ -579,15 +583,11 @@ void read_config(char *config)
 			else if (strcmp(cmd, "delete-script") == 0)
 				wjstrncpy(configuration.delete_script, val, MAX_FILENAME);
 
-			/*cgi-input and cgi-output are deprecated*/
 			else if (strcmp(cmd, "cgi-input") == 0)
 				wjstrncpy(configuration.cgi_in, val, MAX_FILENAME);
 
 			else if (strcmp(cmd, "cgi-output") == 0)
 				wjstrncpy(configuration.cgi_out, val, MAX_FILENAME);
-
-			else if (strcmp(cmd, "cgi-iodir") == 0)
-				wjstrncpy(configuration.cgi_dir, val, MAX_FILENAME);
 
 			else if (strcmp(cmd, "accessfilename") == 0)
 				wjstrncpy(configuration.htaccessfile, val, MAX_FILENAME);

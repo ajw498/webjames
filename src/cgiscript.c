@@ -1,5 +1,5 @@
 /*
-	$Id: cgiscript.c,v 1.1 2002/02/17 22:50:10 ajw Exp $
+	$Id: cgiscript.c,v 1.1.2.1 2002/02/26 22:15:06 ajw Exp $
 	CGI script handler
 */
 
@@ -120,6 +120,7 @@ void cgiscript_start(struct connection *conn)
 {
 	char cmd[MAX_FILENAME], cmdformat[MAX_FILENAME];
 	int size, unix;
+	int input=0; /*whether an input file was created*/
 	FILE *file;
 	wimp_t task;
 	char headerbuf[TEMPBUFFERSIZE];
@@ -129,8 +130,6 @@ void cgiscript_start(struct connection *conn)
 	int location=0;
 	char *status=0;
 	int i,j;
-	char cgiin[MAX_FILENAME]="", cgiout[MAX_FILENAME];
-	static unsigned int cgiserial = 0;
 
 	/* change currently selected directory if required */
 	if (conn->flags.setcsd) {
@@ -158,40 +157,27 @@ void cgiscript_start(struct connection *conn)
 		}
 	}
 
-	/*Get filename to use for output redirection.*/
-	/*Should be unique, to allow a script to start whilst the previous one's output is still being served*/
-	if (*configuration.cgi_out != '\0') {
-		wjstrncpy(cgiout, configuration.cgi_out, MAX_FILENAME);
-	} else {
-		snprintf(cgiout, MAX_FILENAME, "%s.%u", configuration.cgi_dir, cgiserial++);
-	}
-
 	if (conn->method == METHOD_POST) {
 		/* generate input filename */
-		if (*configuration.cgi_in != '\0') {
-			wjstrncpy(cgiin, configuration.cgi_in, MAX_FILENAME);
-		} else {
-			snprintf(cgiin, MAX_FILENAME, "%s.%u", configuration.cgi_dir, cgiserial++);
-		}
-		EV(xosfile_save_stamped(cgiin, 0xfff, (byte *)conn->body, (byte *)conn->body+conn->bodysize));
-
+		EV(xosfile_save_stamped(configuration.cgi_in, 0xfff, (byte *)conn->body, (byte *)conn->body+conn->bodysize));
+		input=1;
 		/* build command with redirection */
 		if (unix) wjstrncat(cmdformat," < %s > %s",MAX_FILENAME); else wjstrncat(cmdformat," { < %s > %s }",MAX_FILENAME);
-		snprintf(cmd, MAX_FILENAME, cmdformat, conn->filename, cgiin, cgiout);
+		snprintf(cmd, MAX_FILENAME, cmdformat, conn->filename, configuration.cgi_in, configuration.cgi_out);
 	} else {
 		if (strchr(cmdformat,'%')) {
 			if (unix) wjstrncat(cmdformat," > %s",MAX_FILENAME); else wjstrncat(cmdformat," { > %s }",MAX_FILENAME);
-			snprintf(cmd, MAX_FILENAME, cmdformat, conn->filename, cgiout);
+			snprintf(cmd, MAX_FILENAME, cmdformat, conn->filename, configuration.cgi_out);
 		} else {
 			if (unix) wjstrncat(cmdformat," > %s",MAX_FILENAME); else wjstrncat(cmdformat," { > %s }",MAX_FILENAME);
-			snprintf(cmd, MAX_FILENAME, cmdformat, cgiout);
+			snprintf(cmd, MAX_FILENAME, cmdformat, configuration.cgi_out);
 		}
 	}
 
 	/* execute the cgi-script */
 	if (E(xwimp_start_task(cmd, &task))) {
 		/* failed to start cgi-script */
-		if (*cgiin) remove(cgiin);
+		if (input) remove(configuration.cgi_in);
 		report_servererr(conn, "script couldn't be started");
 		return;
 	}
@@ -199,7 +185,7 @@ void cgiscript_start(struct connection *conn)
 	webjames_writelog(LOGLEVEL_CGISTART, cmd);
 
 	/* remove cgi-spool-input file (if any) */
-	if (*cgiin) remove(cgiin);
+	if (input) remove(configuration.cgi_in);
 
 	/* Remove all system variables that were set */
 	cgiscript_removevars();
@@ -216,13 +202,13 @@ void cgiscript_start(struct connection *conn)
 	/* already set up for writing (this is done in write.c) */
 
 	/* read filesize */
-	if (get_file_info(cgiout, NULL, NULL, NULL, &size, 0) < 0) {
+	if (get_file_info(configuration.cgi_out, NULL, NULL, NULL, &size, 0) < 0) {
 		report_servererr(conn, "error occured when reading file info");
 		return;
 	}
 
 	/* open file for reading */
-	file = fopen(cgiout, "rb");
+	file = fopen(configuration.cgi_out, "rb");
 	if (!file) {
 		report_notfound(conn);
 		return;
@@ -236,7 +222,7 @@ void cgiscript_start(struct connection *conn)
 	conn->leftinbuffer = 0;
 
 	conn->flags.deletefile = 1;           /* delete the file when done */
-	wjstrncpy(conn->filename, cgiout, MAX_FILENAME);
+	wjstrncpy(conn->filename, configuration.cgi_out, MAX_FILENAME);
 
 	conn->flags.is_cgi = 0;               /* make close() output clf-info */
 
