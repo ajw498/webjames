@@ -43,4 +43,3 @@ all2: all
 #Legacy target
 setup:
 
-handler.o: build/php

@@ -1,7 +1,12 @@
 #!/bin/sh
 #
-# $Id: configure,v 1.2 2002/02/19 20:35:11 ajw Exp $
+# $Id: configure,v 1.3 2002/02/21 23:16:03 ajw Exp $
 #
+
+# Make sure everything is pristine
+if test -f Makefile; then
+  make cvsclean
+fi
 
 LOG=-DLOG
 CGISCRIPT=-DCGISCRIPT
@@ -58,6 +63,7 @@ clean:
 cvsclean: clean
 	rm -f src/Makefile
 	rm -f Makefile
+	rm -f src/build/php
 
 EOF
 
@@ -67,7 +73,14 @@ cat > src/Makefile << EOF
 FLAGS = $LOG $CGISCRIPT $SSI $WEBJAMESSCRIPT $SENDASIS $CONTENT $PHP
 
 include build/cross
--include build/php
+EOF
+if ! test -z $PHP; then
+cat >> src/Makefile << EOF
+include build/php
+include build/php2
+EOF
+fi
+cat >> src/Makefile << EOF
 include build/common
 
 EOF
