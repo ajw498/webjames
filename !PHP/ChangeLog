@@ -1,5 +1,13 @@
-v2.03 6-Dec-00
+v2.05 6-Feb-01
+Rewrote the configuration frontend.
+Fixed problems with the Wimpslot not being set correctly sometimes
+Fixed bug (introduced in version 2.02) that prevented working with Netplex.
+
+v2.04 6-Dec-00
 Variables such as $REMOTE_ADDR and $HTTP_USER_AGENT now work properly
+
+v2.03 29-Oct-00
+Added XML extension functions
 
 v2.02 19-Oct-00
 Fixed bug that could cause a filecore in use error if the script had a pathname

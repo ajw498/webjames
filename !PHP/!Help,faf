@@ -1,5 +1,5 @@
 
-                    PHP 4.0.2  RISC OS version 2.03
+                    PHP 4.0.2  RISC OS version 2.05
                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 What is it?
 ~~~~~~~~~~~
@@ -54,13 +54,15 @@ Using PHP
 ~~~~~~~~~
 Ensure that the !PHP application has been seen before you try to run any
 PHP scripts. You will also need a web browser to view the output. Double
-click on !PHP, then select the Stand alone icon, then click on Save.
-Enter your script in a text editor such as !StrongEd, !Zap or !Edit, and
-then save it. Set it's filetype to PHP. Double click on it, and it will
-be interpreted, and the output loaded into your browser.
+click on !PHP, then select the Stand alone, single tasking icon, then
+click on Save. Enter your script in a text editor such as !StrongEd,
+!Zap or !Edit, and then save it. Set it's filetype to PHP. Double click
+on it, and it will be interpreted, and the output loaded into your
+browser.
 
-If you want PHP to multi-task when interpreting your scripts, then tick
-the Run in a task window icon.
+If you want PHP to multi-task when interpreting your scripts, then
+select the Stand alone, multitasking icon instead. For most scripts
+there is little advantage to be gained from multitasking.
 
 While quite a few scripts will work like this, ones that use GET and
 POST variables from forms, generate GIF images and so forth will only
@@ -78,10 +80,9 @@ WebJames (0.24 and later) http://www.ecs.soton.ac.uk/~ajw498/internet/
 
 PHP does not work with DeltaNet or WebServe
 
-Other servers may work, or may need the CGIWrapper to be altered (see
-below).
-Double click on !PHP, then select the Run as a CGI program icon, then
-click on Save.
+Double click on !PHP, then select one of the CGI icons, according to
+which server you are running, then click Save.
+
 
 To use with Navaho, simply create your script as above, make sure that
 it's filetype is PHP, then put the script into Navaho's cgi-bin
@@ -114,22 +115,13 @@ file and change the line PerlFiletype:&102 to PerlFiletype:&18A (This
 will mean that you can't run Perl scripts though). Thanks to Nik Gare
 for pointing this out.
 
-The commercial version of Netplex (2.0x) shouldn't need either of the
+The commercial version of Netplex (2.xx) shouldn't need either of the
 above modifications, but I don't have a copy so haven't tested this.
 
-Errors
-~~~~~~
-If you get the following error then it is usually because you are
-running PHP from a web server, but have not selected the web server icon
-in !PHP.
 
-X-Powered-By: PHP/X.X.XX Content-type: text/html
-Fatal error: Unable to open -f in - on line 0
-No input file specified.
-
-If you get the output scrolling in a command window, then you are
-trying to run PHP standalone, but have not selected the stand alone icon
-in !PHP
+If you get the output scrolling in a command window, then it is
+probably because you are trying to run PHP standalone, but have not
+selected the stand alone icon in !PHP
 
 Filenames
 ~~~~~~~~~
@@ -159,26 +151,17 @@ areas. If you don't want it to, or you have RISC OS 3.11 or earlier, you
 can disable their use by editing the !PHP.!Boot file.
 
 
-CGIWrapper
-~~~~~~~~~~
-The file !PHP.CGIWrapper exists to isolate the actual PHP binary from
-the variations between web servers. If you find PHP does not work
-correctly with another server, then this is the place to have a look at.
-It is a BASIC file, and most of it should be reasonably easy to
-understand. If you do modify this file, I would be grateful if you
-could send me a copy, so everyone can benefit from it.
-
-
 Configuration
 ~~~~~~~~~~~~~
-Whether to run as a CGI program or not can be configured by double
-clicking on !PHP. There are some other options that can be configured,
-although the defaults should be fine for most people. To configure the
-other options, copy the file php/ini into your !Boot.Choices directory,
-and then load it into a text editor and make any alterations. Many of
-the options are not relevant to the RISC OS port. More information on
-the options can be found in the PHP manual. You may find changing the
-error_reporting variable to 15 helps with debugging.
+You can double click on !PHP to configure which webserver you are
+using (or standalone if you aren't using any webserver).
+There are some other options that can be configured, although the
+defaults should be fine for most people. To configure the other options,
+copy the file php/ini into your !Boot.Choices directory, and then load
+it into a text editor and make any alterations. Many of the options are
+not relevant to the RISC OS port. More information on the options can be
+found in the PHP manual. You may find changing the error_reporting
+variable to 15 helps with debugging.
 
 
 StrongEd

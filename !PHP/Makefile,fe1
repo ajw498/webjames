@@ -1,21 +1,22 @@
-HEADERS	=	
+
 
 LIBS	=	\
-		L:AJWLib.o.AJWLib\
-		L:stubs.o.asstubs\
-		L:Desk.o.Desk
+		C:o.stubs\
+		C:tboxlibs.o.eventlib\
+		C:tboxlibs.o.toolboxlib\
+		C:tboxlibs.o.wimplib
 
 
-OBJECTS	=	!RunImage.o
+OBJECTS = Main.o
 
-INCLUDE	=	L:
+INCLUDE = C:
 
-TARGET		=	!RunImage
+TARGET = !RunImage
 
-CCFLAGS		=	$(CCEXTRA) -mthrowback -Wall -O3 -I$(INCLUDE)
+CCFLAGS = $(CCEXTRA) -throwback -depend !Depend -strict -fah -Otime -I$(INCLUDE)
 
 
-CC		=	gcc -c $(CCFLAGS)
+CC = cc -c $(CCFLAGS)
 
 
 .c.o:
@@ -24,6 +25,15 @@ CC		=	gcc -c $(CCFLAGS)
 
 
 
-$(TARGET):	$(OBJECTS) $(LIBS)
-	gcc -o $@ $(OBJECTS) $(LIBS)
+$(TARGET):	$(OBJECTS)
+	link -o $@ $(OBJECTS) $(LIBS)
 
+
+# Dynamic dependencies:
+o.Main:	c.Main
+o.Main:	C:tboxlibs.h.wimp
+o.Main:	C:tboxlibs.h.toolbox
+o.Main:	C:h.kernel
+o.Main:	C:tboxlibs.h.event
+o.Main:	C:tboxlibs.h.wimplib
+o.Main:	C:tboxlibs.h.gadgets

@@ -1,0 +1,19 @@
+WimpSlot -Min 1400k -Max 1400k
+Set SERVER_SOFTWARE <CGI$ServerSoftware>
+Set SERVER_NAME <CGI$ServerName>
+Set GATEWAY_INTERFACE <CGI$GatewayInterface>
+Set SERVER_PORT <CGI$ServerPort>
+Set SERVER_PROTOCOL <CGI$ServerProtocol>
+Set REQUEST_METHOD <CGI$RequestMethod>
+Set PATH_INFO <CGI$PathInfo>
+Set SCRIPT_NAME <CGI$ScriptName>
+Set QUERY_STRING <CGI$QueryString>
+Set REMOTE_HOST <CGI$RemoteHost>
+Set REMOTE_ADDR <CGI$RemoteAddr>
+Set AUTH_TYPE <CGI$AuthType>
+Set AUTH_USER <CGI$AuthUser>
+Set CONTENT_TYPE <CGI$ContentType>
+Set CONTENT_LENGTH <CGI$ContentLength>
+Set SCRIPT_FILENAME %0
+Set PATH_TRANSLATED %0
+Run <PHP$Dir>.php %*0

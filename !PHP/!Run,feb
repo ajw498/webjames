@@ -1,14 +1,10 @@
 Set PHP$Dir <Obey$Dir>
-IconSprites <PHP$Dir>.!Sprites
-Set File$Type_18A PHP
-Set Alias$PHP Run <PHP$Dir>.PHP %%*0
 
-|Unset any leftover CGI variables
-Unset SERVER_SOFTWARE
-Unset SERVER_NAME
-Unset GATEWAY_INTERFACE
-Unset REQUEST_METHOD
-Unset QUERY_STRING
+RMEnsure Toolbox 1.36 RMLoad System:Modules.Toolbox.Toolbox
+RMEnsure Toolbox 1.36 Error You need Toolbox 1.36 or later
 
-WimpSlot -Min 64k -Max 64k
-Run <Obey$Dir>.!RunImage
+RMEnsure Window 1.44 RMLoad System:Modules.Toolbox.Window
+RMEnsure Window 1.44 Error You need Window Object 1.44 or later
+
+WimpSlot -Min 28k -Max 28k
+Run <PHP$Dir>.!RunImage
