@@ -1,5 +1,5 @@
 /*
-	$Id: serverparsed.c,v 1.2 2002/10/05 16:20:07 ajw Exp $
+	$Id: serverparsed.c,v 1.3 2002/10/05 16:52:10 ajw Exp $
 	Support for Server Side Includes (SSI)
 */
 
@@ -10,8 +10,6 @@
 #include <time.h>
 
 #include "kernel.h"
-
-#include "regex.h"
 
 #include "webjames.h"
 #include "wjstring.h"
