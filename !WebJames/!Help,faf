@@ -1829,7 +1829,7 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 </td></tr></table>
 </h3>
 
-<i>0.30 (24/7/2001)</i>
+<i>0.30 (4/8/2001)</i>
 
 <ul>
   <li>no longer converts %7E type escape characters that are in the query string.
@@ -1837,6 +1837,9 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
   HTTP_ACCEPT, HTTP_ACCEPT_LANGUAGE, HTTP_ACCEPT_CHARSET, HTTP_ENCODING</code>.
   <li>added support for content negotiation and multiviews.
   <li>added the server-parsed handler for SSI files.
+  <li>suports <code>Location:</code> and <code>Status:</code> headers output by CGI scripts
+  <li>ensures all headers from CGI scripts have the correct line endings
+  <li>outputs a <code>Date:</code> header in all responses
 
 </ul>
 
