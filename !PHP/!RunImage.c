@@ -2,7 +2,7 @@
 	!PHP
 	Copyright © Alex Waugh 2000
 
-	$Id: !RunImage.c,v 1.6 2000/09/13 09:44:29 AJW Exp $
+	Version 1.01 19/2/00
 
 
     This program is free software; you can redistribute it and/or modify
@@ -47,7 +47,6 @@
 #define icon_SAVE 4
 #define icon_OK 2
 #define icon_TASKWINDOW 6
-#define icon_CSD 7
 
 Desk_window_handle window;
 
@@ -65,25 +64,14 @@ Desk_bool Help(Desk_event_pollblock *block, void *r)
 	return Desk_TRUE;
 }
 
-void SetVars(FILE *file)
-{
-	char str[256];
-	sprintf(str,"Set PHP$CGI \"%s\"\n",Desk_Icon_GetSelect(window,icon_CGI) ? "Yes" : "No");
-	system(str);
-	if (file) fprintf(file,str);
-	sprintf(str,"Set PHP$TaskWindow \"%s\"\n",Desk_Icon_GetSelect(window,icon_TASKWINDOW) ? "Yes" : "No");
-	system(str);
-	if (file) fprintf(file,str);
-	sprintf(str,"Set PHP$CSD \"%s\"\n",Desk_Icon_GetSelect(window,icon_CSD) ? "Yes" : "No");
-	system(str);
-	if (file) fprintf(file,str);
-	system("Obey <PHP$Dir>.SetRunType");
-}
-
 Desk_bool OK(Desk_event_pollblock *block, void *r)
 {
+	char str[256];
 	if (block->data.mouse.button.data.menu) return Desk_FALSE;
-	SetVars(NULL);
+	sprintf(str,"Set PHP$CGI \"%s\"\n",Desk_Icon_GetSelect(window,icon_CGI) ? "Yes" : "No");
+	system(str);
+	sprintf(str,"Set PHP$TaskWindow \"%s\"\n",Desk_Icon_GetSelect(window,icon_TASKWINDOW) ? "Yes" : "No");
+	system(str);
 	if (block->data.mouse.button.data.select) Desk_Event_CloseDown();
 	return Desk_TRUE;
 }
@@ -103,9 +91,15 @@ Desk_bool UnShadeTaskWindow(Desk_event_pollblock *block, void *r)
 Desk_bool Save(Desk_event_pollblock *block, void *r)
 {
 	FILE *config;
+	char str[256];
 	if (block->data.mouse.button.data.menu) return Desk_FALSE;
 	config=AJWLib_File_fopen("<PHP$Dir>.Config","w");
-	SetVars(config);
+	sprintf(str,"Set PHP$CGI \"%s\"\n",Desk_Icon_GetSelect(window,icon_CGI) ? "Yes" : "No");
+	system(str);
+	fprintf(config,str);
+	sprintf(str,"Set PHP$TaskWindow \"%s\"\n",Desk_Icon_GetSelect(window,icon_TASKWINDOW) ? "Yes" : "No");
+	system(str);
+	fprintf(config,str);
 	fclose(config);
 	if (block->data.mouse.button.data.select) Desk_Event_CloseDown();
 	return Desk_TRUE;
@@ -135,7 +129,6 @@ int main(void)
 	Desk_Event_Claim(Desk_event_CLICK,window,icon_STANDALONE,UnShadeTaskWindow,NULL);
 	Desk_Icon_SetRadios(window,icon_STANDALONE,icon_CGI,Desk_stricmp(getenv("PHP$CGI"),"Yes") ? icon_STANDALONE : icon_CGI);
 	Desk_Icon_SetSelect(window,icon_TASKWINDOW,!Desk_stricmp(getenv("PHP$TaskWindow"),"Yes"));
-	Desk_Icon_SetSelect(window,icon_CSD,!Desk_stricmp(getenv("PHP$CSD"),"Yes"));
 	if (Desk_Icon_GetSelect(window,icon_CGI)) ShadeTaskWindow(NULL,NULL);
 	while (Desk_TRUE) Desk_Event_Poll();
 	return 0;
