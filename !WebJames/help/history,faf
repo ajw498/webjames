@@ -14,7 +14,7 @@
 </td></tr></table>
 </h3>
 
-<i>0.31 (??/9/2001)</i>
+<i>0.31 (18/9/2001)</i>
 
 <ul>
   <li>reverse dns and syslog options are now runtime rather than compile time.
@@ -27,6 +27,7 @@
   <li>fixed bug that caused a crash if you forced a shutdown from the taskmanager while there were still active connections.
   <li>split the help file into several smaller files, as it was getting a bit large.
   <li>now uses the SocketWatch module, if present, to improve performance.
+  <li>supports HTTP HEAD requests 
 
 </ul>
 
