@@ -1,4 +1,7 @@
 
+v1.04 26-Apr-00
+Updated to PHP 3.0.16
+
 v1.03 12-Mar-00
 Altered CGIWrapper to work better with Netplex 1.70
 Fixed corruption of gifs when ImageGif($im) used
