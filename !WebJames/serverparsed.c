@@ -1,5 +1,5 @@
 /*
-	$Id: serverparsed.c,v 1.11 2001/09/18 21:09:28 AJW Exp $
+	$Id: serverparsed.c,v 1.12 2001/12/20 23:09:44 AJW Exp $
 	Support for Server Side Includes (SSI)
 */
 
@@ -677,6 +677,7 @@ static void serverparsed_includevirtual(struct connection *conn,char *reluri)
 	COPY(port);
 	COPY(index);
 	COPY(method);
+	COPY(methodstr);
 	COPY(httpminor);
 	COPY(httpmajor);
 	STRNCOPY(host,MAX_HOSTNAME);
@@ -696,6 +697,7 @@ static void serverparsed_includevirtual(struct connection *conn,char *reluri)
 	MEMCOPY(requesturi);
 	COPY(bodysize);
 	MEMCOPY(body);
+	MEMCOPY(type);
 	COPY(headersize);
 	COPY(headerallocated);
 	COPY(args);
