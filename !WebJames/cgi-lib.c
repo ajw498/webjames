@@ -1,5 +1,6 @@
 /* cgi-lib - C library for WebJames cgi-scripts
 
+   cgi-lib 0.03 17/11/2001
    cgi-lib 0.02 06/10/1999
    cgi-lib 0.01 14/02/1999
 */
@@ -9,13 +10,16 @@
 #include <stdlib.h>
 #include <time.h>
 // oslib
-#include "os.h"
-#include "socket.h"
-#include "osmodule.h"
-#include "wimp.h"
-#include "osfile.h"
+#include "OSlib:os.h"
+#include "OSlib:socket.h"
+#include "OSlib:osmodule.h"
+#include "OSlib:wimp.h"
+#include "OSlib:osfile.h"
 
 #include "cgi-lib.h"
+
+#undef NULL
+#define NULL 0
 
 char _cgi_temp[2048], _cgi_requestline[4100], _cgi_headerfile[256];
 char _cgi_host[128], _cgi_username[64], _cgi_taskname[32];
@@ -29,7 +33,7 @@ int _cgi_polldelay, _cgi_starttime, _cgi_responscode;
 int _cgi_requestlinelength, _cgi_parameterssize, _cgi_parametercount;
 
 int registers[10];
-
+char _cgi_postdata[1000];
 
 
 int cgi_init(int argc, char **argv) {
@@ -41,6 +45,7 @@ int cgi_init(int argc, char **argv) {
 
   int arg, i;
   char *ptr, *end;
+  int length,die,nextpost;
 
   if (argc < 7)  return 2;
 
@@ -72,43 +77,64 @@ int cgi_init(int argc, char **argv) {
 
   // parse the arguments
   arg = 1;
-  while (arg < argc) {
-    if (strcmp(argv[arg], "-socket") == 0) {
-      if (arg+1 < argc)  _cgi_socket = (socket_s)atoi(argv[++arg]);
-    } else if (strcmp(argv[arg], "-http") == 0) {
-      if (arg+1 < argc)  _cgi_httpversion = atoi(argv[++arg]);
-    } else if (strcmp(argv[arg], "-head") == 0)
-      _cgi_requesttype = CGI_METHOD_HEAD;
-    else if (strcmp(argv[arg], "-post") == 0)
-      _cgi_requesttype = CGI_METHOD_POST;
-    else if (strcmp(argv[arg], "-remove") == 0) {
-      _cgi_releaseheader = 1;
-    } else if (strcmp(argv[arg], "-size") == 0) {
-      if (arg+1 < argc)  _cgi_requestsize = atoi(argv[++arg]);
-    } else if (strcmp(argv[arg], "-file") == 0) {
-      if (arg+1 < argc)  strncpy(_cgi_headerfile, argv[++arg], 255);
-      _cgi_headerstorage = CGI_HEADER_FILE;
-    } else if (strcmp(argv[arg], "-rma") == 0) {
-      if (arg+1 < argc)  _cgi_headeraddress = (char *)atoi(argv[++arg]);
-      _cgi_headerstorage = CGI_HEADER_RMA;
-    } else if (strcmp(argv[arg], "-dynamic") == 0) {
-      if (arg+1 < argc)  _cgi_headermeminfo = atoi(argv[++arg]);
-      _cgi_headerstorage = CGI_HEADER_DYNAMIC;
-    } else if (strcmp(argv[arg], "-bps") == 0) {
-      if (arg+1 < argc) {
-        _cgi_maxbytespersecond = atoi(argv[++arg]);
-        if (_cgi_maxbytespersecond < 100)
-          _cgi_maxbytespersecond = 100;
-        if (_cgi_maxbytespersecond < 1000000)
-          _cgi_maxbytespersecond = 1000000;
-      }
-    } else if (strcmp(argv[arg], "-host") == 0) {
-      if (arg+1 < argc)  strncpy(_cgi_host, argv[++arg], 127);
-    } else if (strcmp(argv[arg], "-user") == 0) {
-      if (arg+1 < argc)  strncpy(_cgi_username, argv[++arg], 63);
+  while (arg < argc)
+  {
+   if (strcmp(argv[arg], "-socket") == 0)
+   {
+    if (arg+1 < argc)  _cgi_socket = (socket_s)atoi(argv[++arg]);
+   }
+   else if (strcmp(argv[arg], "-http") == 0)
+   {
+    if (arg+1 < argc)  _cgi_httpversion = atoi(argv[++arg]);
+   }
+   else if (strcmp(argv[arg], "-head") == 0)
+     _cgi_requesttype = CGI_METHOD_HEAD;
+   else if (strcmp(argv[arg], "-post") == 0)
+     _cgi_requesttype = CGI_METHOD_POST;
+   else if (strcmp(argv[arg], "-remove") == 0)
+   {
+    _cgi_releaseheader = 1;
+   }
+   else if (strcmp(argv[arg], "-size") == 0)
+   {
+    if (arg+1 < argc)  _cgi_requestsize = atoi(argv[++arg]);
+   }
+   else if (strcmp(argv[arg], "-file") == 0)
+   {
+    if (arg+1 < argc)  strncpy(_cgi_headerfile, argv[++arg], 255);
+    _cgi_headerstorage = CGI_HEADER_FILE;
+   }
+   else if (strcmp(argv[arg], "-rma") == 0)
+   {
+    if (arg+1 < argc)  _cgi_headeraddress = (char *)atoi(argv[++arg]);
+    _cgi_headerstorage = CGI_HEADER_RMA;
+   }
+   else if (strcmp(argv[arg], "-dynamic") == 0)
+   {
+    if (arg+1 < argc)  _cgi_headermeminfo = atoi(argv[++arg]);
+    _cgi_headerstorage = CGI_HEADER_DYNAMIC;
+   }
+   else if (strcmp(argv[arg], "-bps") == 0)
+   {
+    if (arg+1 < argc)
+    {
+     _cgi_maxbytespersecond = atoi(argv[++arg]);
+     if (_cgi_maxbytespersecond < 100)
+       _cgi_maxbytespersecond = 100;
+     if (_cgi_maxbytespersecond < 1000000)
+       _cgi_maxbytespersecond = 1000000;
     }
+   }
+   else if (strcmp(argv[arg], "-host") == 0)
+   {
+    if (arg+1 < argc)  strncpy(_cgi_host, argv[++arg], 127);
+   }
+   else if (strcmp(argv[arg], "-user") == 0)
+   {
+    if (arg+1 < argc)  strncpy(_cgi_username, argv[++arg], 63);
+   }
 
-    arg++;
+   arg++;
   }
 
   // check if the arguments are OK
@@ -132,26 +158,66 @@ int cgi_init(int argc, char **argv) {
   }
 
   // preprocess the arguments (if any) to the cgi-script
-  ptr = _cgi_headeraddress;             // points to 'GET /<uri>[?...&...]'
-  end = ptr + _cgi_requestsize;
-  i = 0;
-  while ((ptr[i] >= ' ') && (i < 4096)) {
-    _cgi_requestline[i] = ptr[i];
-    i++;
-  }
-  _cgi_requestline[i] = '\0';
-  _cgi_requestlinelength = i;
-  // skip method and go to /
-  while ((*ptr >= ' ') && (ptr < end) && (*ptr != '/'))  ptr++;
-  while ((*ptr >= ' ') && (ptr < end) && (*ptr != '?'))  ptr++;
-  if ((*ptr < ' ') || (ptr == end) || (ptr[1] < ' '))  return NULL;
+  if (_cgi_requesttype==CGI_METHOD_GET)
+  {
+   ptr = _cgi_headeraddress;             // points to 'GET /<uri>[?...&...]'
+   end = ptr + _cgi_requestsize;
+   i = 0;
+   while ((ptr[i] >= ' ') && (i < 4096)) {
+     _cgi_requestline[i] = ptr[i];
+     i++;
+   }
+   _cgi_requestline[i] = '\0';
+   _cgi_requestlinelength = i;
+   // skip method and go to /
+   while ((*ptr >= ' ') && (ptr < end) && (*ptr != '/'))  ptr++;
+   while ((*ptr >= ' ') && (ptr < end) && (*ptr != '?'))  ptr++;
+   if ((*ptr < ' ') || (ptr == end) || (ptr[1] < ' '))  return NULL;
 
-  _cgi_parameters = ++ptr;    // skip the '?'
-  _cgi_parametercount = 1;
-  while ((*ptr > ' ') && (ptr < end)) {
-    if (*ptr == '&')  _cgi_parametercount++;
-    _cgi_parameterssize++;
+   _cgi_parameters = ++ptr;    // skip the '?'
+
+  }
+
+  /* new additions by mdc - POST support!  (yay!) */
+  if (_cgi_requesttype==CGI_METHOD_POST)
+  {
+   ptr=_cgi_headeraddress;
+   end=ptr+1;
+   die=0;
+   nextpost=0;
+   while (ptr!=NULL && end!=NULL && die==0)
+   {
+    ptr=strstr(ptr,"\n");
     ptr++;
+    end=strstr(ptr,"\n");
+    if (ptr!=NULL)
+    {
+     if ( ((((int) _cgi_headeraddress) - (int) end) > _cgi_requestsize) || end==NULL)
+     {
+      end=(char *) (((int) _cgi_headeraddress) + _cgi_requestsize);
+      die=1;
+     }
+     length=((int) end)-((int) ptr);
+     if (length>=1000) length=999;
+     strncpy(_cgi_postdata,ptr,length);
+     _cgi_postdata[length]=0;
+     if (_cgi_postdata[0]==13) nextpost=1;
+    }
+   }
+   if (nextpost==1)
+    _cgi_parameters=_cgi_postdata;
+   else
+    _cgi_parameters=ptr;
+  }
+
+  if (_cgi_requesttype==CGI_METHOD_GET || _cgi_requesttype==CGI_METHOD_POST )
+  {
+   _cgi_parametercount = 1;
+   while ((*ptr > ' ') && (ptr < end)) {
+     if (*ptr == '&')  _cgi_parametercount++;
+     _cgi_parameterssize++;
+     ptr++;
+   }
   }
 
   return NULL;
@@ -216,12 +282,13 @@ void cgi_writestring(char *string) {
 //
 // string           string to write to the socket
 
+// Zap doesn't like CR LF - using LF instead.
   char crlf[2];
 
   cgi_writebuffer(string, strlen(string));
-  crlf[0] = 13;
-  crlf[1] = 10;
-  cgi_writebuffer(crlf, 2);
+  //crlf[0] = 13;
+  crlf[0] = 10;
+  cgi_writebuffer(crlf, 1);
 }
 
 
@@ -370,7 +437,7 @@ int *cgi_writetosocket(char *buffer, int bytes, int *written) {
 
   error = (int *)xsocket_write(_cgi_socket, (byte *)buffer, bytes, written);
   if (error) {
-    if (error[0] != 36)  return error;
+    if (error[0] != 36 && error[0] != 35)  return error;
   }
 
   return NULL;
