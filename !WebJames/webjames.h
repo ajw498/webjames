@@ -1,6 +1,8 @@
 #ifndef WEBJAMES_H
 #define WEBJAMES_H
 
+#define WEBJAMES_H_REVISION "$Revision: 1.20 $"
+
 #define MAXCONNECTIONS    100
 #define HTTPBUFFERSIZE    4096
 
