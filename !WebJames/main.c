@@ -15,8 +15,8 @@
 int quit;
 
 // local variables
-int wimp[64];
-int polldelay;
+static int wimp[64];
+static int polldelay;
 
 
 

@@ -69,7 +69,7 @@ int script_start(int scripttype, struct connection *conn, char *script, int pwd,
 
 
 
-void set_var_val(char *name, char *value) {
+static void set_var_val(char *name, char *value) {
 
   xos_set_var_val(name, (byte *)value, strlen(value), 0, 4, NULL, NULL);
 }
@@ -247,6 +247,8 @@ void script_start_webjames(int scripttype, struct connection *conn, char *script
   int size;
   char *ptr;
   wimp_t handle;
+
+  scripttype = scripttype;
 
   size = conn->headersize ;
   if (conn->bodysize > 0)  size += conn->bodysize;

@@ -16,7 +16,7 @@
 
 
 // must be called before calling report_XXXX() during reading
-void read_report(struct connection *conn) {
+static void read_report(struct connection *conn) {
 
   fd_clear(select_read, conn->socket);
   readcount--;
@@ -25,7 +25,7 @@ void read_report(struct connection *conn) {
 }
 
 
-void donereading(struct connection *conn) {
+static void donereading(struct connection *conn) {
 // header (and body) has been read, now process the request
 
   if (conn->httpmajor < 1) {

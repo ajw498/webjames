@@ -64,6 +64,4 @@ typedef struct attributes {
 
 
 void init_attributes(char *filename);
-void read_attributes_file(char *filename, char *baseuri);
 void get_attributes(char *uri, struct connection *conn);
-void insert_attributes(struct attributes *attr);

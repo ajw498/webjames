@@ -15,8 +15,8 @@
 struct reportcache reports[REPORTCACHECOUNT];
 
 // global structure describing the keywords and their values
-struct substitute subs[20];
-char *header[20];
+static struct substitute subs[20];
+static char *header[20];
 
 
 typedef struct reportname {
@@ -24,7 +24,7 @@ typedef struct reportname {
   char *string;               // text
 } reportname;
 
-struct reportname rnames[] = {
+static struct reportname rnames[] = {
           { HTTP_NOCONTENT,      "No content"},
           { HTTP_MOVED,          "File has been moved"},
           { HTTP_TEMPMOVED,      "File has been moved temporarily"},
@@ -40,7 +40,7 @@ struct reportname rnames[] = {
    };
 
 
-char *findmatch(char *start, char *end) {
+static char *findmatch(char *start, char *end) {
 
   char *ptr;
 
@@ -60,7 +60,7 @@ void report_flushcache() {
 
 
 
-char *report_substitute(struct reportcache *report, struct substitute subs[], int num, int *size) {
+static char *report_substitute(struct reportcache *report, struct substitute subs[], int num, int *size) {
 // substitutes all occurences of specific strings
 //
 // report           cached report-html-file
@@ -86,6 +86,7 @@ char *report_substitute(struct reportcache *report, struct substitute subs[], in
   }
 
   matches = 0;
+  end = 0;
   newsize = report->size;
   if (report->substitute != REPORT_SUBSTITUTE_NOT_NEEDED) {
     search = report->buffer;
@@ -218,7 +219,7 @@ struct reportcache *report_getfile(int report) {
 
 
 
-char *get_report_name(int report) {
+static char *get_report_name(int report) {
 // scans the list of http status codes and returns a string describing it
 //
 // report           http status code
@@ -233,7 +234,7 @@ char *get_report_name(int report) {
 
 
 
-void report_quickanddirty(struct connection *conn, int report) {
+static void report_quickanddirty(struct connection *conn, int report) {
 // if all other fails, this attempts to write a fairly understandable
 // reply to the socket
 //
@@ -408,6 +409,8 @@ void report_nocontent(struct connection *conn) {
 
 
 void report_badrequest(struct connection *conn, char *info) {
+
+  info = info;
 
   subs[0].name = "%URL%";
   subs[0].value = conn->uri;

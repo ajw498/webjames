@@ -17,9 +17,9 @@
 
 
 int cachesize, maxcachefilesize;
-os_dynamic_area_no cachedynamicarea = -1;
-byte *cachestart;
-struct cache *cachedfiles[MAXCACHEFILES];
+static os_dynamic_area_no cachedynamicarea = -1;
+static byte *cachestart;
+static struct cache *cachedfiles[MAXCACHEFILES];
 
 
 struct cache *get_file_through_cache(char *name, char *filename) {
@@ -200,6 +200,8 @@ void init_cache(char *list) {
 // get memory for cache; pre-load the list of files
 
   int i, limit, next, curr, freeslot;
+
+  list = list;
 
   cachestart = NULL;
   if (cachesize < 10)  return;

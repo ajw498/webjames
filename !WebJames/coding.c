@@ -1,3 +1,4 @@
+#include "coding.h"
 
 int decode_base64(char *out, char *in, int bytes) {
 // decodes a base64 stream which previously must have been

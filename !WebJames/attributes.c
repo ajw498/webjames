@@ -10,66 +10,12 @@
 #include "cgi.h"
 
 
-struct attributes *attributeslist;
-struct attributes **attrlist;
-int startattr[57];
-int attributescount;
+static struct attributes *attributeslist;
+static struct attributes **attrlist;
+static int startattr[57];
+static int attributescount;
 
-struct attributes *create_attribute_structure(char *uri);
-void insert_attributes(struct attributes *attr);
-void scan_host_list(char *list, struct attributes *attr, int allowed);
-
-
-
-void init_attributes(char *filename) {
-// reads the attributes file
-//
-// filename         pointer to the name of the attributes file
-//
-  struct attributes *attr;
-  int i, chr, start;
-
-  attributeslist = NULL;
-  attrlist = NULL;
-  attributescount = 0;
-  read_attributes_file(filename, "");   // read attributes in to a
-                                        // sorted linked list
-  if (!attributescount)  return;
-
-  attrlist = malloc(attributescount*sizeof(struct attributes *));
-  if (!attrlist)  return;
-
-  // start position in attrlist array, indexed by first letter in the URI
-  for (i = 0; i < 56; i++)  startattr[i] = -1;
-
-  attr = attributeslist;                // convert the linked list to
-                                        // a straight array - easier to
-                                        // to binary search that way
-  for (i = 0; i < attributescount; i++) {
-    attrlist[i] = attr;
-
-    chr = attr->uri[1];                 // first letter after the /
-    if (chr < 'A')
-      start = ATTR___A;
-    else if ((chr >= 'A') && (chr <= 'Z'))
-      start = chr - 'A' + ATTR_A_Z;
-    else if ((chr > 'Z') && (chr < 'a'))
-      start = ATTR_Z_a;
-    else if ((chr >= 'a') && (chr <= 'z'))
-      start = chr - 'a' + ATTR_a_z;
-    else
-      start = ATTR_z__;
-
-    if (startattr[start] == -1)
-      startattr[start] = i;             // set starting point
-
-    attr = attr->next;                  // next in linked list
-  }
-}
-
-
-
-void insert_attributes(struct attributes *attr) {
+static void insert_attributes(struct attributes *attr) {
 // insert an attributes structure at the right position in the linked list
   struct attributes *prev, *this;
   int more;
@@ -97,7 +43,7 @@ void insert_attributes(struct attributes *attr) {
 }
 
 
-void scan_filetype_list(char *list, struct attributes *attr, int allowed) {
+static void scan_filetype_list(char *list, struct attributes *attr, int allowed) {
 
   int count, filetypeslist[256], *oldlist, *newlist, more;
 
@@ -143,7 +89,7 @@ void scan_filetype_list(char *list, struct attributes *attr, int allowed) {
 
 
 
-void scan_host_list(char *list, struct attributes *attr, int allowed) {
+static void scan_host_list(char *list, struct attributes *attr, int allowed) {
 
   int count, hostlist[256], *oldlist, *newlist, more;
 
@@ -189,7 +135,7 @@ void scan_host_list(char *list, struct attributes *attr, int allowed) {
 
 
 
-struct attributes *create_attribute_structure(char *uri) {
+static struct attributes *create_attribute_structure(char *uri) {
 
   struct attributes *attr;
 
@@ -225,7 +171,7 @@ struct attributes *create_attribute_structure(char *uri) {
 }
 
 
-void read_attributes_file(char *filename, char *base) {
+static void read_attributes_file(char *filename, char *base) {
 // filename - name of the attributes file
 // base - base uri
 //
@@ -585,3 +531,50 @@ void get_attributes(char *uri, struct connection *conn) {
 
   if (hidden)  conn->attrflags.accessallowed =0;
 }
+
+void init_attributes(char *filename) {
+// reads the attributes file
+//
+// filename         pointer to the name of the attributes file
+//
+  struct attributes *attr;
+  int i, chr, start;
+
+  attributeslist = NULL;
+  attrlist = NULL;
+  attributescount = 0;
+  read_attributes_file(filename, "");   // read attributes in to a
+                                        // sorted linked list
+  if (!attributescount)  return;
+
+  attrlist = malloc(attributescount*sizeof(struct attributes *));
+  if (!attrlist)  return;
+
+  // start position in attrlist array, indexed by first letter in the URI
+  for (i = 0; i < 56; i++)  startattr[i] = -1;
+
+  attr = attributeslist;                // convert the linked list to
+                                        // a straight array - easier to
+                                        // to binary search that way
+  for (i = 0; i < attributescount; i++) {
+    attrlist[i] = attr;
+
+    chr = attr->uri[1];                 // first letter after the /
+    if (chr < 'A')
+      start = ATTR___A;
+    else if ((chr >= 'A') && (chr <= 'Z'))
+      start = chr - 'A' + ATTR_A_Z;
+    else if ((chr > 'Z') && (chr < 'a'))
+      start = ATTR_Z_a;
+    else if ((chr >= 'a') && (chr <= 'z'))
+      start = chr - 'a' + ATTR_a_z;
+    else
+      start = ATTR_z__;
+
+    if (startattr[start] == -1)
+      startattr[start] = i;             // set starting point
+
+    attr = attr->next;                  // next in linked list
+  }
+}
+

@@ -11,16 +11,16 @@ CC            = cc
 
 # CCFlags       = -c -throwback -IC: -IOSLibInclude: -DANTRESOLVER -DLOG -DSYSLOG -Otime
 # CCFlags       = -c -throwback -IC: -IOSLibInclude: -DLOG -DSYSLOG -Otime
-CCFlags       = -c -throwback -IC: -IOSLibInclude: -DLOG -Otime
+CCFlags       = -c -throwback -IC: -g -fah -IOSLibInclude: -DLOG
 LinkFlags     = -o $@
 
-Libs          = OSLib:o.OSLib C:o.Stubs C:o.socklib
+Libs          = OSLib:o.OSLib C:o.Stubs C:o.socklib MemCheck:o.MC
 Objects       = main.o webjames.o ip.o stat.o report.o write.o openclose.o \
                 read.o cache.o coding.o mimemap.o attributes.o cgi.o \
                 resolve.o cacheheap.o
 
 !RunImage:    $(Objects)
-              Link $(Linkflags) $(Objects) $(Libs)
+              Link -d $(Linkflags) $(Objects) $(Libs)
 #              Squeeze -f -v !WebJames.!RunImage
 
 .c.o:

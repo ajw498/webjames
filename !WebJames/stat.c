@@ -16,7 +16,8 @@
 
 
 struct stats statistics;
-char weblog[256], clflog[256], logclock[32], rename_cmd[256];
+char weblog[256], clflog[256], rename_cmd[256];
+static char logclock[32];
 int loglevel = 5;
 int log_close_delay = 90;               // seconds
 
@@ -24,11 +25,12 @@ int log_close_delay = 90;               // seconds
 #ifndef SYSLOG
 int log_max_age, log_max_size;
 int log_max_copies = 0;
-int logupdatetime, logrotatetime;       // clock()/100 values
-FILE *logfile = NULL;
+static int logupdatetime, logrotatetime;       // clock()/100 values
+static FILE *logfile = NULL;
 #endif
 
-int clfupdatetime, clfrotatetime;       // clock()/100 values
+int clfupdatetime;
+static int clfrotatetime;       // clock()/100 values
 FILE *clffile = NULL;
 int clf_max_age, clf_max_size;
 int clf_max_copies = 0;

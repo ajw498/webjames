@@ -27,13 +27,14 @@ struct config configuration;
 // connection
 struct serverinfo servers[8];
 int readcount, writecount, dnscount, slowdown, reversedns;
-int activeconnections, quitwhenidle, maxrequestsize;
+int activeconnections, maxrequestsize;
+static quitwhenidle;
 struct connection *connections[MAXCONNECTIONS];
 char select_read[32], select_write[32], select_except[32];
 
 // various
 char line[HTTPBUFFERSIZE], temp[HTTPBUFFERSIZE];
-int serverscount;
+static int serverscount;
 
 
 // ------------------------------------------------
@@ -565,7 +566,7 @@ void rfc_to_time(char *rfc, struct tm *time) {
 // time             tm structure to fill in
   char *start, days[12];
   int date, month, year, hour, min, sec, letter1, letter2, letter3;
-  int wday, yday, leap, m;
+  int wday, yday, m;
 
   // array holding (the number days in the month)-28
   strcpy(days, "303232332323");
@@ -662,7 +663,7 @@ void rfc_to_time(char *rfc, struct tm *time) {
   sec = atoi(start+1);
 
   // adjust the days[] array if it's a leap year
-  if ((year%4 == 0) && ((year%100 != 0) || (leap%400 == 0)) )
+  if ((year%4 == 0) && ((year%100 != 0) || (year%400 == 0)) )
     days[1] = '1';
 
   yday = date;
