@@ -1,3 +1,0 @@
-PHP -f %*0 > <Wimp$Scrap>
-SetType <Wimp$Scrap> HTML
-Filer_Run <Wimp$Scrap>
