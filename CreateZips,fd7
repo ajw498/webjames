@@ -1,4 +1,0 @@
-Echo Creating zip...
-Dir <Obey$Dir>
-Remove <Obey$Dir>.webjames/zip
-zip -r -9 <Obey$Dir>.webjames/zip !WebJames Site Licence -x */o/* o/* *CVS* *Debug* *zip* 
