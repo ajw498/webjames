@@ -276,22 +276,11 @@ void pollread_header(struct connection *conn, int bytes) {
         return;
       }
 
-      get_attributes(conn->uri, conn);
-
-      if (!(conn->attrflags.accessallowed)) {
-        read_report(conn);
-        report_notfound(conn);
-        return;
-      }
-
-      // if the requested file is a cgi-script...
-      if (conn->flags.is_cgi) {
-        conn->header = malloc(HTTPBUFFERSIZE);    // allocate header-buffer
-        if (conn->header) {
-          sprintf(conn->header, "%s\n", conn->requestline);
-          conn->headersize = strlen(conn->header);
-          conn->headerallocated = HTTPBUFFERSIZE;
-        }
+      conn->header = malloc(HTTPBUFFERSIZE);    // allocate header-buffer
+      if (conn->header) {
+        sprintf(conn->header, "%s\n", conn->requestline);
+        conn->headersize = strlen(conn->header);
+        conn->headerallocated = HTTPBUFFERSIZE;
       }
 
     } else if (strncmp(upper, "ACCEPT: ", 8) == 0) {

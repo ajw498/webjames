@@ -141,6 +141,14 @@ void send_file(struct connection *conn) {
   // select the socket for writing
   select_writing(conn->index);
 
+  get_uri_attributes(conn->uri, conn);
+
+  if (!(conn->attrflags.accessallowed)) {
+    report_notfound(conn);
+    return;
+  }
+
+
   // uri MUST start with a /
   if (conn->uri[0] != '/') {
     report_badrequest(conn, "uri must start with a /");
@@ -158,13 +166,13 @@ void send_file(struct connection *conn) {
     return;
   }
 
-  // make a copy of the uri for processing
-  strcpy(file, conn->uri);
-
 #ifdef LOG
-  sprintf(temp, "URI %s", file);
+  sprintf(temp, "URI %s", conn->uri);
   writelog(LOGLEVEL_REQUEST, temp);
 #endif
+
+  // make a copy of the uri for processing
+  strcpy(file, conn->uri);
 
   // if requesting a directory (ie. the uri ends with a /) use index.html
   if (file[len-1] == '/') {
@@ -173,16 +181,6 @@ void send_file(struct connection *conn) {
     else
       strcpy(file+len, "index.html");
   }
-
-  // check if the file has been moved
-  if (conn->moved)
-    report_moved(conn, conn->moved);
-  else if (conn->tempmoved)
-    report_movedtemporarily(conn, conn->tempmoved);
-
-  // if if the file is password-protected
-  pwd = check_access(conn, conn->authorization);
-  if (pwd == ACCESS_FAILED)  return;
 
   // build RISCOS filename
   name = conn->filename;
@@ -205,6 +203,18 @@ void send_file(struct connection *conn) {
     ptr++;
   }
   *name = '\0';
+
+  get_dir_attributes(conn->filename,conn);
+
+  // check if the file has been moved
+  if (conn->moved)
+    report_moved(conn, conn->moved);
+  else if (conn->tempmoved)
+    report_movedtemporarily(conn, conn->tempmoved);
+
+  // if if the file is password-protected
+  pwd = check_access(conn, conn->authorization);
+  if (pwd == ACCESS_FAILED)  return;
 
   // check if is it a cgi-script
   if (conn->flags.is_cgi) {

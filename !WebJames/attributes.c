@@ -9,18 +9,37 @@
 #include "stat.h"
 #include "cgi.h"
 
+#include "osfscontrol.h"
 
-static struct attributes *attributeslist;
-static struct attributes **attrlist;
-static int startattr[57];
-static int attributescount;
+#define STACKSIZE 10
 
-static void insert_attributes(struct attributes *attr) {
+typedef enum sectiontype {
+	section_LOCATION,
+	section_DIRECTORY,
+	section_FILES,
+	section_NONE
+} sectiontype;
+
+static struct attributes *uriattributeslist, *dirattributeslist;
+static struct attributes **uriattrlist;
+static int starturiattr[57];
+static int uriattributescount, dirattributescount;
+
+static void insert_attributes(struct attributes *attr, enum sectiontype section) {
 // insert an attributes structure at the right position in the linked list
   struct attributes *prev, *this;
   int more;
 
-  this = attributeslist;
+  switch (section) {
+    case section_LOCATION:
+      this = uriattributeslist;
+      break;
+    case section_DIRECTORY:
+      this = dirattributeslist;
+    default:
+      this = NULL;
+  }
+
   prev = NULL;
   more = 1;
   while ((this) && (more)) {
@@ -34,12 +53,32 @@ static void insert_attributes(struct attributes *attr) {
   attr->next = this;                    // insert the structure and
   attr->previous = prev;                // re-do the pointers in the
   if (this)  this->previous = attr;     // previous and next structures
-  if (prev)
+  if (prev) {
     prev->next = attr;
-  else
-    attributeslist = attr;
+  } else {
+    switch (section) {
+      case section_LOCATION:
+        uriattributeslist = attr;
+        break;
+      case section_DIRECTORY:
+        dirattributeslist = attr;
+        break;
+      default:
+        break;
+    }
+  }
 
-  attributescount++;
+  switch (section) {
+    case section_LOCATION:
+      uriattributescount++;
+      break;
+    case section_DIRECTORY:
+      dirattributescount++;
+      break;
+    default:
+      break;
+  }
+
 }
 
 
@@ -170,8 +209,30 @@ static struct attributes *create_attribute_structure(char *uri) {
   return attr;
 }
 
+static enum sectiontype stack(enum sectiontype type, int push) {
+// if push!=0 then push type onto the stack, else pop a value and return it
+// reset the stack if push == -1
+  static enum sectiontype stack[STACKSIZE];
+  static int size;
 
-static void read_attributes_file(char *filename, char *base) {
+  switch (push) {
+    case -1:
+      // reset the stack
+      size = 0;
+      break;
+    case 0:
+      // pop value from stack
+      if (size > 0) return stack[--size];
+      break;
+    default:
+      // push value to the stack
+      if (size >= STACKSIZE) break;
+      stack[size++] = type;
+  }
+  return section_NONE;
+}
+
+static struct attributes *read_attributes_file(char *filename, char *base) {
 // filename - name of the attributes file
 // base - base uri
 //
@@ -180,10 +241,25 @@ static void read_attributes_file(char *filename, char *base) {
   char line[256], *attribute, *ptr, *end, uri[256];
   int i;
   struct attributes *attr;
+  enum sectiontype section;
 
   attr = NULL;
+
+  switch (base[0]) {
+    case '\0':
+      section = section_NONE;
+      break;
+    case '/':
+      section = section_LOCATION;
+      break;
+    default:
+      section = section_DIRECTORY;
+      attr = create_attribute_structure(base);
+      if (!attr) return NULL;
+  }
+
   file = fopen(filename, "r");
-  if (!file)  return;
+  if (!file)  return NULL;
 
   while (!feof(file)) {
     line[0] = '\0';  // clear the linebuffer
@@ -209,9 +285,10 @@ static void read_attributes_file(char *filename, char *base) {
       if ((ptr[0] == '[') || (ptr[0] == '<' && ptr[1] == '/')) {
         // end of a section
         if (attr) {
-          insert_attributes(attr);
+          insert_attributes(attr,section);
+          section = stack(section_NONE,0);
         }
-        if (ptr[0] == '<') break; // end of section, but not the start of a new one
+        if (ptr[0] == '<') continue; // end of section, but not the start of a new one
       }
 
       if (ptr[0] == '<') {
@@ -228,7 +305,11 @@ static void read_attributes_file(char *filename, char *base) {
       len = strlen(ptr);
 
       if (type == NULL || strcmp(type,"location") == 0) {
-        if (ptr[0] != '/')  break;        // MUST start with a /
+        if (ptr[0] != '/')  continue;        // MUST start with a /
+        if (section != section_NONE && section != section_LOCATION) continue; // cannot have a location inside anything else
+
+        stack(section,1);
+        section = section_LOCATION;
         ptr[len-1] = '\0';
         len--;
 #ifndef CASESENSITIVE
@@ -240,10 +321,30 @@ static void read_attributes_file(char *filename, char *base) {
         attr = create_attribute_structure(uri);
         if (!attr) {
           fclose(file);
-          return;
+          return NULL;
+        }
+      } else if (strcmp(type,"directory") == 0) {
+        char buffer[256];
+        int spare;
+
+        if (section != section_NONE) continue; // cannot have a directory inside anything else
+
+        stack(section,1);
+        section = section_DIRECTORY;
+        ptr[len-1] = '\0';
+        len--;
+
+        sprintf(uri, "%s%s", base, ptr);
+
+        if (xosfscontrol_canonicalise_path(uri,buffer,NULL,NULL,255,&spare)) strcpy(buffer,uri);
+
+        attr = create_attribute_structure(buffer);
+        if (!attr) {
+          fclose(file);
+          return NULL;
         }
       } else {
-        // must be a <files> or <directory> (not supported yet)
+        // must be a <files> (not supported yet)
       }
 
     // **** or an attribute and value
@@ -264,7 +365,7 @@ static void read_attributes_file(char *filename, char *base) {
           value = malloc(strlen(ptr)+1);
           if (!value) {                  // malloc failed
             fclose(file);
-            return;
+            return NULL;
           }
           strcpy(value, ptr);            // make copy of value
       	}
@@ -274,7 +375,7 @@ static void read_attributes_file(char *filename, char *base) {
       if (attr) {
 
         if (strcmp(attribute, "defaultfile") == 0) {
-          if (attr->uri[attr->urilen-1] != '/') break;
+          if (attr->uri[attr->urilen-1] != '/') continue;
           if (attr->defaultfile)  free(attr->defaultfile);
           attr->defined.defaultfile = 1;
           attr->defaultfile = value;
@@ -434,23 +535,88 @@ static void read_attributes_file(char *filename, char *base) {
     }
   }
   if (attr) {
-    insert_attributes(attr);
+    insert_attributes(attr,section);
   }
 
   fclose(file);
-  return;
+  return attr;
 }
 
 
-void get_attributes(char *uri, struct connection *conn) {
+static void merge_attributes2(struct connection *conn, struct attributes *attr) {
+// merge all attributes from attr into conn
+
+  if (attr->defined.realm)        conn->realm           = attr->realm;
+  if (attr->defined.accessfile)   conn->accessfile      = attr->accessfile;
+  if (attr->defined.userandpwd)   conn->userandpwd      = attr->userandpwd;
+  if (attr->defined.cgi_api)      conn->cgi_api         = attr->cgi_api;
+  if (attr->defined.is_cgi)       conn->flags.is_cgi    = attr->is_cgi;
+  if (attr->allowedfiletypescount) {
+    conn->allowedfiletypes = attr->allowedfiletypes;
+    conn->allowedfiletypescount = attr->allowedfiletypescount;
+  }
+  if (attr->forbiddenfiletypescount) {
+    conn->forbiddenfiletypes = attr->forbiddenfiletypes;
+    conn->forbiddenfiletypescount = attr->forbiddenfiletypescount;
+  }
+  if (attr->defined.methods)
+    if (!(attr->methods & (1<<conn->method)))
+      conn->attrflags.accessallowed = 0;
+  if (attr->defined.port)
+    if (attr->port != conn->port)
+      conn->attrflags.accessallowed = 0;
+  if (attr->defined.hidden)   conn->attrflags.hidden = attr->hidden;
+  if (attr->allowedhostscount) {
+    int h, ok, ip;
+    ok = 0;
+    ip = (conn->ipaddr[3]<<24) | (conn->ipaddr[2]<<16) |
+         (conn->ipaddr[1]<<8)  | (conn->ipaddr[0]);
+    for (h = 0; (h < attr->allowedhostscount) && (ok == 0); h++)
+      if (ip == attr->allowedhosts[h])  ok = 1;
+    if (!ok)  conn->attrflags.accessallowed = 0;
+  }
+  if (attr->forbiddenhostscount) {
+    int h, ok, ip;
+    ok = 1;
+    ip = (conn->ipaddr[3]<<24) | (conn->ipaddr[2]<<16) |
+         (conn->ipaddr[1]<<8)  | (conn->ipaddr[0]);
+    for (h = 0; (h < attr->forbiddenhostscount) && (ok == 1); h++)
+      if (ip == attr->forbiddenhosts[h])  ok = 0;
+    if (!ok)  conn->attrflags.accessallowed = 0;
+  }
+}
+
+static void merge_attributes1(struct connection *conn, struct attributes *attr) {
+// merge all attributes from attr into conn
+
+  if (attr->defined.homedir) {
+    conn->homedir       = attr->homedir;
+    conn->homedirignore = attr->ignore;
+  }
+  if (attr->defined.defaultfile)  conn->defaultfile     = attr->defaultfile;
+  if (attr->defined.cacheable)    conn->flags.cacheable = attr->cacheable;
+  if (attr->defined.moved)        conn->moved           = attr->moved;
+  if (attr->defined.tempmoved)    conn->tempmoved       = attr->tempmoved;
+}
+
+static void merge_attributes(struct connection *conn, struct attributes *attr) {
+// merge all attributes from attr into conn
+
+  merge_attributes1(conn,attr);
+  merge_attributes2(conn,attr);
+}
+
+void get_uri_attributes(char *uri, struct connection *conn) {
 // merge all attributes-structures that matches the URI
 //
 // uri              pointer to the URI to match
 // conn             structure to fill in
-  int i, m, start, ok, hidden;
+  int i, m, start, ok;
   struct attributes *test;
 
   if (*uri != '/')  return;
+
+  conn->attrflags.hidden = 0;
 
   start = uri[1];                       // find starting point in attribute database
   if (start < 'A')
@@ -464,13 +630,11 @@ void get_attributes(char *uri, struct connection *conn) {
   else
     start = ATTR_z__;
 
-  start = startattr[start];
+  start = starturiattr[start];
   if (start == -1)  start = 0;
 
-  hidden = 0;
-
-  for (i = start; i < attributescount; i++) {
-    test = attrlist[i];
+  for (i = start; i < uriattributescount; i++) {
+    test = uriattrlist[i];
 
     m = 0;
     while ((uri[m] == test->uri[m]) && (m < test->urilen))  m++;
@@ -481,55 +645,60 @@ void get_attributes(char *uri, struct connection *conn) {
     if ((test->uri[m-1] != '/') && ((uri[m] != '\0') && (uri[m] != '?')))
       ok = 0;
 
-    if (ok) {
-      if (test->defined.homedir) {
-        conn->homedir       = test->homedir;
-        conn->homedirignore = test->ignore;
-      }
-      if (test->defined.defaultfile)  conn->defaultfile     = test->defaultfile;
-      if (test->defined.cacheable)    conn->flags.cacheable = test->cacheable;
-      if (test->defined.moved)        conn->moved           = test->moved;
-      if (test->defined.tempmoved)    conn->tempmoved       = test->tempmoved;
-      if (test->defined.realm)        conn->realm           = test->realm;
-      if (test->defined.accessfile)   conn->accessfile      = test->accessfile;
-      if (test->defined.userandpwd)   conn->userandpwd      = test->userandpwd;
-      if (test->defined.cgi_api)      conn->cgi_api         = test->cgi_api;
-      if (test->defined.is_cgi)       conn->flags.is_cgi    = test->is_cgi;
-      conn->allowedfiletypes = test->allowedfiletypes;
-      conn->allowedfiletypescount = test->allowedfiletypescount;
-      conn->forbiddenfiletypes = test->forbiddenfiletypes;
-      conn->forbiddenfiletypescount = test->forbiddenfiletypescount;
-      if (test->defined.methods)
-        if (!(test->methods & (1<<conn->method)))
-          conn->attrflags.accessallowed = 0;
-      if (test->defined.port)
-        if (test->port != conn->port)
-          conn->attrflags.accessallowed = 0;
-      if (test->defined.hidden)   hidden = test->hidden;
-      if (test->allowedhostscount) {
-        int h, ok, ip;
-        ok = 0;
-        ip = (conn->ipaddr[3]<<24) | (conn->ipaddr[2]<<16) |
-             (conn->ipaddr[1]<<8)  | (conn->ipaddr[0]);
-        for (h = 0; (h < test->allowedhostscount) && (ok == 0); h++)
-          if (ip == test->allowedhosts[h])  ok = 1;
-        if (!ok)  conn->attrflags.accessallowed = 0;
-      }
-      if (test->forbiddenhostscount) {
-        int h, ok, ip;
-        ok = 1;
-        ip = (conn->ipaddr[3]<<24) | (conn->ipaddr[2]<<16) |
-             (conn->ipaddr[1]<<8)  | (conn->ipaddr[0]);
-        for (h = 0; (h < test->forbiddenhostscount) && (ok == 1); h++)
-          if (ip == test->forbiddenhosts[h])  ok = 0;
-        if (!ok)  conn->attrflags.accessallowed = 0;
-      }
+    if (ok) merge_attributes(conn,test);
 
-    } else if (m < 0)
-      i = attributescount;              // abort
   }
 
-  if (hidden)  conn->attrflags.accessallowed =0;
+  if (conn->attrflags.hidden)  conn->attrflags.accessallowed = 0;
+}
+
+void get_dir_attributes(char *dir, struct connection *conn) {
+// merge all attributes-structures that matches the directory
+//
+// dir              pointer to the directory to match
+// conn             structure to fill in
+  int found;
+  struct attributes *test;
+  char buffer[256], path[256], *ptr;
+  int spare;
+
+  if (xosfscontrol_canonicalise_path(dir,buffer,NULL,NULL,255,&spare)) strcpy(buffer,dir);
+
+// do something a bit more efficient here to find the correct attributes structure for each directory
+// some sort of binary search?
+
+  ptr = buffer;
+
+  while ((ptr = strchr(ptr+1,'.')) != NULL) {
+    // decend through each directory till the one needed
+    strncpy(path, buffer, ptr - buffer);  // copy path upto the '.' just found
+    path[ptr - buffer] = '\0';
+
+    found = 0;
+
+    for (test = dirattributeslist; test != NULL; test = test->next) {
+      // traverse through the linked list till found
+
+      if (strcmp(path, test->uri) == 0) {
+        merge_attributes(conn, test);
+        found = 1;
+        break;
+      }
+    }
+
+    if (!found) {
+      struct attributes *newattr;
+      char htaccessfile[256];
+
+      sprintf(htaccessfile,"%s.%s",path,configuration.htaccessfile);
+      newattr=read_attributes_file(htaccessfile, path);
+      if (newattr) merge_attributes(conn, newattr);
+    }
+
+  }
+
+  if (conn->attrflags.hidden)  conn->attrflags.accessallowed = 0;
+
 }
 
 void init_attributes(char *filename) {
@@ -540,24 +709,27 @@ void init_attributes(char *filename) {
   struct attributes *attr;
   int i, chr, start;
 
-  attributeslist = NULL;
-  attrlist = NULL;
-  attributescount = 0;
+  uriattributeslist = NULL;
+  uriattrlist = NULL;
+  uriattributescount = 0;
+  dirattributeslist = NULL;
+  dirattributescount = 0;
+  stack(section_NONE,-1);   // reset stack
   read_attributes_file(filename, "");   // read attributes in to a
                                         // sorted linked list
-  if (!attributescount)  return;
+  if (!uriattributescount)  return;
 
-  attrlist = malloc(attributescount*sizeof(struct attributes *));
-  if (!attrlist)  return;
+  uriattrlist = malloc(uriattributescount*sizeof(struct attributes *));
+  if (!uriattrlist)  return;
 
   // start position in attrlist array, indexed by first letter in the URI
-  for (i = 0; i < 56; i++)  startattr[i] = -1;
+  for (i = 0; i < 56; i++)  starturiattr[i] = -1;
 
-  attr = attributeslist;                // convert the linked list to
+  attr = uriattributeslist;                // convert the linked list to
                                         // a straight array - easier to
                                         // to binary search that way
-  for (i = 0; i < attributescount; i++) {
-    attrlist[i] = attr;
+  for (i = 0; i < uriattributescount; i++) {
+    uriattrlist[i] = attr;
 
     chr = attr->uri[1];                 // first letter after the /
     if (chr < 'A')
@@ -571,8 +743,8 @@ void init_attributes(char *filename) {
     else
       start = ATTR_z__;
 
-    if (startattr[start] == -1)
-      startattr[start] = i;             // set starting point
+    if (starturiattr[start] == -1)
+      starturiattr[start] = i;             // set starting point
 
     attr = attr->next;                  // next in linked list
   }

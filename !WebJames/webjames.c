@@ -58,7 +58,7 @@ int webjames_init(char *config) {
   configuration.bandwidth = 0;
   reversedns = -1;
   *clflog = *weblog = *configuration.webmaster = *configuration.site = *configuration.serverip = *configuration.cgi_in = *configuration.cgi_out = '\0';
-  *configuration.put_script = *configuration.delete_script = '\0';
+  *configuration.put_script = *configuration.delete_script = *configuration.htaccessfile = '\0';
   maxrequestsize = 100000;
   configuration.xheaders = 0;
   strcpy(configuration.server, "WebJames");

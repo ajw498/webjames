@@ -64,4 +64,5 @@ typedef struct attributes {
 
 
 void init_attributes(char *filename);
-void get_attributes(char *uri, struct connection *conn);
+void get_uri_attributes(char *uri, struct connection *conn);
+void get_dir_attributes(char *dir, struct connection *conn);

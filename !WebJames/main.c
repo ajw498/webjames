@@ -1,3 +1,5 @@
+#include "MemCheck:MemCheck.h"
+
 #include <time.h>
 #include <ctype.h>
 #include <stdio.h>
@@ -94,6 +96,13 @@ void closedown() {
 int main(int argc, char *argv[]) {
 // first argument should be the configuration file
 //
+  MemCheck_Init();
+  MemCheck_RegisterArgs(argc,argv);
+  MemCheck_InterceptSCLStringFunctions();
+  MemCheck_SetStoreMallocFunctions(1);
+  MemCheck_SetAutoOutputBlocksInfo(0);
+  MemCheck_SetWriteQuitting(0);
+
   if (argc != 2)  return 0;
 
   init_task();

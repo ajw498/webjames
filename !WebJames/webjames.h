@@ -57,10 +57,10 @@ typedef struct connection {
   int dnsendtime;             // clock() value
 
   struct {
-    unsigned int releasefilebuffer : 1;  // release filebuffer when done
-    unsigned int deletefile        : 1;  // delete file when done
-    unsigned int cacheable         : 1;
-    unsigned int is_cgi            : 1;
+    unsigned int releasefilebuffer /*: 1*/;  // release filebuffer when done
+    unsigned int deletefile        /*: 1*/;  // delete file when done
+    unsigned int cacheable         /*: 1*/;
+    unsigned int is_cgi            /*: 1*/;
   } flags;
 
   // various header-lines, all malloc()'ed
@@ -86,6 +86,7 @@ typedef struct connection {
   int forbiddenfiletypescount;
   struct {
     unsigned int accessallowed : 1;
+    unsigned int hidden : 1;
   } attrflags;
   char cgi_api;
 
