@@ -100,7 +100,7 @@ realm=the search engine
 # Example vitualhost section
 #<virtualhost>
 #servername www
-#homedir=idefs::toffee.$.internet.www
+#DocumentRoot IDEFS::Toffee.$.Internet.WWW
 #
 #<location />
 #defaultfile index.php
