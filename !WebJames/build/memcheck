@@ -1,33 +1,32 @@
 # Makefile for WebJames the web server
-#
-# Settings for the memcheck build
+#
+# Settings for the memcheck build
 
-#Programs
-CC = cc
-LINK = link
-MEMCHECK = MemCheck.cc
-SQUEEZE = Settype $@ ff8
-SETTYPE = SetType $@ Obey
+#Programs
+CC = cc
+LINK = link
+MEMCHECK = MemCheck.cc
+SQUEEZE = Settype $@ ff8
+SETTYPE = SetType $@ Obey
 
-#Libraries
-MEMCHECKLIB = MemCheck:o.MC
-STUBS = C:o.stubs
-OSLIB = OSLib:o.OSLib
-REGEX = C:regex.a.libregex
+#Libraries
+MEMCHECKLIB = MemCheck:o.MC
+STUBS = C:o.stubs
+OSLIB = OSLib:o.OSLib
+REGEX = C:regex.a.libregex
 
-#Compiler flags
-THROWBACK = -throwback
-DEPEND = -depend !Depend
-WARNINGS = -strict -fah
-OPTIMISATION =
-DEBUG = -g -Wg
-INCLUDE = -IC: -IOSLib:
+#Compiler flags
+THROWBACK = -throwback
+DEPEND = -depend !Depend
+WARNINGS = -strict -fah
+OPTIMISATION =
+DEBUG = -g -Wg
+INCLUDE = -IC: -IOSLib:
 
-#Linker flags
-LINKDEBUG = -d
+#Linker flags
+LINKDEBUG = -d
 
-#!Run file
-WIMPSLOT = $(WIMPSLOT_DEBUG)
-STDERR =
-TYPESTDERR =
-
+#!Run file
+WIMPSLOT = $(WIMPSLOT_DEBUG)
+STDERR =
+TYPESTDERR =
