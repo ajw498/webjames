@@ -1,5 +1,5 @@
 /*
-	$Id: openclose.c,v 1.20 2001/09/03 14:10:37 AJW Exp $
+	$Id: openclose.c,v 1.21 2002/01/07 22:42:30 uid1 Exp $
 	Open and close connections
 */
 
@@ -18,9 +18,9 @@
 #include "resolve.h"
 
 
-struct connection *create_conn(void) {
+struct connection *create_conn(void)
 /* create and empty connection structure */
-
+{
 	struct connection *conn;
 
 	conn = EM(malloc(sizeof(struct connection)));
@@ -43,6 +43,7 @@ struct connection *create_conn(void) {
 	conn->cache = NULL;
 	conn->file = NULL;
 	conn->vary[0]='\0';
+	conn->contentlanguage = conn->contentlocation = NULL;
 	/* attributes */
 	conn->homedir = configuration.site;
 	conn->accessfile = conn->userandpwd = conn->realm = NULL;
@@ -198,10 +199,13 @@ void close_connection(struct connection *conn, int force, int real) {
 	if (conn->cookie)         free(conn->cookie);
 	if (conn->requesturi)     free(conn->requesturi);
 	if (conn->authorization)  free(conn->authorization);
+	if (conn->contentlocation)  free(conn->contentlocation);
+	if (conn->contentlanguage)  free(conn->contentlanguage);
 	if ((conn->filebuffer) && (conn->flags.releasefilebuffer)) free(conn->filebuffer);
 	conn->filebuffer = conn->body = conn->header = conn->type = NULL;
 	conn->accept = conn->acceptlanguage = conn->acceptcharset = conn->acceptencoding = NULL;
 	conn->uri =  conn->requesturi = conn->cookie = conn->authorization = NULL;
+	conn->contentlocation = conn->contentlanguage = NULL;
 
 	/* free the linked list of custom error documents */
 	errordocs = conn->errordocs;

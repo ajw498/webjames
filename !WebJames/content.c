@@ -1,5 +1,5 @@
 /*
-	$Id: content.c,v 1.10 2001/09/07 16:07:00 AJW Exp $
+	$Id: content.c,v 1.11 2002/01/07 22:42:29 uid1 Exp $
 	Content negotiation
 */
 
@@ -34,7 +34,7 @@ static struct {
 
 /*structure to hold the parsed values of an accept, accept_language, etc. header*/
 struct accept {
-	char type[256]; /*length checking? - MimeMap_Translate does not seem to give a length for the buffer needed*/
+	char type[MAX_MIMETYPE];
 	float q;
 	enum {
 		normal,
@@ -316,7 +316,7 @@ static struct varmap *content_multiviews(char *dirname,char *leafname)
 				memcpy(map->type,buf2,len2+1);
 			}
 		}
-	} while(more != -1);
+	} while(more != osgbpb_NO_MORE);
 	return maps;
 }
 
@@ -565,6 +565,20 @@ int content_negotiate(struct connection *conn)
 	/*change the filename to point to the chosen variant*/
 	len=(leafname-conn->filename);
 	wjstrncpy(conn->filename+len+1,bestmap->uri,MAX_FILENAME-len-1);
+
+	len = strlen(bestmap->uri);
+	conn->contentlocation = EM(malloc(len + 1));
+	if (conn->contentlocation) {
+		if (uri_to_filename(bestmap->uri, conn->contentlocation, 0)) {
+			free(conn->contentlocation);
+			conn->contentlocation = NULL;
+		}
+	}
+	if (bestmap->language) {
+		len = strlen(bestmap->language) + 1;
+		conn->contentlanguage = EM(malloc(len));
+		if (conn->contentlanguage) memcpy(conn->contentlanguage,bestmap->language,len);
+	}
 
 	return 0;
 }

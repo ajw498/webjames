@@ -1,5 +1,5 @@
 /*
-	$Id: sendasis.c,v 1.7 2001/09/18 20:58:01 AJW Exp $
+	$Id: sendasis.c,v 1.8 2002/01/07 22:42:31 uid1 Exp $
 	send-as-is handler
 */
 
@@ -156,6 +156,14 @@ void sendasis_start(struct connection *conn)
 		webjames_writestringr(conn, temp);
 		if (conn->vary[0]) {
 			snprintf(temp, TEMPBUFFERSIZE, "Vary:%s\r\n", conn->vary);
+			webjames_writestringr(conn, temp);
+		}
+		if (conn->contentlocation) {
+			snprintf(temp, TEMPBUFFERSIZE, "Content-Location: %s\r\n", conn->contentlocation);
+			webjames_writestringr(conn, temp);
+		}
+		if (conn->contentlanguage) {
+			snprintf(temp, TEMPBUFFERSIZE, "Content-Language: %s\r\n", conn->contentlanguage);
 			webjames_writestringr(conn, temp);
 		}
 		for (i = 0; i < configuration.xheaders; i++) {
