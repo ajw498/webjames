@@ -1,0 +1,1 @@
+Server side includes are useful for creating pages that have small amounts of dynamic content.

@@ -1,0 +1,33 @@
+<html>
+<head>
+<title>Example SSI file</title>
+</head>
+
+<body bgcolor="#ffffff">
+
+<center>
+<h1>Server side includes</h1>
+</center>
+<!--#config timefmt="%A" -->
+Today is <!--#echo var="DATE_LOCAL" -->
+<p>
+<!--#config sizefmt="abbrev" timefmt="%d/%m/%Y %H:%M:%S" -->
+This file was last modified on <!--#echo var="LAST_MODIFIED" --><br>
+The size of this file is <!--#fsize virtual="$DOCUMENT_NAME" -->
+<p>
+<!--#include virtual="small.txt" -->
+<p>
+
+<!--#if expr="$HTTP_USER_AGENT=/Browse/" -->
+You are using Browse
+<!--#elif expr="${HTTP_USER_AGENT}=/Fresco/" -->
+You are using Fresco
+<!--#else -->
+You are not using Browse or Fresco
+<!--#endif -->
+
+<p>
+Back to <A HREF="examples.html">Examples</A>
+
+</body>
+</html>
