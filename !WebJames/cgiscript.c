@@ -1,5 +1,5 @@
 /*
-	$Id: cgiscript.c,v 1.29 2001/09/03 14:10:30 AJW Exp $
+	$Id: cgiscript.c,v 1.30 2001/09/18 21:05:27 AJW Exp $
 	CGI script handler
 */
 
@@ -27,15 +27,6 @@
 #include "handler.h"
 
 #define MAXHEADERS 100
-
-static int wjstrnicmp(char *s1, char *s2,size_t n)
-/*compares n characters, case insensitively. returns zero if equal*/
-{
-	int i;
-
-	for (i=0;i<n;i++) if (tolower(s1[i])!=tolower(s2[i])) return 1;
-	return 0;
-}
 
 void cgiscript_setvars(struct connection *conn)
 /*set system variables for a CGI or SSI script*/
@@ -130,6 +121,7 @@ void cgiscript_start(struct connection *conn)
 	int input=0; /*whether an input file was created*/
 	FILE *file;
 	wimp_t task;
+	char headerbuf[TEMPBUFFERSIZE];
 	char *headers[MAXHEADERS];
 	char *headerbuffer;
 	int headerbufferlength;
@@ -243,8 +235,8 @@ void cgiscript_start(struct connection *conn)
 		headerbufferlength=conn->leftinbuffer = fread(conn->filebuffer, 1, configuration.readaheadbuffer*1024, conn->file);
 		conn->positioninbuffer = 0;
 	} else {
-		headerbuffer=temp;
-		headerbufferlength=fread(temp, 1, HTTPBUFFERSIZE, conn->file);
+		headerbuffer=headerbuf;
+		headerbufferlength=fread(headerbuffer, 1, TEMPBUFFERSIZE, conn->file);
 	}
 
 	for (i=0;i<MAXHEADERS;i++) headers[i]=NULL;
@@ -338,5 +330,6 @@ void cgiscript_start(struct connection *conn)
 		if (configuration.server[0]) snprintf(temp, TEMPBUFFERSIZE, "Server: %s\r\n\r\n", configuration.server);
 		webjames_writestringr(conn, temp);
 	}
+	if (conn->method==METHOD_HEAD) conn->close(conn,0);
 }
 
