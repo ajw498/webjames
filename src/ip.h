@@ -29,6 +29,6 @@ int ip_ready(socket_s socket, os_error **err);
 socket_s ip_accept(socket_s socket, char *host);
 int ip_select(int max, char *read, char *write, char *except);
 
-void fd_clear(char *select, socket_s socket);
-void fd_set(char *select, socket_s socket);
-int fd_is_set(char *select, socket_s socket);
+void ip_fd_clear(char *select, socket_s socket);
+void ip_fd_set(char *select, socket_s socket);
+int ip_fd_is_set(char *select, socket_s socket);

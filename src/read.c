@@ -1,5 +1,5 @@
 /*
-	$Id: read.c,v 1.7 2004/01/17 17:20:03 ajw Exp $
+	$Id$
 	Reading requests
 */
 
@@ -25,7 +25,7 @@ static char line[HTTPBUFFERSIZE];
 /* must be called before calling report_XXXX() during reading */
 static void read_report(struct connection *conn) {
 
-	fd_clear(serverinfo.select_read, conn->socket);
+	ip_fd_clear(serverinfo.select_read, conn->socket);
 	serverinfo.readcount--;
 
 	select_writing(conn->index);
@@ -42,7 +42,7 @@ static void donereading(struct connection *conn) {
 	}
 
 	/* deselect the socket for reading */
-	fd_clear(serverinfo.select_read, conn->socket);
+	ip_fd_clear(serverinfo.select_read, conn->socket);
 	serverinfo.readcount--;
 
 	send_file(conn);

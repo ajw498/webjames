@@ -1,5 +1,5 @@
 /*
-	$Id: cgiscript.c,v 1.4 2002/10/20 15:40:31 ajw Exp $
+	$Id$
 	CGI script handler
 */
 
@@ -208,8 +208,8 @@ void cgiscript_start(struct connection *conn)
 	if (conn->flags.setcsd) EV(xosfscontrol_back());
 
 	/* disable reading */
-	if (fd_is_set(serverinfo.select_read, conn->socket)) {
-		fd_clear(serverinfo.select_read, conn->socket);
+	if (ip_fd_is_set(serverinfo.select_read, conn->socket)) {
+		ip_fd_clear(serverinfo.select_read, conn->socket);
 		serverinfo.readcount--;
 	}
 

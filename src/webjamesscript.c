@@ -1,5 +1,5 @@
 /*
-	$Id: webjamesscript.c,v 1.1 2002/02/17 22:50:10 ajw Exp $
+	$Id$
 	Handler for WebJames style CGI scripts
 */
 
@@ -91,12 +91,12 @@ void webjamesscript_start(struct connection *conn)
 #endif
 
 	/* cgi-script started ok, so let the cgi-script close the socket */
-	if (fd_is_set(serverinfo.select_read, conn->socket)) {
-		fd_clear(serverinfo.select_read, conn->socket);
+	if (ip_fd_is_set(serverinfo.select_read, conn->socket)) {
+		ip_fd_clear(serverinfo.select_read, conn->socket);
 		serverinfo.readcount--;
 	}
-	if (fd_is_set(serverinfo.select_write, conn->socket)) {
-		fd_clear(serverinfo.select_write, conn->socket);
+	if (ip_fd_is_set(serverinfo.select_write, conn->socket)) {
+		ip_fd_clear(serverinfo.select_write, conn->socket);
 		serverinfo.writecount--;
 	}
 	conn->socket = socket_CLOSED;

@@ -1,5 +1,5 @@
 /*
-	$Id: write.c,v 1.2 2002/10/20 11:22:37 ajw Exp $
+	$Id$
 	Get attributes for each request the send the file
 */
 
@@ -52,7 +52,7 @@ void pollwrite(int cn) {
 
 void select_writing(int cn) {
 /* mark a connection as writing */
-	fd_set(serverinfo.select_write, connections[cn]->socket);
+	ip_fd_set(serverinfo.select_write, connections[cn]->socket);
 	serverinfo.writecount++;
 	connections[cn]->status = WJ_STATUS_WRITING;
 

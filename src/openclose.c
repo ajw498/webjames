@@ -1,5 +1,5 @@
 /*
-	$Id: openclose.c,v 1.2 2002/10/20 11:22:37 ajw Exp $
+	$Id$
 	Open and close connections
 */
 
@@ -112,7 +112,7 @@ void open_connection(socket_s socket, char *host, int port)
 
 	/* set up for reading the header */
 	conn->status = WJ_STATUS_HEADER;
-	fd_set(serverinfo.select_read, socket);
+	ip_fd_set(serverinfo.select_read, socket);
 	serverinfo.readcount++;
 
 	/* fill in the structure */
@@ -153,12 +153,12 @@ void close_connection(struct connection *conn, int force, int real) {
 		/* close socket and make sure it is no longer 'selected' */
 		socket = conn->socket;
 		if (conn->socket != socket_CLOSED) {
-			if (fd_is_set(serverinfo.select_read, socket)) {
-				fd_clear(serverinfo.select_read, socket);
+			if (ip_fd_is_set(serverinfo.select_read, socket)) {
+				ip_fd_clear(serverinfo.select_read, socket);
 				serverinfo.readcount--;
 			}
-			if (fd_is_set(serverinfo.select_write, socket)) {
-				fd_clear(serverinfo.select_write, socket);
+			if (ip_fd_is_set(serverinfo.select_write, socket)) {
+				ip_fd_clear(serverinfo.select_write, socket);
 				serverinfo.writecount--;
 			}
 			ip_close(conn->socket);

@@ -1,5 +1,5 @@
 /*
-	$Id: ip.c,v 1.5 2004/01/17 17:05:30 ajw Exp $
+	$Id$
 	Socket access
 */
 
@@ -182,19 +182,19 @@ socket_s ip_accept(socket_s socket, char *host)
 }
 
 
-void fd_clear(char *select, socket_s sock)
+void ip_fd_clear(char *select, socket_s sock)
 {
 	int socket=(int)sock;
 	select[socket>>3] &= ~(1<< (socket &7));
 }
 
-void fd_set(char *select, socket_s sock)
+void ip_fd_set(char *select, socket_s sock)
 {
 	int socket=(int)sock;
 	select[socket>>3] |= 1<< (socket &7);
 }
 
-int fd_is_set(char *select, socket_s sock)
+int ip_fd_is_set(char *select, socket_s sock)
 {
 	int socket=(int)sock;
 	return select[socket>>3] & (1<< (socket &7));
