@@ -1,3 +1,6 @@
+v2.03 6-Dec-00
+Variables such as $REMOTE_ADDR and $HTTP_USER_AGENT now work properly
+
 v2.02 19-Oct-00
 Fixed bug that could cause a filecore in use error if the script had a pathname
 of eg. <WebJames$Dir>.index/php

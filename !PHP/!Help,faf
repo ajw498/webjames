@@ -1,5 +1,5 @@
 
-                    PHP 4.0.2  RISC OS version 2.02
+                    PHP 4.0.2  RISC OS version 2.03
                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 What is it?
 ~~~~~~~~~~~
@@ -197,6 +197,7 @@ gd        Create/manipulate GIF images
 sockets   Functions for using sockets
 session   Tracking site visitors
 zlib      Compression functions
+xml       XML parsing
 
 If there are other extensions that you would like added then let me know
 and I will take a look at them.

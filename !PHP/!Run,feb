@@ -8,6 +8,7 @@ Unset SERVER_SOFTWARE
 Unset SERVER_NAME
 Unset GATEWAY_INTERFACE
 Unset REQUEST_METHOD
+Unset QUERY_STRING
 
 WimpSlot -Min 64k -Max 64k
 Run <Obey$Dir>.!RunImage
