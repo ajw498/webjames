@@ -22,7 +22,7 @@ server=WebJames/0.26
 # port - http port number
 # Webjames can accept connections on up to 8 ports simultaneously - simply
 # specify a commaseperated list of portnumbers, eg.:   port=80,8080
-port=8080
+port=8081
 
 # homedir - directory holding the files
 homedir=<WebJames$Dir>.^.site
@@ -31,7 +31,7 @@ homedir=<WebJames$Dir>.^.site
 attributes=<WebJames$Dir>.attributes
 
 # name of file to look for directory specific attributes
-accessfilename=/htaccess
+#accessfilename=/htaccess
 
 # connection control
 # ------------------

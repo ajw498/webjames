@@ -756,7 +756,7 @@ void get_attributes(char *uri, struct connection *conn) {
       if (key>=hashsize) key = 0;
     }
 
-    if (!found && uri[0] != '/') {
+    if (!found && uri[0] != '/' && *configuration.htaccessfile) {
       struct attributes *newattr;
       char htaccessfile[256];
 

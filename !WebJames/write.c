@@ -215,9 +215,11 @@ void send_file(struct connection *conn) {
     while (*src) *dest++ = tolower(*src++);
     *dest = '\0';
 
-    if (strcmp(conn->filename+strlen(conn->filename)-strlen(temp),temp) == 0) {
-      report_forbidden(conn);
-      return;
+    if (*configuration.htaccessfile) {
+      if (strcmp(conn->filename+strlen(conn->filename)-strlen(temp),temp) == 0) {
+        report_forbidden(conn);
+        return;
+      }
     }
   }
 
