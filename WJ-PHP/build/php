@@ -1,0 +1,5 @@
+# Definitions needed for linking PHP with WebJames
+PHP_LIBS = -llibphp4 -lC:zlib.zlib -lC:GD13.libgd
+PHP_LDFLAGS = -L.
+PHP_CFLAGS = -DPHP
+WIMPSLOT = $(WIMPSLOT_PHP)
