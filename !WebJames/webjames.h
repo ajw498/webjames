@@ -1,7 +1,7 @@
 #ifndef WEBJAMES_H
 #define WEBJAMES_H
 
-#define WEBJAMES_H_REVISION "$Revision: 1.31 $"
+#define WEBJAMES_H_REVISION "$Revision: 1.32 $"
 
 #define WEBJAMES_VERSION "0.33"
 #define WEBJAMES_DATE "20/12/01"
@@ -207,6 +207,8 @@ typedef struct config {
 	char *webjames_h_revision;
 } config;
 
+extern struct config configuration;
+
 #ifndef WEBJAMES_PHP_ONLY
 /* WEBJAMES_PHP_ONLY is defined if webjames.h is included by PHP*/
 /* PHP only needs the connection and config structures, and the webjames_writestring/buffer/log functions*/
@@ -266,7 +268,6 @@ typedef struct globalserverinfo {
 
 
 /*globals*/
-extern struct config configuration;
 extern struct connection *connections[MAXCONNECTIONS];
 extern struct globalserverinfo serverinfo;
 
