@@ -61,7 +61,7 @@ void pollwrite(int cn) {
       written = statistics.written + statistics.written2;
       secs = (statistics.currenttime - statistics.time)/100 + 60;
       // calculate the max bandwidth for the immediate future
-      maxbps = bandwidth - 60*written/secs;
+      maxbps = configuration.bandwidth - 60*written/secs;
       if (maxbps < 0)  return;
       maxbps = maxbps/writecount;  // spread even across all connections
       maxbytes = slowdown * maxbps/100;
@@ -290,11 +290,11 @@ void send_file(struct connection *conn) {
     writestring(conn->socket, temp);
     sprintf(temp, "Content-Type: %s\r\n", mimetype);
     writestring(conn->socket, temp);
-    for (i = 0; i < xheaders; i++) {
-      writestring(conn->socket, xheader[i]);
+    for (i = 0; i < configuration.xheaders; i++) {
+      writestring(conn->socket, configuration.xheader[i]);
       writestring(conn->socket, "\r\n");
     }
-    sprintf(temp, "Server: %s\r\n\r\n", server);
+    sprintf(temp, "Server: %s\r\n\r\n", configuration.server);
     writestring(conn->socket, temp);
   }
 }

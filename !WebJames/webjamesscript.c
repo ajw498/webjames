@@ -89,11 +89,11 @@ void script_start_redirect(char *script, struct connection *conn, char *args, in
 
   // set up the system variables
 
-  if (server[0])  set_var_val("SERVER_SOFTWARE", server);
+  if (configuration.server[0])  set_var_val("SERVER_SOFTWARE", configuration.server);
   set_var_val("SERVER_PORT", "80");
   set_var_val("SERVER_PROTOCOL", "HTTP/1.0");
-  if (serverip[0])  set_var_val("SERVER_NAME", serverip);
-  set_var_val("SERVER_ADMIN", webmaster);
+  if (configuration.serverip[0])  set_var_val("SERVER_NAME", configuration.serverip);
+  set_var_val("SERVER_ADMIN", configuration.webmaster);
 
   set_var_val("SCRIPT_NAME", conn->uri);
   set_var_val("PATH_TRANSLATED", script);
@@ -159,14 +159,14 @@ void script_start_redirect(char *script, struct connection *conn, char *args, in
   input[0] = '\0';                      // clear spool-input filename
 
   // get unique, temporary file
-  if (*cgi_out)
-    strcpy(tempfile, cgi_out);
+  if (*configuration.cgi_out)
+    strcpy(tempfile, configuration.cgi_out);
   else
     tmpnam(tempfile);
 
   if (conn->method == METHOD_POST) {
-    if (*cgi_in)
-      strcpy(input, cgi_in);
+    if (*configuration.cgi_in)
+      strcpy(input, configuration.cgi_in);
     else
       tmpnam(input);
     // generate input filename
@@ -237,7 +237,7 @@ void script_start_redirect(char *script, struct connection *conn, char *args, in
 
 
 void script_start_webjames(int scripttype, struct connection *conn, char *script, int pwd) {
-// start a 'webjames-tyle' cgi-script
+// start a 'webjames-style' cgi-script
 //
 // scripttype       cgi-, DELETE- or PUT-
 // conn             connection structure
@@ -264,7 +264,7 @@ void script_start_webjames(int scripttype, struct connection *conn, char *script
   sprintf(temp,
        "*%s -http %d -socket %d -remove -size %d -rma %d -bps %d -port %d -host %d.%d.%d.%d",
        script, conn->httpmajor*10+conn->httpminor, conn->socket, size,
-       (int)ptr, bandwidth/100, conn->port, conn->ipaddr[0], conn->ipaddr[1],
+       (int)ptr, configuration.bandwidth/100, conn->port, conn->ipaddr[0], conn->ipaddr[1],
        conn->ipaddr[2], conn->ipaddr[3]);
   if (conn->method == METHOD_HEAD)
     strcat(temp, " -head");

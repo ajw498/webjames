@@ -220,42 +220,42 @@ void pollread_header(struct connection *conn, int bytes) {
       else if (strncmp(upper, "HEAD ", 5) == 0)
         conn->method = METHOD_HEAD;
       else if (strncmp(upper, "DELETE ", 7) == 0) { // DELETE request
-        if (!*delete_script) {
+        if (!*configuration.delete_script) {
           read_report(conn);
           report_notfound(conn);
           return;
         }
         conn->method = METHOD_DELETE;
         conn->requesturi = conn->uri;
-        ptr = malloc(strlen(delete_script)+1);
+        ptr = malloc(strlen(configuration.delete_script)+1);
         if (!ptr) {
           read_report(conn);
           report_busy(conn, "Memory low");
           return;
         }
         conn->uri = ptr;
-        strcpy(conn->uri, delete_script);
+        strcpy(conn->uri, configuration.delete_script);
 #ifndef CASESENSITIVE
         for (i = 0; conn->uri[i]; i++)
            conn->uri[i] = tolower(conn->uri[i]);  // must be lowercase
 #endif
 
       } else if (strncmp(upper, "PUT ", 4) == 0) {
-        if (!*put_script) {
+        if (!*configuration.put_script) {
           read_report(conn);
           report_notfound(conn);
           return;
         }
         conn->method = METHOD_PUT;
         conn->requesturi = conn->uri;
-        ptr = malloc(strlen(put_script)+1);
+        ptr = malloc(strlen(configuration.put_script)+1);
         if (!ptr) {
           read_report(conn);
           report_busy(conn, "Memory low");
           return;
         }
         conn->uri = ptr;
-        strcpy(conn->uri, put_script);
+        strcpy(conn->uri, configuration.put_script);
 #ifndef CASESENSITIVE
         for (i = 0; conn->uri[i]; i++)
            conn->uri[i] = tolower(conn->uri[i]);  // must be lowercase

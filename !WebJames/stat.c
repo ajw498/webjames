@@ -46,7 +46,7 @@ void init_statistics() {
   statistics.adjusttime = statistics.time - 25;
   statistics.written = 0;
   statistics.access = 0;
-  statistics.written2 = bandwidth;
+  statistics.written2 = configuration.bandwidth;
   statistics.access2 = 0;
 
   clfupdatetime = -1;           // clock() at last update

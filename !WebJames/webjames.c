@@ -22,11 +22,7 @@
 
 
 // configuration
-int timeout, bandwidth;
-char server[128], panic[504], *xheader[17], webmaster[256], site[256];
-char delete_script[256], put_script[256];
-char attributesfile[256], serverip[256], cgi_in[256], cgi_out[256];
-int xheaders;
+struct config configuration;
 
 // connection
 struct serverinfo servers[8];
@@ -57,16 +53,16 @@ int webjames_init(char *config) {
   // default configuration
   serverscount = 0;
 
-  timeout = 200;
-  bandwidth = 0;
+  configuration.timeout = 200;
+  configuration.bandwidth = 0;
   reversedns = -1;
-  *clflog = *weblog = *webmaster = *site = *serverip = *cgi_in = *cgi_out = '\0';
-  *put_script = *delete_script = '\0';
+  *clflog = *weblog = *configuration.webmaster = *configuration.site = *configuration.serverip = *configuration.cgi_in = *configuration.cgi_out = '\0';
+  *configuration.put_script = *configuration.delete_script = '\0';
   maxrequestsize = 100000;
-  xheaders = 0;
-  strcpy(server, "WebJames");
+  configuration.xheaders = 0;
+  strcpy(configuration.server, "WebJames");
   read_config(config);
-  if ((*site == '\0') || (serverscount == 0) || (timeout < 0))
+  if ((*configuration.site == '\0') || (serverscount == 0) || (configuration.timeout < 0))
     return 0;
 
   // reset everything
@@ -92,7 +88,7 @@ int webjames_init(char *config) {
   // exceeds the max allowed bandwidth
   slowdown = 0;
 
-  init_attributes(attributesfile);
+  init_attributes(configuration.attributesfile);
 
 #define SOCKETOPT_REUSEADDR   4
 
@@ -273,7 +269,7 @@ int webjames_poll() {
       if ( ((connections[i]->status == WJ_STATUS_HEADER)  ||
             (connections[i]->status == WJ_STATUS_BODY)    ||
             (connections[i]->status == WJ_STATUS_WRITING)) &&
-            (clk > connections[i]->timeoflastactivity + 100*timeout) )
+            (clk > connections[i]->timeoflastactivity + 100*configuration.timeout) )
               close(i, 1);
     }
   }
@@ -281,16 +277,16 @@ int webjames_poll() {
   xos_read_monotonic_time(&statistics.currenttime);
 
   // calculate slowdown
-  if ((statistics.currenttime > statistics.adjusttime) && (bandwidth > 0)) {
+  if ((statistics.currenttime > statistics.adjusttime) && (configuration.bandwidth > 0)) {
     int used, secs, bytes;
 
     statistics.adjusttime = statistics.currenttime + 25;
     bytes = statistics.written + statistics.written2;
     secs = (statistics.currenttime - statistics.time)/100 + 60;
     used = 60*bytes / secs;
-    if (used > bandwidth)
+    if (used > configuration.bandwidth)
       slowdown += 5;
-    else if (used < bandwidth/2)
+    else if (used < configuration.bandwidth/2)
       slowdown = 0;
     else if (slowdown > 5)
       slowdown -= 5;
@@ -367,22 +363,33 @@ void read_config(char *config) {
 // config           configuration file name
 //
   FILE *file;
-  int i;
   char *cmd, *val;
 
   file = fopen(config, "r");
   if (!file)  return;
   do {
     if (!fgets(line, 256, file))  break;          // read line
-    for (i = 0; i < strlen(line); i++)
-      if (line[i] < 32)  line[i] = 0;             // proper termination
-    val = strchr(line, '=');
+    cmd = line;
+    // skip whitespace
+    while (isspace(*cmd)) cmd++;
+    // remove trailing whitespace
+    val = cmd+strlen(cmd);
+    while (val>cmd && isspace(*(val-1))) val--;
+    *val = '\0';
 
-    if ((*line != '#') && (*line != '\0') && (val)) {
-      *val++ = '\0';
-      cmd = line;
-      while (*cmd == ' ')  cmd++;
-      while (*val == ' ')  val++;
+    val = cmd;
+    // find end of command
+    while (*val!='\0' && *val!='=' && !isspace(*val)) val++;
+    if (*val == '\0') {
+      val=NULL;
+    } else {
+      *val = '\0';
+      val++;
+    }
+    // find start of value
+    if (val) while (*val!='\0' && (*val=='=' || isspace(*val))) val++;
+
+    if ((*cmd != '#') && (*cmd != '\0') && (val)) {
       if (strcmp(cmd, "port") == 0) {
         do {
           int i, unused, port;
@@ -405,10 +412,10 @@ void read_config(char *config) {
         } while ((val) && (serverscount < 8));
 
       } else if (strcmp(cmd, "bandwidth") == 0)
-        bandwidth = atoi(val);
+        configuration.bandwidth = atoi(val);
 
       else if (strcmp(cmd, "timeout") == 0)
-        timeout = atoi(val);
+        configuration.timeout = atoi(val);
 
       else if (strcmp(cmd, "cachesize") == 0)
         cachesize = atoi(val);
@@ -450,7 +457,7 @@ void read_config(char *config) {
         if (maxrequestsize > 2000)  maxrequestsize = 2000;
 
       } else if (strcmp(cmd, "server") == 0)
-        strcpy(server, val);
+        strcpy(configuration.server, val);
 
       else if (strcmp(cmd, "clf") == 0)
         strcpy(clflog, val);
@@ -459,7 +466,7 @@ void read_config(char *config) {
         strcpy(weblog, val);
 
       else if (strcmp(cmd, "attributes") == 0)
-        strcpy(attributesfile, val);
+        strcpy(configuration.attributesfile, val);
 
       else if (strcmp(cmd, "loglevel") == 0)
         loglevel = atoi(val);
@@ -468,37 +475,40 @@ void read_config(char *config) {
         strcpy(rename_cmd, val);
 
       else if (strcmp(cmd, "homedir") == 0)
-        strcpy(site, val);
+        strcpy(configuration.site, val);
 
       else if (strcmp(cmd, "put-script") == 0)
-        strncpy(put_script, val, 255);
+        strncpy(configuration.put_script, val, 255);
 
       else if (strcmp(cmd, "delete-script") == 0)
-        strncpy(delete_script, val, 255);
+        strncpy(configuration.delete_script, val, 255);
 
       else if (strcmp(cmd, "cgi-input") == 0)
-        strncpy(cgi_in, val, 255);
+        strncpy(configuration.cgi_in, val, 255);
 
       else if (strcmp(cmd, "cgi-output") == 0)
-        strncpy(cgi_out, val, 255);
+        strncpy(configuration.cgi_out, val, 255);
+
+      else if (strcmp(cmd, "accessfilename") == 0)
+        strncpy(configuration.htaccessfile, val, 255);
 
       else if (strcmp(cmd, "panic") == 0)
-        strncpy(panic, val, 500);
+        strncpy(configuration.panic, val, 500);
 
       else if (strcmp(cmd, "serverip") == 0)
-        strncpy(serverip, val, 255);
+        strncpy(configuration.serverip, val, 255);
 
 #ifdef ANTRESOLVER
       else if (strcmp(cmd, "reversedns") == 0)
-        reversedns = atoi(val);
+        configuration.reversedns = atoi(val);
 #endif
 
       else if (strcmp(cmd, "webmaster") == 0)
-        strcpy(webmaster, val);
+        strcpy(configuration.webmaster, val);
 
-      else if ((strcmp(cmd, "x-header") == 0) && (xheaders < 16)) {
-        xheader[xheaders] = malloc(strlen(val)+1);
-        if (xheader[xheaders])  strcpy(xheader[xheaders++], val);
+      else if ((strcmp(cmd, "x-header") == 0) && (configuration.xheaders < 16)) {
+        configuration.xheader[configuration.xheaders] = malloc(strlen(val)+1);
+        if (configuration.xheader[configuration.xheaders])  strcpy(configuration.xheader[configuration.xheaders++], val);
       }
     }
   } while (!feof(file));

@@ -67,7 +67,7 @@ void open_connection(int socket, char *host, int port) {
   conn->cache = NULL;
   conn->file = NULL;
   // attributes
-  conn->homedir = site;
+  conn->homedir = configuration.site;
   conn->accessfile = conn->userandpwd = conn->realm = NULL;
   conn->moved = conn->tempmoved = conn->defaultfile = NULL;
   conn->attrflags.accessallowed = 1;

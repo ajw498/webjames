@@ -117,12 +117,17 @@ typedef struct connection {
 
 extern struct connection *connections[MAXCONNECTIONS];
 
-// configuratiom
-extern int timeout, bandwidth;
-extern char server[128], panic[504], *xheader[17], webmaster[256];
-extern char delete_script[256], put_script[256], site[256];
-extern char serverip[256], cgi_in[256], cgi_out[256];
-extern int xheaders;
+// configuration
+typedef struct config {
+  int timeout, bandwidth;
+  char server[128], panic[504], *xheader[17], webmaster[256];
+  char delete_script[256], put_script[256], site[256];
+  char attributesfile[256], serverip[256], cgi_in[256], cgi_out[256];
+  char htaccessfile[256];
+  int xheaders;
+} config;
+
+extern struct config configuration;
 
 extern struct serverinfo servers[8];
 

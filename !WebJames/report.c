@@ -76,7 +76,7 @@ char *report_substitute(struct reportcache *report, struct substitute subs[], in
 
   // add the webmaster-email entry to the list of strings to substitute
   subs[num].name = "%EMAIL%";
-  subs[num].value = webmaster;
+  subs[num].value = configuration.webmaster;
   num++;
 
   // calculate the length of all the entries
@@ -246,14 +246,14 @@ void report_quickanddirty(struct connection *conn, int report) {
     name = get_report_name(report);
     sprintf(temp, "HTTP/1.0 %d %s\r\n", report, name);
     writestring(conn->socket, temp);
-    sprintf(temp, "Server: %s\r\n", server);
+    sprintf(temp, "Server: %s\r\n", configuration.server);
     writestring(conn->socket, temp);
     writestring(conn->socket, "Content-Type: text/html\r\n");
-    sprintf(temp, "Content-Length: %d\r\n\r\n", strlen(panic));
+    sprintf(temp, "Content-Length: %d\r\n\r\n", strlen(configuration.panic));
     writestring(conn->socket, temp);
   }
-  writestring(conn->socket, panic);
-  statistics.written += strlen(panic);
+  writestring(conn->socket, configuration.panic);
+  statistics.written += strlen(configuration.panic);
 }
 
 
@@ -307,7 +307,7 @@ void report(struct connection *conn, int code, int subno, int headerlines) {
     // if no substitution was required, simply send the cached file
     sprintf(temp, "Content-Length: %d\r\n", size);
     writestring(conn->socket, temp);
-    sprintf(temp, "Server: %s\r\n", server);
+    sprintf(temp, "Server: %s\r\n", configuration.server);
     writestring(conn->socket, temp);
     for (i = 0; i < headerlines; i++) {
       if (header[i]) {
@@ -335,8 +335,8 @@ void report_moved(struct connection *conn, char *newurl) {
 
   char url[HTTPBUFFERSIZE];
 
-  if (*serverip)
-    sprintf(url, "http://%s%s", serverip, newurl);
+  if (*configuration.serverip)
+    sprintf(url, "http://%s%s", configuration.serverip, newurl);
   else
     strcpy(url, newurl);
 
@@ -357,8 +357,8 @@ void report_movedtemporarily(struct connection *conn, char *newurl) {
 
   char url[HTTPBUFFERSIZE];
 
-  if (*serverip)
-    sprintf(url, "http://%s%s", serverip, newurl);
+  if (*configuration.serverip)
+    sprintf(url, "http://%s%s", configuration.serverip, newurl);
   else
     strcpy(url, newurl);
 
