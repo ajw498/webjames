@@ -1,11 +1,21 @@
 #ifndef WEBJAMES_H
 #define WEBJAMES_H
 
-#define WEBJAMES_H_REVISION "$Revision: 1.24 $"
+#define WEBJAMES_H_REVISION "$Revision: 1.25 $"
 
 #define WEBJAMES_VERSION "0.31"
 #define WEBJAMES_DATE "31/9/01"
 #define WEBJAMES_SERVER_SOFTWARE "WebJames/" WEBJAMES_VERSION
+
+#ifdef WEBJAMES_PHP_ONLY
+/*Avoid pulling in any OSLib headers */
+typedef int socket_s;
+#else
+
+#include "oslib/os.h"
+#include "oslib/socket.h"
+
+#endif
 
 #define MAXCONNECTIONS    100
 #define HTTPBUFFERSIZE    4096
@@ -48,16 +58,18 @@
 #define DNS_TRYING        1
 #define DNS_OK            2
 
+
 typedef struct listeninfo {
 	int port;
-	int socket;
+	socket_s socket;
 } listeninfo;
 
 typedef struct connection {
 
 	struct connection *parent; /*the parent connection structure if this was #included from an SSI doc*/
 
-	int socket, port;
+	socket_s socket;
+	int port;
 	int status;                 /* unused/header/body/write/dns */
 	char index;                 /* index in connections[] */
 	char method;                /* 0 GET  1=POST  2=HEAD */
@@ -206,9 +218,6 @@ extern struct globalserverinfo serverinfo;
 
 extern char temp[HTTPBUFFERSIZE];
 
-
-#include "oslib/os.h"
-
 int webjames_init(char *config);
 void webjames_kill(void);
 int webjames_poll(void);
@@ -219,8 +228,13 @@ void read_config(char *config);
 
 #endif /*WEBJAMES_PHP_ONLY*/
 
-int webjames_writestring(int socket, char *string);
-int webjames_writebuffer(int socket, char *buffer, int size);
+#define webjames_writestringr(conn,string) \
+	if (webjames_writestring(conn,string)<0) return
+
+int webjames_writestring(struct connection *conn, char *string);
+int webjames_writebuffer(struct connection *conn, char *buffer, int size);
+
+int webjames_readbuffer(struct connection *conn, char *buffer, int size);
 
 void webjames_writelog(int level, char *fmt, ...);
 

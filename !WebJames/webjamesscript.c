@@ -51,7 +51,7 @@ void webjamesscript_start(struct connection *conn)
 	/* start cgi-script */
 	sprintf(temp,
 			"*%s -http %d -socket %d -remove -size %d -rma %d -bps %d -port %d -host %d.%d.%d.%d",
-			conn->filename, conn->httpmajor*10+conn->httpminor, conn->socket, size,
+			conn->filename, conn->httpmajor*10+conn->httpminor, (int)conn->socket, size,
 			(int)ptr, configuration.bandwidth/100, conn->port, conn->ipaddr[0], conn->ipaddr[1],
 			conn->ipaddr[2], conn->ipaddr[3]);
 	if (conn->method == METHOD_HEAD)
@@ -91,7 +91,7 @@ void webjamesscript_start(struct connection *conn)
 		fd_clear(serverinfo.select_write, conn->socket);
 		serverinfo.writecount--;
 	}
-	conn->socket = -1;
+	conn->socket = socket_CLOSED;
 	conn->flags.is_cgi = 1;
 	conn->close(conn, 0);
 }

@@ -11,6 +11,7 @@
 #define LOGLEVEL_CACHE        4
 #define LOGLEVEL_REPORT       3
 #define LOGLEVEL_ATTRIBUTES   2
+#define LOGLEVEL_OSERROR      1
 
 #define LOGLEVEL_ALWAYS       0
 #define LOGLEVEL_NEVER        10

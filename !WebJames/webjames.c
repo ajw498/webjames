@@ -125,12 +125,12 @@ int webjames_init(char *config) {
 #define SOCKETOPT_REUSEADDR   4
 
 	for (i = 0; i < serverscount; i++) {
-		int listen;
-		serverinfo.servers[i].socket = -1;
+		socket_s listen;
+		serverinfo.servers[i].socket = socket_CLOSED;
 
 		/* start listening */
 		listen = ip_create(0);
-		if (listen < 0) {
+		if (listen == socket_CLOSED) {
 			webjames_writelog(LOGLEVEL_ALWAYS, "Couldn't create socket...");
 			continue;
 		}
@@ -158,7 +158,7 @@ int webjames_init(char *config) {
 
 	active = 0;
 	for (i = 0; i < serverscount; i++)
-		if (serverinfo.servers[i].socket != -1)  active++;
+		if (serverinfo.servers[i].socket != socket_CLOSED)  active++;
 	if (active == 0)  return 0;
 
 	return 1;
@@ -175,7 +175,7 @@ void webjames_command(char *cmd, int release) {
 	if (strcmp(cmd, "closeall") == 0) {                       /* CLOSEALL */
 		int i;
 		for (i = 0; i < serverinfo.activeconnections; i++)
-			if (connections[i]->socket >= 0)  connections[i]->close(connections[i], 1);
+			if (connections[i]->socket != socket_CLOSED)  connections[i]->close(connections[i], 1);
 		webjames_writelog(LOGLEVEL_CMD, "ALL CONNECTIONS CLOSED");
 
 	} else if (strncmp(cmd, "flushcache", 10) == 0) {         /* FLUSHCACHE */
@@ -224,13 +224,13 @@ void webjames_kill() {
 
 	/* close all open sockets */
 	for (i = 0; i < serverinfo.activeconnections; i++)
-		if (connections[i]->socket >= 0)  connections[i]->close(connections[i], 1);
+		if (connections[i]->socket != socket_CLOSED)  connections[i]->close(connections[i], 1);
 
 	close_log();
 
 	/* close all servers */
 	for (i = 0; i < serverscount; i++)
-		if (serverinfo.servers[i].socket >= 0)
+		if (serverinfo.servers[i].socket != socket_CLOSED)
 			ip_close(serverinfo.servers[i].socket);
 	serverscount = 0;
 
@@ -244,7 +244,8 @@ int webjames_poll() {
 
 /* returns polldelay (cs) or -1 to quit */
 
-	int socket, cs, i, srv;
+	socket_s socket;
+	int cs, i, srv;
 	char host[16], select[32];
 
 	/* are there any reverse-dns lookups in progress? */
@@ -322,18 +323,18 @@ int webjames_poll() {
 	/* are there any new connections? */
 	for (srv = 0; srv < serverscount; srv++) {
 		for (i = 0; i < 8; i++)  ((int *)select)[i] = 0;
-		select[serverinfo.servers[srv].socket>>3] |= 1 << (serverinfo.servers[srv].socket &7);
+		select[(int)serverinfo.servers[srv].socket>>3] |= 1 << ((int)serverinfo.servers[srv].socket &7);
 
 		do {
-			socket = -1;
+			socket = socket_CLOSED;
 			if (ip_select(256, select, NULL, NULL) > 0) {
 				socket = ip_accept(serverinfo.servers[srv].socket, host);
-				if (socket >= 0) {
+				if (socket != socket_CLOSED) {
 					ip_nonblocking(socket);
 					open_connection(socket, host, serverinfo.servers[srv].port);
 				}
 			}
-		} while (socket >= 0);
+		} while (socket != socket_CLOSED);
 	}
 
 
@@ -349,13 +350,12 @@ int webjames_poll() {
 
 /* ------------------------------------------------ */
 
-void abort_reverse_dns(struct connection *conn, int newstatus) {
+void abort_reverse_dns(struct connection *conn, int newstatus)
 /* stop trying to lookup the address */
 /* if reading/writing has already been finished, close the connection */
-
 /* conn             connection structure */
 /* newstatus        new dns status */
-
+{
 	conn->dnsstatus = newstatus;
 	serverinfo.dnscount--;
 	if (conn->status == WJ_STATUS_DNS)   conn->close(conn, 1);
@@ -365,25 +365,69 @@ void abort_reverse_dns(struct connection *conn, int newstatus) {
 /* ------------------------------------------------ */
 
 
-int webjames_writestring(int socket, char *string)
-/* write a string to a socket, and update statistics */
+int webjames_writestring(struct connection *conn, char *string)
+/* write a string to a socket (and block until it is sent), and update statistics */
+/* return bytes written (length of string) or -1 if error */
 {
-	int len;
+	os_error *err;
+	int len, written=0;
 
-	len=strlen(string);
-	len = ip_write(socket, string, len);
-	if (len>0) statistics.written += len;
-	return len;
+	len = strlen(string);
+	while (len>0) {
+		written = ip_write(conn->socket, string, len, &err);
+		statistics.written += written;
+		len-=written;
+		if (err) {
+			if (err->errnum==socket_EPIPE) {
+				webjames_writelog(LOGLEVEL_ABORT, "ABORT connection closed by client");
+			} else {
+				webjames_writelog(LOGLEVEL_OSERROR,"ERROR %s",err->errmess);
+			}
+			conn->close(conn,1);
+			len=written=-1;
+		}
+	}
+	return written;
 }
 
-int webjames_writebuffer(int socket, char *buffer, int size)
+int webjames_writebuffer(struct connection *conn, char *buffer, int size)
 /* write a block of memory to a socket, and update statistics */
+/* return bytes written or -1 if error */
 {
-	size = ip_write(socket, buffer, size);
-	if (size>0) statistics.written += size;
+	os_error *err;
+
+	size = ip_write(conn->socket, buffer, size, &err);
+	statistics.written += size;
+	if (err) {
+		if (err->errnum==socket_EPIPE) {
+			webjames_writelog(LOGLEVEL_ABORT, "ABORT connection closed by client");
+		} else {
+			webjames_writelog(LOGLEVEL_OSERROR,"ERROR %s",err->errmess);
+		}
+		conn->close(conn,1);
+		size=-1;
+	}
 	return size;
 }
 
+int webjames_readbuffer(struct connection *conn, char *buffer, int size)
+/* read from a socket to a block of memory */
+/* return bytes read or -1 if error */
+{
+	os_error *err;
+
+	size = ip_read(conn->socket, buffer, size, &err);
+	if (err) {
+		if (err->errnum==socket_EPIPE) {
+			webjames_writelog(LOGLEVEL_ABORT, "ABORT connection closed by client");
+		} else {
+			webjames_writelog(LOGLEVEL_OSERROR,"ERROR %s",err->errmess);
+		}
+		conn->close(conn,1);
+		size=-1;
+	}
+	return size;
+}
 
 void webjames_writelog(int level, char *fmt, ...)
 {

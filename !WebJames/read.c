@@ -81,12 +81,11 @@ int readline(char *buffer, int bytes, char *line) {
 
 
 
-void pollread_body(struct connection *conn, int bytes) {
+void pollread_body(struct connection *conn, int bytes)
 /* read part of the body in the the body-buffer */
-
 /* conn             connection structure */
 /* bytes            number of bytes ready to be read */
-
+{
 	/* reading the body */
 
 	if (conn->used + bytes > conn->bodysize) {
@@ -95,15 +94,15 @@ void pollread_body(struct connection *conn, int bytes) {
 		return;
 	}
 
-	bytes = ip_read(conn->socket, conn->body+conn->used, bytes);
+	if ((bytes = webjames_readbuffer(conn, conn->body+conn->used, bytes))<0) return;
 	conn->used += bytes;
 	if (conn->used == conn->bodysize)  donereading(conn);
 }
 
 
 
-void pollread_header(struct connection *conn, int bytes) {
-
+void pollread_header(struct connection *conn, int bytes)
+{
 	int i;
 	char upper[HTTPBUFFERSIZE], *newptr;
 
@@ -112,7 +111,7 @@ void pollread_header(struct connection *conn, int bytes) {
 		bytes = HTTPBUFFERSIZE - conn->used;
 
 	/* read some bytes from the socket */
-	bytes = ip_read(conn->socket, conn->buffer+conn->used, bytes);
+	if ((bytes = webjames_readbuffer(conn, conn->buffer+conn->used, bytes))<0) return;
 	conn->used += bytes;
 
 	do {

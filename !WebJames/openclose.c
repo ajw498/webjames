@@ -72,14 +72,13 @@ struct connection *create_conn(void) {
 }
 
 
-void open_connection(int socket, char *host, int port) {
+void open_connection(socket_s socket, char *host, int port)
 /* called when an incoming connection has been accepted */
 /* find an empty entry, and use that for the connection */
-
 /* socket           socket number */
 /* host             pointer to host structure as returned by accept() */
 /* port             port number */
-
+{
 	struct connection *conn;
 
 	conn = create_conn();
@@ -87,7 +86,11 @@ void open_connection(int socket, char *host, int port) {
 	/* no empty entries */
 	if (!conn) {
 		/* can't use report_busy() as we haven't allocated a connection-structure */
-		webjames_writestring(socket, "HTTP/1.0 503 Server is busy\r\nContent-type: text/html\r\n\r\n<html><head><title>Server is busy</title><body><h1>The server is busy</h1>Please try again later...</body></html>");
+		char *mess="HTTP/1.0 503 Server is busy\r\nContent-type: text/html\r\n\r\n<html><head><title>Server is busy</title><body><h1>The server is busy</h1>Please try again later...</body></html>";
+		os_error *err;
+
+		ip_write(socket, mess, strlen(mess), &err);
+		if (err) webjames_writelog(LOGLEVEL_OSERROR,"ERROR %s",err->errmess);
 		ip_close(socket);
 		return;
 	}
@@ -134,14 +137,15 @@ void close_connection(struct connection *conn, int force, int real) {
 /* real             set if this is a real connection rather than just a connection struct*/
 	int cn=conn->index;
 	struct errordoc *errordocs;
-	int socket, i, clk;
+	socket_s socket;
+	int i, clk;
 
 	clk = clock();
 
 	if (real) {
 		/* close socket and make sure it is no longer 'selected' */
 		socket = conn->socket;
-		if (conn->socket != -1) {
+		if (conn->socket != socket_CLOSED) {
 			if (fd_is_set(serverinfo.select_read, socket)) {
 				fd_clear(serverinfo.select_read, socket);
 				serverinfo.readcount--;
@@ -151,7 +155,7 @@ void close_connection(struct connection *conn, int force, int real) {
 				serverinfo.writecount--;
 			}
 			ip_close(conn->socket);
-			conn->socket = -1;
+			conn->socket = socket_CLOSED;
 		}
 
 #ifdef LOG

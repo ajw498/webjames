@@ -1,5 +1,5 @@
 /*
-	$Id: resolve.c,v 1.5 2001/08/31 10:48:45 AJW Exp $
+	$Id: resolve.c,v 1.6 2001/09/02 19:00:49 AJW Exp $
 	Reverse DNS
 */
 
@@ -8,6 +8,8 @@
 #include <time.h>
 
 #include "kernel.h"
+
+#include "oslib/socket.h"
 
 #include "stat.h"
 #include "webjames.h"
@@ -33,7 +35,7 @@ void resolver_poll(struct connection *conn)
 			dnsstat = regs.r[0];
 			ip = (char **)regs.r[1];
 			switch (dnsstat) {
-				case IPERR_INPROGRESS:
+				case socket_EINPROGRESS:
 					/* still trying, so check timeout */
 					if (clock() > conn->dnsendtime)  abort_reverse_dns(conn, DNS_FAILED);
 					break;

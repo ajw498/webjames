@@ -1,5 +1,5 @@
 /*
-	$Id: serverparsed.c,v 1.8 2001/09/01 12:22:32 AJW Exp $
+	$Id: serverparsed.c,v 1.9 2001/09/02 19:00:51 AJW Exp $
 	Support for Server Side Includes (SSI)
 */
 
@@ -60,6 +60,8 @@ typedef struct serverparsedinfo {
 	int commandlength,argslength;
 	enum serverparsed_status status;
 	struct connection *child; /*set if we should wait for annother connection to finish first before continuing*/
+	char outputbuffer[OUTPUT_BUFFERSIZE]; /*buffer for the output*/
+	int bytesinbuffer; /*number of bytes currently in the output buffer*/
 } serverparsedinfo;
 
 void serverparsed_start(struct connection *conn)
@@ -75,6 +77,7 @@ void serverparsed_start(struct connection *conn)
 		return;
 	}
 	info->status=status_BODY;
+	info->bytesinbuffer=0;
 	conn->fileused = 0;
 	info->timefmt=info->errmsg=NULL;
 	info->abbrev=0;
@@ -110,24 +113,24 @@ void serverparsed_start(struct connection *conn)
 		char rfcnow[50];
 
 		/* write header */
-		webjames_writestring(conn->socket, "HTTP/1.0 200 OK\r\n");
+		webjames_writestringr(conn, "HTTP/1.0 200 OK\r\n");
 		/* we can't give a content length as we don't know it until the entire doc has been parsed*/
 		sprintf(temp, "Content-Type: %s\r\n", conn->fileinfo.mimetype);
-		webjames_writestring(conn->socket, temp);
+		webjames_writestringr(conn, temp);
 		time(&now);
 		time_to_rfc(localtime(&now),rfcnow);
 		sprintf(temp, "Date: %s\r\n", rfcnow);
-		webjames_writestring(conn->socket, temp);
+		webjames_writestringr(conn, temp);
 		if (conn->vary[0]) {
 			sprintf(temp, "Vary:%s\r\n", conn->vary);
-			webjames_writestring(conn->socket, temp);
+			webjames_writestringr(conn, temp);
 		}
 		for (i = 0; i < configuration.xheaders; i++) {
-			webjames_writestring(conn->socket, configuration.xheader[i]);
-			webjames_writestring(conn->socket, "\r\n");
+			webjames_writestringr(conn, configuration.xheader[i]);
+			webjames_writestringr(conn, "\r\n");
 		}
 		sprintf(temp, "Server: %s\r\n\r\n", configuration.server);
-		webjames_writestring(conn->socket, temp);
+		webjames_writestringr(conn, temp);
 	}
 
 	/*environment vars are the same as for a CGI script, with a few additions*/
@@ -148,9 +151,9 @@ static void serverparsed_writeerror(struct connection *conn,char *msg)
 	struct serverparsedinfo *info=(struct serverparsedinfo *)conn->handlerinfo;
 
 	if (info->errmsg) {
-		webjames_writestring(conn->socket,info->errmsg);
+		webjames_writestringr(conn,info->errmsg);
 	} else {
-		webjames_writestring(conn->socket,msg);
+		webjames_writestringr(conn,msg);
 	}
 }
 
@@ -774,7 +777,7 @@ static void serverparsed_fsize(struct connection *conn,char *filename)
 			} else {
 				sprintf(buf,"%d",size);
 			}
-			webjames_writestring(conn->socket,buf);
+			webjames_writestringr(conn,buf);
 	}
 }
 
@@ -808,7 +811,7 @@ static void serverparsed_flastmod(struct connection *conn,char *filename)
 		default:
 			utc_to_localtime(&utc,&time);
 			if (info->timefmt==NULL) time_to_rfc(&time,str); else strftime(str,49,info->timefmt,&time);
-			webjames_writestring(conn->socket,str);
+			webjames_writestringr(conn,str);
 	}
 }
 
@@ -937,7 +940,7 @@ static void serverparsed_command(struct connection *conn,char *command,char *arg
 		
 					var=serverparsed_getvar(conn,vals[0]);
 					if (var==NULL) var="(none)";
-					webjames_writestring(conn->socket,var);
+					webjames_writestringr(conn,var);
 				} else {
 					serverparsed_writeerror(conn,"Syntax error");
 				}
@@ -1047,25 +1050,27 @@ static void serverparsed_command(struct connection *conn,char *command,char *arg
 	}
 }
 
-#define WRITEBUFFER {\
-/*write the contents of the output buffer to the socket*/\
-	int bytes=o-outputbuffer;\
-	int bytessent;\
-	if (!info->output) {\
-		o=outputbuffer;\
-	} else if (bytes>0) {\
-		int fixme;\
-		bytessent = webjames_writebuffer(conn->socket, outputbuffer, bytes);\
-		byteswritten+=bytessent;\
-		if (bytessent<0) return bytessent; /*does this return error if it would block?*/ \
-		if (bytessent==0) return byteswritten; /*would this ever happen? we would lose the contents of outputbuffer if it does*/ \
-		if (bytessent<bytes) {\
-			memmove(outputbuffer,outputbuffer+bytessent,bytes-bytessent);\
-			o=outputbuffer+bytes-bytessent;\
-		} else {\
-			o=outputbuffer;\
+#define ENSURE(num) {\
+/*Ensures that there is at least num bytes more space in the output buffer*/\
+	info->bytesinbuffer=o-info->outputbuffer;\
+	if (info->output) {\
+		if (info->bytesinbuffer+num>OUTPUT_BUFFERSIZE) {\
+			int bytessent;\
+\
+			bytessent = webjames_writebuffer(conn, info->outputbuffer, info->bytesinbuffer);\
+			if (bytessent<=0) return bytestowrite-bytesleft;\
+			if (bytessent<info->bytesinbuffer) {\
+				info->bytesinbuffer-=bytessent;\
+				memmove(info->outputbuffer,info->outputbuffer+bytessent,info->bytesinbuffer); /*move remaining bytes to begginning of buffer*/\
+				if (info->bytesinbuffer+num>OUTPUT_BUFFERSIZE) return bytestowrite-bytesleft; /*still not enough room*/\
+			} else {\
+				info->bytesinbuffer=0;\
+			}\
 		}\
+	} else {\
+		info->bytesinbuffer=0;\
 	}\
+	o=info->outputbuffer+info->bytesinbuffer;\
 }
 
 static int serverparsed_parse(struct connection *conn, char *buffer, int bytesleft)
@@ -1074,10 +1079,7 @@ static int serverparsed_parse(struct connection *conn, char *buffer, int bytesle
 {
 	struct serverparsedinfo *info=(struct serverparsedinfo *)conn->handlerinfo;
 	char *p=buffer;
-	char outputbuffer[OUTPUT_BUFFERSIZE];
-	char *o=outputbuffer;
-	char *oend=outputbuffer+OUTPUT_BUFFERSIZE-1; /*ptr to last char in buffer*/
-	int byteswritten=0;
+	char *o=info->outputbuffer+info->bytesinbuffer;
 	int bytestowrite=bytesleft;
 
 	while (bytesleft>0 && info->child==NULL) {
@@ -1088,9 +1090,9 @@ static int serverparsed_parse(struct connection *conn, char *buffer, int bytesle
 					bytesleft--;
 					info->status=status_OPEN1;
 				} else {
+					ENSURE(1);
 					*o++=*p++;
 					bytesleft--;
-					if (o>oend) WRITEBUFFER;
 				}
 				break;
 			case status_OPEN1:
@@ -1099,9 +1101,9 @@ static int serverparsed_parse(struct connection *conn, char *buffer, int bytesle
 					bytesleft--;
 					info->status=status_OPEN2;
 				} else {
+					ENSURE(1);
 					*o++='<';
 					info->status=status_BODY;
-					if (o>oend) WRITEBUFFER;
 				}
 				break;
 			case status_OPEN2:
@@ -1110,11 +1112,10 @@ static int serverparsed_parse(struct connection *conn, char *buffer, int bytesle
 					bytesleft--;
 					info->status=status_OPEN3;
 				} else {
+					ENSURE(2);
 					*o++='<';
-					if (o>oend) WRITEBUFFER;
 					*o++='!';
 					info->status=status_BODY;
-					if (o>oend) WRITEBUFFER;
 				}
 				break;
 			case status_OPEN3:
@@ -1123,13 +1124,11 @@ static int serverparsed_parse(struct connection *conn, char *buffer, int bytesle
 					bytesleft--;
 					info->status=status_OPEN4;
 				} else {
+					ENSURE(3);
 					*o++='<';
-					if (o>oend) WRITEBUFFER;
 					*o++='!';
-					if (o>oend) WRITEBUFFER;
 					*o++='-';
 					info->status=status_BODY;
-					if (o>oend) WRITEBUFFER;
 				}
 				break;
 			case status_OPEN4:
@@ -1140,15 +1139,12 @@ static int serverparsed_parse(struct connection *conn, char *buffer, int bytesle
 					info->commandlength=0;
 					info->argslength=0;
 				} else {
+					ENSURE(4);
 					info->status=status_BODY;
 					*o++='<';
-					if (o>oend) WRITEBUFFER;
 					*o++='!';
-					if (o>oend) WRITEBUFFER;
 					*o++='-';
-					if (o>oend) WRITEBUFFER;
 					*o++='-';
-					if (o>oend) WRITEBUFFER;
 				}
 				break;
 			case status_COMMAND:
@@ -1201,10 +1197,10 @@ static int serverparsed_parse(struct connection *conn, char *buffer, int bytesle
 				break;
 			case status_CLOSE2:
 				if (*p=='>') {
+					ENSURE(OUTPUT_BUFFERSIZE); /*ensure that the buffer is empty before executing the command, as the commands output directly to the socket*/
 					p++;
 					bytesleft--;
 					info->status=status_BODY;
-					WRITEBUFFER; /*ensure that the buffer is empty before executing the command, as the commands output directly to the socket*/
 					serverparsed_command(conn,info->command,info->args);
 				} else {
 					info->status=status_ARGS;
@@ -1215,7 +1211,7 @@ static int serverparsed_parse(struct connection *conn, char *buffer, int bytesle
 				break;
 		}
 	}
-	WRITEBUFFER;
+	ENSURE(OUTPUT_BUFFERSIZE);
 	return bytestowrite-bytesleft;
 }
 
@@ -1226,16 +1222,18 @@ static void serverparsed_tidyup(void)
 	remove_var("DOCUMENT_URI");
 }
 
-int serverparsed_poll(struct connection *conn,int maxbytes)
+void serverparsed_poll(struct connection *conn,int maxbytes)
 /* attempt to write a chunk of data from the file (bandwidth-limited) */
 /* close the connection if EOF is reached */
-/* return the number of bytes written */
 {
 	struct serverparsedinfo *info=(struct serverparsedinfo *)conn->handlerinfo;
 	int bytes = 0;
-	char temp[HTTPBUFFERSIZE];
+/*	char temp[HTTPBUFFERSIZE];*/
 
-	if (info->child) return handler_poll(info->child,maxbytes);
+	if (info->child) {
+		handler_poll(info->child,maxbytes);
+		return;
+	}
 
 	if (conn->fileused < conn->fileinfo.size) {
 		/* send a bit more of the file or buffered data */
@@ -1260,34 +1258,21 @@ int serverparsed_poll(struct connection *conn,int maxbytes)
 					conn->positioninbuffer = 0;
 				}
 				if (bytes > conn->leftinbuffer)  bytes = conn->leftinbuffer;
-				bytes = serverparsed_parse(conn, conn->filebuffer + conn->positioninbuffer, bytes);
+				if ((bytes = serverparsed_parse(conn, conn->filebuffer + conn->positioninbuffer, bytes))<0) return;
 				conn->positioninbuffer += bytes;
 				conn->leftinbuffer -= bytes;
 			} else {
 				fseek(conn->file, conn->fileused, SEEK_SET);
 				bytes = fread(temp, 1, bytes, conn->file);
-				bytes = serverparsed_parse(conn, temp, bytes);
+				if ((bytes = serverparsed_parse(conn, temp, bytes))<0) return;
 			}
 		} else {            /* read from buffer */
-			bytes = serverparsed_parse(conn, conn->filebuffer+conn->fileused, bytes);
+			if ((bytes = serverparsed_parse(conn, conn->filebuffer+conn->fileused, bytes))<0) return;
 		}
 
 		conn->timeoflastactivity = clock();
 
-		if (bytes < 0) {
-			/* errorcode = -bytes; */
-			*temp = '\0';
-			switch (-bytes) {
-			case IPERR_BROKENPIPE:
-				webjames_writelog(LOGLEVEL_ABORT, "ABORT connection closed by client");
-				break;
-			}
-			serverparsed_tidyup();
-			conn->close(conn, 1);           /* close the connection, with force */
-			return 0;
-		} else {
-			conn->fileused += bytes;
-		}
+		conn->fileused += bytes;
 	}
 
 
@@ -1296,8 +1281,6 @@ int serverparsed_poll(struct connection *conn,int maxbytes)
 		if (conn->parent==NULL) serverparsed_tidyup();
 		conn->close(conn, 0);
 	}
-
-	return bytes;
 }
 
 #endif /*SSI*/

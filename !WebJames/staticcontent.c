@@ -56,29 +56,29 @@ void staticcontent_start(struct connection *conn)
 		char rfcnow[50];
 
 		/* write header */
-		webjames_writestring(conn->socket, "HTTP/1.0 200 OK\r\n");
+		webjames_writestringr(conn, "HTTP/1.0 200 OK\r\n");
 		sprintf(temp, "Content-Length: %d\r\n", conn->fileinfo.size);
-		webjames_writestring(conn->socket, temp);
+		webjames_writestringr(conn, temp);
 		sprintf(temp, "Content-Type: %s\r\n", conn->fileinfo.mimetype);
-		webjames_writestring(conn->socket, temp);
+		webjames_writestringr(conn, temp);
 		time(&now);
 		time_to_rfc(localtime(&now),rfcnow);
 		sprintf(temp, "Date: %s\r\n", rfcnow);
-		webjames_writestring(conn->socket, temp);
+		webjames_writestringr(conn, temp);
 		if (conn->vary[0]) {
 			sprintf(temp, "Vary:%s\r\n", conn->vary);
-			webjames_writestring(conn->socket, temp);
+			webjames_writestringr(conn, temp);
 		}
 		for (i = 0; i < configuration.xheaders; i++) {
-			webjames_writestring(conn->socket, configuration.xheader[i]);
-			webjames_writestring(conn->socket, "\r\n");
+			webjames_writestringr(conn, configuration.xheader[i]);
+			webjames_writestringr(conn, "\r\n");
 		}
 		if (configuration.server[0]) sprintf(temp, "Server: %s\r\n\r\n", configuration.server);
-		webjames_writestring(conn->socket, temp);
+		webjames_writestringr(conn, temp);
 	}
 }
 
-int staticcontent_poll(struct connection *conn,int maxbytes) {
+void staticcontent_poll(struct connection *conn,int maxbytes) {
 /* attempt to write a chunk of data from the file (bandwidth-limited) */
 /* close the connection if EOF is reached */
 /* return the number of bytes written */
@@ -111,39 +111,25 @@ int staticcontent_poll(struct connection *conn,int maxbytes) {
 					conn->positioninbuffer = 0;
 				}
 				if (bytes > conn->leftinbuffer)  bytes = conn->leftinbuffer;
-				bytes = webjames_writebuffer(conn->socket, conn->filebuffer + conn->positioninbuffer,bytes);
+				if ((bytes = webjames_writebuffer(conn, conn->filebuffer + conn->positioninbuffer,bytes))<0) return;
 				conn->positioninbuffer += bytes;
 				conn->leftinbuffer -= bytes;
 			} else {
 				fseek(conn->file, conn->fileused, SEEK_SET);
 				bytes = fread(temp, 1, bytes, conn->file);
-				bytes = webjames_writebuffer(conn->socket, temp, bytes);
+				if ((bytes = webjames_writebuffer(conn, temp, bytes))<0) return;
 			}
 		} else {            /* read from buffer */
-			bytes = webjames_writebuffer(conn->socket, conn->filebuffer+conn->fileused, bytes);
+			if ((bytes = webjames_writebuffer(conn, conn->filebuffer+conn->fileused, bytes))<0) return;
 		}
 
 		conn->timeoflastactivity = clock();
 
-		if (bytes < 0) {
-			/* errorcode = -bytes; */
-			*temp = '\0';
-			switch (-bytes) {
-			case IPERR_BROKENPIPE:
-				webjames_writelog(LOGLEVEL_ABORT, "ABORT connection closed by client");
-				break;
-			}
-			conn->close(conn, 1);           /* close the connection, with force */
-			return 0;
-		} else {
-			conn->fileused += bytes;
-		}
+		conn->fileused += bytes;
 	}
 
 
 	/* if EOF reached, close */
 	if (conn->fileused >= conn->fileinfo.size)   conn->close(conn, 0);
-
-	return bytes;
 }
 

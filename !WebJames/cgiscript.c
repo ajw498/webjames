@@ -306,33 +306,33 @@ void cgiscript_start(struct connection *conn)
 			} else {
 				sprintf(temp,"HTTP/1.0 %s\r\n",status);
 			}
-			webjames_writestring(conn->socket,temp);
+			webjames_writestringr(conn,temp);
 		} else if (location) {
-			webjames_writestring(conn->socket, "HTTP/1.0 302 Moved Temporarily\r\n");
+			webjames_writestringr(conn, "HTTP/1.0 302 Moved Temporarily\r\n");
 		} else {
-			webjames_writestring(conn->socket, "HTTP/1.0 200 OK\r\n");
+			webjames_writestringr(conn, "HTTP/1.0 200 OK\r\n");
 		}
 
 		time(&now);
 		time_to_rfc(localtime(&now),rfcnow);
 		sprintf(temp, "Date: %s\r\n", rfcnow);
-		webjames_writestring(conn->socket, temp);
+		webjames_writestringr(conn, temp);
 		if (conn->vary[0]) {
 			sprintf(temp, "Vary:%s\r\n", conn->vary);
-			webjames_writestring(conn->socket, temp);
+			webjames_writestringr(conn, temp);
 		}
 		for (i = 0; i < configuration.xheaders; i++) {
-			webjames_writestring(conn->socket, configuration.xheader[i]);
-			webjames_writestring(conn->socket, "\r\n");
+			webjames_writestringr(conn, configuration.xheader[i]);
+			webjames_writestringr(conn, "\r\n");
 		}
 		for (i=0;i<MAXHEADERS;i++) {
 			if (headers[i]) {
 				sprintf(temp,"%s\r\n",headers[i]);
-				webjames_writestring(conn->socket,temp);
+				webjames_writestringr(conn,temp);
 			}
 		}
 		if (configuration.server[0]) sprintf(temp, "Server: %s\r\n\r\n", configuration.server);
-		webjames_writestring(conn->socket, temp);
+		webjames_writestringr(conn, temp);
 	}
 }
 

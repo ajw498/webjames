@@ -252,19 +252,18 @@ static void report_quickanddirty(struct connection *conn, int report) {
 
 		name = get_report_name(report);
 		sprintf(temp, "HTTP/1.0 %d %s\r\n", report, name);
-		webjames_writestring(conn->socket, temp);
+		webjames_writestringr(conn, temp);
 		if (configuration.server[0]) sprintf(temp, "Server: %s\r\n", configuration.server);
-		webjames_writestring(conn->socket, temp);
+		webjames_writestringr(conn, temp);
 		time(&now);
 		time_to_rfc(localtime(&now),rfcnow);
 		sprintf(temp, "Date: %s\r\n", rfcnow);
-		webjames_writestring(conn->socket, "Content-Type: text/html\r\n");
+		webjames_writestringr(conn, "Content-Type: text/html\r\n");
 		sprintf(temp, "Content-Length: %d\r\n\r\n", strlen(configuration.panic));
-		webjames_writestring(conn->socket, temp);
-		webjames_writestring(conn->socket, temp);
+		webjames_writestringr(conn, temp);
+		webjames_writestringr(conn, temp);
 	}
-	webjames_writestring(conn->socket, configuration.panic);
-	statistics.written += strlen(configuration.panic);
+	webjames_writestringr(conn, configuration.panic);
 }
 
 
@@ -462,26 +461,26 @@ void report(struct connection *conn, int code, int subno, int headerlines, char 
 		char rfcnow[50];
 
 		sprintf(temp, "HTTP/1.0 %d %s\r\n", code, reportname);
-		webjames_writestring(conn->socket, temp);
-		webjames_writestring(conn->socket, "Content-Type: text/html\r\n");
+		webjames_writestringr(conn, temp);
+		webjames_writestringr(conn, "Content-Type: text/html\r\n");
 		/* if no substitution was required, simply send the cached file */
 		sprintf(temp, "Content-Length: %d\r\n", size);
-		webjames_writestring(conn->socket, temp);
+		webjames_writestringr(conn, temp);
 		if (configuration.server[0]) sprintf(temp, "Server: %s\r\n", configuration.server);
-		webjames_writestring(conn->socket, temp);
+		webjames_writestringr(conn, temp);
 		time(&now);
 		time_to_rfc(localtime(&now),rfcnow);
 		sprintf(temp, "Date: %s\r\n", rfcnow);
-		webjames_writestring(conn->socket, temp);
+		webjames_writestringr(conn, temp);
 		for (i = 0; i < headerlines; i++) {
 			if (header[i]) {
-				webjames_writestring(conn->socket, header[i]);
+				webjames_writestringr(conn, header[i]);
 				free(header[i]);
 				header[i] = NULL;
-				webjames_writestring(conn->socket, "\r\n");
+				webjames_writestringr(conn, "\r\n");
 			}
 		}
-		webjames_writestring(conn->socket, "\r\n");
+		webjames_writestringr(conn, "\r\n");
 	}
 
 	conn->handler = get_handler("static-content");

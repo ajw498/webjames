@@ -108,10 +108,9 @@ void handler_start(struct connection *conn)
 
 }
 
-int handler_poll(struct connection *conn,int maxbytes)
+void handler_poll(struct connection *conn,int maxbytes)
 {
-	if (conn->handler != NULL) if (conn->handler->pollfn != NULL) return conn->handler->pollfn(conn,maxbytes);
-	return 0;
+	if (conn->handler && conn->handler->pollfn) conn->handler->pollfn(conn,maxbytes);
 }
 
 void add_handler(char *name, char *command)
