@@ -1,5 +1,5 @@
 /*
-	$Id: ip.c,v 1.7 2001/09/03 14:10:35 AJW Exp $
+	$Id: ip.c,v 1.8 2002/01/07 22:16:00 uid1 Exp $
 	Socket access
 */
 
@@ -79,7 +79,7 @@ int ip_read(socket_s socket, char *buffer, int size, os_error **err)
 }
 
 
-int ip_write(socket_s socket, char *buffer, int size, os_error **err)
+int ip_write(socket_s socket, const char *buffer, int size, os_error **err)
 /* returns the number of bytes written */
 /* err is non-null if there was an error */
 {

@@ -18,7 +18,7 @@ socket_s ip_create(int udp);
 int ip_bind(socket_s socket, int addr, int port);
 int ip_connect(socket_s socket, int addr, int port);
 int ip_read(socket_s socket, char *buffer, int size, os_error **err);
-int ip_write(socket_s socket, char *buffer, int size, os_error **err);
+int ip_write(socket_s socket, const char *buffer, int size, os_error **err);
 int ip_nonblocking(socket_s socket);
 int ip_resolve(char *host, int *addr);
 void ip_writeaddr(char *ip, int addr, int port);
