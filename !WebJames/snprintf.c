@@ -867,17 +867,7 @@ static int format_converter(register buffy * odp, const char *fmt,
 			 * Print the string s. 
 			 */
 			for (i = s_len; i != 0; i--) {
-#if 1
-	    {
-		if ( sp < bep )
-		{
-		    *sp++ = *s ;
-		    cc++ ;
-		}
-	    }
-#else
 				INS_CHAR(*s, sp, bep, cc);
-#endif
 				s++;
 			}
 
