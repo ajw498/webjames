@@ -62,7 +62,7 @@
 <location />
 is-cgi
 cgi-api=redirect
-allowed-filetypes=18a
+allowed-filetypes=18a,ffb,feb,102,ffa,ff8
 </location>
 
 # define which directory holds 'webjames-style' cgi-scripts

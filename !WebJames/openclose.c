@@ -73,6 +73,7 @@ void open_connection(int socket, char *host, int port) {
   conn->defaultfiles = NULL;
   conn->defaultfilescount = 0;
   conn->attrflags.accessallowed = 1;
+  conn->attrflags.hidden = 0;
   conn->cgi_api = CGI_API_WEBJAMES;
   conn->homedirignore = 0;
   conn->allowedfiletypescount=0;

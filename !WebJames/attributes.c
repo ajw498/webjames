@@ -12,73 +12,67 @@
 #include "osfscontrol.h"
 
 #define STACKSIZE 10
+#define HASHINCREMENT 20
 
 typedef enum sectiontype {
-	section_LOCATION,
-	section_DIRECTORY,
-	section_FILES,
-	section_NONE
+  section_LOCATION,
+  section_DIRECTORY,
+  section_FILES,
+  section_NONE
 } sectiontype;
 
-static struct attributes *uriattributeslist, *dirattributeslist;
-static struct attributes **uriattrlist;
-static int starturiattr[57];
-static int uriattributescount, dirattributescount;
+typedef struct hashentry {
+  char *uri;
+  struct attributes *attr;
+} hashentry;
 
-static void insert_attributes(struct attributes *attr, enum sectiontype section) {
-// insert an attributes structure at the right position in the linked list
-  struct attributes *prev, *this;
-  int more;
+static struct hashentry *hash=NULL;
+static int hashsize, hashentries;
 
-  switch (section) {
-    case section_LOCATION:
-      this = uriattributeslist;
-      break;
-    case section_DIRECTORY:
-      this = dirattributeslist;
-    default:
-      this = NULL;
+static int generate_key(char *uri, int size) {
+// generate a hash table key for given uri
+  int len, i, key = 0;
+
+  len = strlen(uri);
+  for (i=0; i<len; i++) key += uri[i];
+  return key % size;
+}
+
+static void insert_into_hash(struct hashentry *hashptr, int size, char *uri, struct attributes *attr) {
+// insert into hash table
+  int key;
+
+  key = generate_key(uri,size);
+  while (hashptr[key].uri) {
+    key++;
+    if (key>=size) key = 0;
   }
 
-  prev = NULL;
-  more = 1;
-  while ((this) && (more)) {
-    if (strcmp(this->uri, attr->uri) > 0)
-      more = 0;
-    else {
-      prev = this;
-      this = this->next;
+  hashptr[key].uri = uri;
+  hashptr[key].attr = attr;
+}
+
+static void insert_attributes(struct attributes *attr) {
+// insert an attributes structure into the hash table
+  int i;
+
+  if (hashentries*4/3>hashsize) {
+    // increase the size of the hash table
+    struct hashentry *newhash;
+
+    newhash = malloc((hashsize+HASHINCREMENT)*sizeof(struct hashentry));
+    if (!newhash) return;
+    for (i=0; i<hashsize+HASHINCREMENT; i++) newhash[i].uri = NULL;
+    for (i=0; i<hashsize; i++) {
+      if (hash[i].uri) insert_into_hash(newhash,hashsize+HASHINCREMENT,hash[i].uri,hash[i].attr);
     }
-  }
-  attr->next = this;                    // insert the structure and
-  attr->previous = prev;                // re-do the pointers in the
-  if (this)  this->previous = attr;     // previous and next structures
-  if (prev) {
-    prev->next = attr;
-  } else {
-    switch (section) {
-      case section_LOCATION:
-        uriattributeslist = attr;
-        break;
-      case section_DIRECTORY:
-        dirattributeslist = attr;
-        break;
-      default:
-        break;
-    }
+    hashsize += HASHINCREMENT;
+    free(hash);
+    hash = newhash;
   }
 
-  switch (section) {
-    case section_LOCATION:
-      uriattributescount++;
-      break;
-    case section_DIRECTORY:
-      dirattributescount++;
-      break;
-    default:
-      break;
-  }
-
+  insert_into_hash(hash,hashsize,attr->uri,attr);
+  hashentries++;
 }
 
 
@@ -336,7 +330,7 @@ static struct attributes *read_attributes_file(char *filename, char *base) {
       if ((ptr[0] == '[') || (ptr[0] == '<' && ptr[1] == '/')) {
         // end of a section
         if (attr) {
-          insert_attributes(attr,section);
+          insert_attributes(attr);
           section = stack(section_NONE,0);
         }
         if (ptr[0] == '<') continue; // end of section, but not the start of a new one
@@ -611,7 +605,7 @@ static struct attributes *read_attributes_file(char *filename, char *base) {
     }
   }
   if (attr) {
-    insert_attributes(attr,section);
+    insert_attributes(attr);
   }
 
   fclose(file);
@@ -697,99 +691,64 @@ static void merge_attributes(struct connection *conn, struct attributes *attr) {
   merge_attributes2(conn,attr);
 }
 
-void get_uri_attributes(char *uri, struct connection *conn) {
-// merge all attributes-structures that matches the URI
-//
-// uri              pointer to the URI to match
-// conn             structure to fill in
-  int i, m, start, ok;
-  struct attributes *test;
-
-  if (*uri != '/')  return;
-
-  conn->attrflags.hidden = 0;
-
-  start = uri[1];                       // find starting point in attribute database
-  if (start < 'A')
-    start = ATTR___A;
-  else if ((start >= 'A') && (start <= 'Z'))
-    start = start - 'A' + ATTR_A_Z;
-  else if ((start > 'Z') && (start < 'a'))
-    start = ATTR_Z_a;
-  else if ((start >= 'a') && (start <= 'z'))
-    start = start - 'a' + ATTR_a_z;
-  else
-    start = ATTR_z__;
-
-  start = starturiattr[start];
-  if (start == -1)  start = 0;
-
-  for (i = start; i < uriattributescount; i++) {
-    test = uriattrlist[i];
-
-    m = 0;
-    while ((uri[m] == test->uri[m]) && (m < test->urilen))  m++;
-    ok = 0;
-    // only OK if the first (test->urilen) chars are identical
-    if (m == test->urilen)  ok = 1;
-    // if test->uri is a file (not a dir) then only OK if uri==test->uri
-    if ((test->uri[m-1] != '/') && ((uri[m] != '\0') && (uri[m] != '?')))
-      ok = 0;
-
-    if (ok) merge_attributes(conn,test);
-
-  }
-
-  if (conn->attrflags.hidden)  conn->attrflags.accessallowed = 0;
-}
-
-void get_dir_attributes(char *dir, struct connection *conn) {
+void get_attributes(char *uri, struct connection *conn) {
 // merge all attributes-structures that matches the directory
 //
 // dir              pointer to the directory to match
 // conn             structure to fill in
   int found;
-  struct attributes *test;
-  char buffer[256], path[256], *ptr;
-  int len, last;
+  char buffer[256], path[256], *ptr, splitchar;
+  int len, last, first, key;
 
-  // remove any terminating '.'
-  strcpy(path,dir);
-  len = strlen(path);
-  if (path[len-1] == '.') path[len-1] = '\0';
+  if (uri[0] != '/') {
+    // must be a directory
 
-  // make sure we can't have two different pathnames refering to the same directory
-  if (xosfscontrol_canonicalise_path(path,buffer,NULL,NULL,255,&len)) strcpy(buffer,path);
+    // remove any terminating '.'
+    strcpy(path,uri);
+    len = strlen(path);
+    if (path[len-1] == '.') path[len-1] = '\0';
 
-// do something a bit more efficient here to find the correct attributes structure for each directory
-// some sort of binary search? hash table?
+    // make sure we can't have two different pathnames refering to the same directory
+    if (xosfscontrol_canonicalise_path(path,buffer,NULL,NULL,255,&len)) strcpy(buffer,path);
+    splitchar = '.';
+  } else {
+    strcpy(buffer,uri);
+    splitchar = '/';
+  }
 
   ptr = buffer;
   last = 0;
+  first = 1;
 
   do {
-    ptr = strchr(ptr+1,'.');
+    ptr = strchr(first ? ptr : ptr+1,splitchar);
+    first = 0;
     if (ptr == NULL) {
       ptr = buffer+strlen(buffer);
       last = 1;
     }
     // decend through each directory till the one needed
     strncpy(path, buffer, ptr - buffer);  // copy path upto the '.' just found
-    path[ptr - buffer] = '\0';
+    if (uri[0] == '/' && *ptr == '/') {
+      path[ptr - buffer] = '/';
+      path[ptr - buffer + 1] = '\0';
+    } else {
+      path[ptr - buffer] = '\0';
+    }
 
     found = 0;
 
-    for (test = dirattributeslist; test != NULL; test = test->next) {
-      // traverse through the linked list till found
-
-      if (strcmp(path, test->uri) == 0) {
-        merge_attributes(conn, test);
+    key = generate_key(path,hashsize);
+    while (hash[key].uri && !found) {
+      if (strcmp(hash[key].uri,path) == 0) {
         found = 1;
-        break;
+        merge_attributes(conn,hash[key].attr);
       }
+      key++;
+      if (key>=hashsize) key = 0;
     }
 
-    if (!found) {
+    if (!found && uri[0] != '/') {
       struct attributes *newattr;
       char htaccessfile[256];
 
@@ -798,9 +757,9 @@ void get_dir_attributes(char *dir, struct connection *conn) {
       if (newattr) {
         merge_attributes(conn, newattr);
       } else {
-        // an error occoured (probably couldn't find the file), so create a blkank structure for theis dir
+        // an error occoured (probably couldn't find the file), so create a blank structure for this dir
         newattr=create_attribute_structure(path);
-        insert_attributes(newattr,section_DIRECTORY);
+        if (newattr) insert_attributes(newattr);
       }
     }
 
@@ -815,47 +774,16 @@ void init_attributes(char *filename) {
 //
 // filename         pointer to the name of the attributes file
 //
-  struct attributes *attr;
-  int i, chr, start;
+  int i;
 
-  uriattrlist = NULL;
-  uriattributeslist = NULL;
-  uriattributescount = 0;
-  dirattributeslist = NULL;
-  dirattributescount = 0;
   stack(section_NONE,-1);   // reset stack
-  read_attributes_file(filename, "");   // read attributes in to a
-                                        // sorted linked list
-  if (!uriattributescount)  return;
 
-  uriattrlist = malloc(uriattributescount*sizeof(struct attributes *));
-  if (!uriattrlist)  return;
+  hashsize = HASHINCREMENT; // init hash table
+  hashentries = 0;
+  hash = malloc(hashsize*sizeof(struct hashentry));
+  if (!hash) return;
+  for (i=0; i<hashsize; i++) hash[i].uri = NULL;
 
-  // start position in attrlist array, indexed by first letter in the URI
-  for (i = 0; i < 56; i++)  starturiattr[i] = -1;
-
-  attr = uriattributeslist;                // convert the linked list to
-                                        // a straight array - easier to
-                                        // to binary search that way
-  for (i = 0; i < uriattributescount; i++) {
-    uriattrlist[i] = attr;
-
-    chr = attr->uri[1];                 // first letter after the /
-    if (chr < 'A')
-      start = ATTR___A;
-    else if ((chr >= 'A') && (chr <= 'Z'))
-      start = chr - 'A' + ATTR_A_Z;
-    else if ((chr > 'Z') && (chr < 'a'))
-      start = ATTR_Z_a;
-    else if ((chr >= 'a') && (chr <= 'z'))
-      start = chr - 'a' + ATTR_a_z;
-    else
-      start = ATTR_z__;
-
-    if (starturiattr[start] == -1)
-      starturiattr[start] = i;             // set starting point
-
-    attr = attr->next;                  // next in linked list
-  }
+  read_attributes_file(filename, "");   // read attributes in to the hash table
 }
 

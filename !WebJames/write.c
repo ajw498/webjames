@@ -160,17 +160,17 @@ void send_file(struct connection *conn) {
   // select the socket for writing
   select_writing(conn->index);
 
-  get_uri_attributes(conn->uri, conn);
+  // split the request in filename and args (seperated by a ?)
+  args = strchr(conn->uri, '?');
+  if (args)  *args++ = '\0';
+
+  get_attributes(conn->uri, conn);
 
   // uri MUST start with a /
   if (conn->uri[0] != '/') {
     report_badrequest(conn, "uri must start with a /");
     return;
   }
-
-  // split the request in filename and args (seperated by a ?)
-  args = strchr(conn->uri, '?');
-  if (args)  *args++ = '\0';
 
   // RISC OS filename limit - really should be removed...
   len = strlen(conn->uri);
@@ -199,7 +199,7 @@ void send_file(struct connection *conn) {
     return;
   }
 
-  get_dir_attributes(conn->filename,conn);
+  get_attributes(conn->filename,conn);
 
   if (!(conn->attrflags.accessallowed)) {
     report_notfound(conn);

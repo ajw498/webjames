@@ -1,3 +1,5 @@
+#include "MemCheck:MemCheck.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -225,6 +227,8 @@ void script_start_webjames(int scripttype, struct connection *conn, char *script
     report_badrequest(conn, "cannot allocate memory");
     return;
   }
+  
+  MemCheck_RegisterMiscBlock(ptr,size+16);
 
   memcpy(ptr, conn->header, conn->headersize);
   if (conn->bodysize > 0)
