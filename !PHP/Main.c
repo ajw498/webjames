@@ -95,7 +95,7 @@ static int Save(int event_code, ToolboxEvent *event, IdBlock *id_block,void *han
 				fprintf(file,ALIAS RUN "StandAlone %%%%*0\n");
 				break;
 			case icon_MULTITASK:
-				fprintf(file,ALIAS "TaskWindow \"" RUN "StandAlone" " %%%%*0\" -name \"PHP script\" -quit -wimpslot 1400k");
+				fprintf(file,ALIAS "TaskWindow \"" RUN "StandAlone" " %%%%*0\" -name \"PHP script\" -quit -wimpslot 1700k");
 				break;
 			case icon_ANT:
 				fprintf(file,ALIAS RUN "ANT %%%%*0\n");
@@ -107,7 +107,7 @@ static int Save(int event_code, ToolboxEvent *event, IdBlock *id_block,void *han
 				fprintf(file,ALIAS RUN "Netplex %%%%*0\n");
 				break;
 			case icon_WEBJAMES:
-				fprintf(file,ALIAS "WimpSlot -Min 1400k -Max 1400k |M Run <PHP$Dir>.php %%%%*0\n");
+				fprintf(file,ALIAS "WimpSlot -Min 1700k -Max 1700k |M Run <PHP$Dir>.php %%%%*0\n");
 				break;
 		}
 	}

@@ -1,7 +1,7 @@
 Set PHP$Dir <Obey$Dir>
 IconSprites <PHP$Dir>.!Sprites
 Set File$Type_18A PHP
-Set Alias$PHP Wimpslot -Min 2400k -Max 2400k |M Run <PHP$Dir>.PHP %%*0
+Set Alias$PHP Wimpslot -Min 2000k -Max 2000k |M Run <PHP$Dir>.PHP %%*0
 
 |Disable the following line if you don't want PHP to use a dynamic area
 |You will probably need to increase the number in the wimpslot below as well
