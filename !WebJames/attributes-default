@@ -47,6 +47,7 @@
 # forbidden-filetypes=list-of-filetypes
 # errordocument statuscode "message
 # errordocument statuscode urltoredirectto
+# stripextensions
 #
 #  if a file/directory is password-protected, a realm MUST
 # be defined for that file/directory, otherwise it cannot
@@ -55,7 +56,7 @@
 #  you can only specify homedir and defaultfile for
 # directories, ie. if the URI ends in a /
 #
-#  URIs (like filenames) are case-insensitive in WebJames
+#  URIs (like filenames) are case-insensitive in WebJames, unless the casesensitive option is set in the config file
 
 # global atttributes
 # Allow PHP scripts to be run as cgi, all other files served normally

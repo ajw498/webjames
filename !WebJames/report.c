@@ -324,7 +324,7 @@ void report(struct connection *conn, int code, int subno, int headerlines) {
 					strcpy(name, tempconn->homedir);
 					name += strlen(name);
 					/* append requested URI, with . and / switched */
-					if (!uri_to_filename(tempconn->uri + tempconn->homedirignore,name)) {
+					if (!uri_to_filename(tempconn->uri + tempconn->homedirignore,name,tempconn->flags.stripextensions)) {
 						struct cache *cacheentry;
 
 						strcpy(conn->filename,tempconn->filename);

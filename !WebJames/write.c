@@ -128,23 +128,30 @@ void select_writing(int cn) {
 
 }
 
-int uri_to_filename(char *uri, char *filename) {
+int uri_to_filename(char *uri, char *filename, int stripextension) {
 /* swap '.' and '/' */
 /* returns non zero if illegal chars are present */
+/* optionally removes the leafname extension */
+	char *lastdot = NULL;
 	while (*uri) {
-		if (*uri == '/')
+		if (*uri == '/') {
 			*filename++ = '.';
-		else if (*uri == '.')
+			lastdot = NULL;
+		} else if (*uri == '.') {
+			lastdot = filename;
 			*filename++ = '/';
-		else if ((*uri == '%') || (*uri == '*') || (*uri == '^') || (*uri == '&')
+		} else if ((*uri == '%') || (*uri == '*') || (*uri == '^') || (*uri == '&')
 					|| (*uri == '#') || (*uri == ':') || (*uri == '<') || (*uri == '>')
-					|| (*uri == '$') || (*uri == '@') || (*uri == '\\') )
+					|| (*uri == '$') || (*uri == '@') || (*uri == '\\') ) {
 			return 1;
-		else
+		} else {
 			*filename++ = *uri;
+		}
 		uri++;
 	}
 	*filename = '\0';
+
+	if (stripextension && lastdot) *lastdot = '\0';
 
 	return 0;
 }
@@ -194,7 +201,7 @@ void send_file(struct connection *conn) {
 	name += strlen(name);
 	ptr = conn->uri + conn->homedirignore;
 	/* append requested URI, with . and / switched */
-	if (uri_to_filename(ptr,name)) {
+	if (uri_to_filename(ptr,name,conn->flags.stripextensions)) {
 		report_badrequest(conn, "filename includes illegal characters");
 		return;
 	}
@@ -230,9 +237,9 @@ void send_file(struct connection *conn) {
 		int i;
 
 		strcpy(testfile,conn->filename);
-		strcat(testfile,"index/html"); /* incase the list is empty */
+		uri_to_filename("index.html", testfile+len, conn->flags.stripextensions); /* incase the list is empty */
 		for(i=0; i<conn->defaultfilescount; i++) {
-			uri_to_filename(conn->defaultfiles[i], testfile+len);
+			uri_to_filename(conn->defaultfiles[i], testfile+len, conn->flags.stripextensions);
 			type = get_file_info(testfile,NULL,NULL,&size,1);
 			if (type != FILE_DOESNT_EXIST) break;
 		}

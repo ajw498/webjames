@@ -31,10 +31,11 @@ static int hashsize, hashentries;
 
 static int generate_key(char *uri, int size) {
 /* generate a hash table key for given uri */
-	int len, i, key = 0;
+	int len, i, mult, key = 0;
 
 	len = strlen(uri);
-	for (i=0; i<len; i++) key += uri[i];
+	mult = size/(len+1);
+	for (i=0; i<len; i++) key += mult*i*uri[i];
 	return key % size;
 }
 
@@ -231,7 +232,7 @@ static struct attributes *create_attribute_structure(char *uri) {
 	if (!attr)  return NULL;
 
 	/* reset the structure to default state */
-	attr->cacheable = attr->hidden = attr->ignore = 0;
+	attr->cacheable = attr->hidden = attr->ignore = attr->stripextensions = 0;
 	attr->realm = attr->accessfile = attr->userandpwd = NULL;
 	attr->homedir = attr->moved = attr->tempmoved = NULL;
 	attr->defaultfiles = NULL;
@@ -251,7 +252,8 @@ static struct attributes *create_attribute_structure(char *uri) {
 		attr->defined.moved = attr->defined.tempmoved = attr->defined.cacheable =
 		attr->defined.homedir = attr->defined.is_cgi = attr->defined.cgi_api =
 		attr->defined.methods = attr->defined.port = attr->defined.hidden =
-		attr->defined.defaultfile = attr->defined.allowedfiletypes = attr->defined.forbiddenfiletypes = 0;
+		attr->defined.defaultfile = attr->defined.allowedfiletypes =
+		attr->defined.forbiddenfiletypes = attr->defined.stripextensions = 0;
 
 	attr->urilen = strlen(uri);
 	attr->uri = malloc(attr->urilen+1);
@@ -479,6 +481,12 @@ static struct attributes *read_attributes_file(char *filename, char *base) {
 						attr->defined.port = 1;
 					}
 
+				} else if (strcmp(attribute, "stripextensions") == 0) {
+					/* Strip filename extensions */
+					attr->defined.stripextensions = 1;
+					attr->stripextensions = 1;
+					if (value) free(value);
+
 				} else if (strcmp(attribute, "is-cgi") == 0) {
 					/* URI is cgi */
 					attr->defined.is_cgi = 1;
@@ -620,11 +628,12 @@ static struct attributes *read_attributes_file(char *filename, char *base) {
 static void merge_attributes3(struct connection *conn, struct attributes *attr) {
 /* merge all attributes from attr into conn */
 	int i;
-	if (attr->defined.realm)        conn->realm           = attr->realm;
-	if (attr->defined.accessfile)   conn->accessfile      = attr->accessfile;
-	if (attr->defined.userandpwd)   conn->userandpwd      = attr->userandpwd;
-	if (attr->defined.cgi_api)      conn->cgi_api         = attr->cgi_api;
-	if (attr->defined.is_cgi)       conn->flags.is_cgi    = attr->is_cgi;
+	if (attr->defined.realm)           conn->realm                 = attr->realm;
+	if (attr->defined.accessfile)      conn->accessfile            = attr->accessfile;
+	if (attr->defined.userandpwd)      conn->userandpwd            = attr->userandpwd;
+	if (attr->defined.cgi_api)         conn->cgi_api               = attr->cgi_api;
+	if (attr->defined.is_cgi)          conn->flags.is_cgi          = attr->is_cgi;
+	if (attr->defined.stripextensions) conn->flags.stripextensions = attr->stripextensions;
 	for (i=0; i<attr->errordocscount; i++) {
 		/* add to top of linked list */
 		struct errordoc *error;
@@ -692,6 +701,7 @@ static void merge_attributes1(struct connection *conn, struct attributes *attr) 
 
 static void merge_attributes(struct connection *conn, struct attributes *attr) {
 /* merge all attributes from attr into conn */
+/* split into 3 separate functions, as otherwise cc gives an internal inconsistency when memcheck is enabled */
 
 	merge_attributes1(conn,attr);
 	merge_attributes2(conn,attr);

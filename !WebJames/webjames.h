@@ -40,7 +40,7 @@
 typedef struct errordoc {
 	int status; /* http status code */
 	char *report; /* text to use, or url to redirect to */
-	struct errordoc *next; /* only used in conn structures, not in attrributes strcutures */
+	struct errordoc *next; /* only used in conn structures, not in attributes structures */
 } errordoc;
 
 #endif
@@ -72,6 +72,7 @@ typedef struct connection {
 		unsigned int deletefile        : 1;  /* delete file when done */
 		unsigned int cacheable         : 1;
 		unsigned int is_cgi            : 1;
+		unsigned int stripextensions   : 1;  /* strip any filename extension when looking for the file */
 	} flags;
 
 	/* various header-lines, all malloc()'ed */

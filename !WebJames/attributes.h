@@ -26,10 +26,11 @@ typedef struct attributes {
 	char **defaultfiles; /* list of default files to use for an index page */
 	int defaultfilescount;
 
-	char cacheable;	/* 0 no, 1 yes */
-	char hidden;	/* 0 no, 1 yes */
-	char is_cgi;	/* 0 no, 1 yes */
-	char cgi_api;	/* 0 normal, 1 redirect */
+	char cacheable;        /* 0 no, 1 yes */
+	char hidden;           /* 0 no, 1 yes */
+	char is_cgi;           /* 0 no, 1 yes */
+	char stripextensions;  /* 0 no, 1 yes */
+	char cgi_api;          /* 0 normal, 1 redirect */
 
 	int methods;	/* allowed methods, default is GET/HEAD/POST */
 
@@ -58,20 +59,21 @@ typedef struct attributes {
 	int errordocscount;
 
 	struct {
-		unsigned int accessfile  : 1;
-		unsigned int userandpwd  : 1;
-		unsigned int realm       : 1;
-		unsigned int moved       : 1;
-		unsigned int tempmoved   : 1;
-		unsigned int cacheable   : 1;
-		unsigned int is_cgi      : 1;
-		unsigned int cgi_api     : 1;
-		unsigned int homedir     : 1;
-		unsigned int methods     : 1;
-		unsigned int port        : 1;
-		unsigned int hidden      : 1;
-		unsigned int defaultfile : 1;
-		unsigned int allowedfiletypes : 1;
+		unsigned int accessfile         : 1;
+		unsigned int userandpwd         : 1;
+		unsigned int realm              : 1;
+		unsigned int moved              : 1;
+		unsigned int tempmoved          : 1;
+		unsigned int cacheable          : 1;
+		unsigned int stripextensions    : 1;
+		unsigned int is_cgi             : 1;
+		unsigned int cgi_api            : 1;
+		unsigned int homedir            : 1;
+		unsigned int methods            : 1;
+		unsigned int port               : 1;
+		unsigned int hidden             : 1;
+		unsigned int defaultfile        : 1;
+		unsigned int allowedfiletypes   : 1;
 		unsigned int forbiddenfiletypes : 1;
 	} defined;
 
