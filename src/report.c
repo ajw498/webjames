@@ -1,5 +1,5 @@
 /*
-	$Id: report.c,v 1.2 2002/10/20 15:40:31 ajw Exp $
+	$Id: report.c,v 1.3 2002/10/23 20:23:46 ajw Exp $
 	Error reporting functions
 */
 
@@ -89,7 +89,7 @@ static char *report_substitute(struct reportcache *report, struct substitute sub
 
 	/* add the webmaster-email entry to the list of strings to substitute */
 	subs[num].name = "%EMAIL%";
-	subs[num].value = conn->vhost->serveradmin;
+	subs[num].value = conn->vhost ? conn->vhost->serveradmin : configuration.webmaster; /* vhost entry may not be valid at this point */
 	num++;
 
 	/* calculate the length of all the entries */
@@ -513,7 +513,7 @@ void report_moved(struct connection *conn, char *newurl) {
 	char url[MAX_FILENAME];
 	size_t len;
 
-	if (conn->vhost->domain[0])
+	if (conn->vhost && conn->vhost->domain[0])
 		snprintf(url, MAX_FILENAME, "http://%s%s", conn->vhost->domain, newurl);
 	else
 		wjstrncpy(url, newurl, MAX_FILENAME);
@@ -537,7 +537,7 @@ void report_movedtemporarily(struct connection *conn, char *newurl) {
 	char url[MAX_FILENAME];
 	size_t len;
 
-	if (conn->vhost->domain[0])
+	if (conn->vhost && conn->vhost->domain[0])
 		snprintf(url, MAX_FILENAME, "http://%s%s", conn->vhost->domain, newurl);
 	else
 		wjstrncpy(url, newurl, MAX_FILENAME);
