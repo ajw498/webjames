@@ -1,4 +1,4 @@
-v2.02 6-Oct-00
+v2.02 19-Oct-00
 Fixed bug that could cause a filecore in use error if the script had a pathname
 of eg. <WebJames$Dir>.index/php
 As a consequence of the bug fix, the CSD is now set correctly in the php binary,
