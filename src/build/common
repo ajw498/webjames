@@ -1,6 +1,6 @@
 # Makefile for WebJames the web server
 #
-# $Id: common,v 1.14 2002/12/14 00:34:56 ajw Exp $
+# $Id: common,v 1.15 2003/01/02 00:15:10 ajw Exp $
 #
 # Parts common to all builds
 
@@ -84,18 +84,15 @@ $(WJCONFIG): config-default
 $(PHPSETRUNTYPE): setruntype-default
 	cp setruntype-default $@
 
-PHPMail.o: PHPMail.c
-	$(GCC) $(GCCINCLUDE) -c PHPMail.c -o PHPMail.o
-
-$(WJPHPMAIL): PHPMail.o
-	$(GCC) -o $@ PHPMail.o $(LINKFLAGS) $(OSLIB)
+$(WJPHPMAIL): PHPMail.c
+	$(GCC) $(GCCINCLUDE) -o $@ PHPMail.c $(OSLIB)
 
 $(WJPHPHELP): $(PHPHELP)
 	-rm -f $(WJPHPHELP)
 	$(LN_S) $(UP)$(DIRSEP)$(PHPHELP) $(WJPHPHELP)
 
 $(PHPGUI): PHPFrontEnd.c
-	$(GCC) $(GCCINCLUDE) -o $@ PHPFrontEnd.c $(LINKFLAGS) $(OSLIBSUPPORT) $(OSLIB)
+	$(GCC) $(GCCINCLUDE) -o $@ PHPFrontEnd.c -mlibscl $(OSLIBSUPPORT) $(OSLIB)
 
 
 clean:

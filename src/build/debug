@@ -1,6 +1,6 @@
 # Makefile for WebJames the web server
 #
-# $Id: debug,v 1.3 2002/10/05 16:59:17 ajw Exp $
+# $Id: debug,v 1.4 2003/01/02 00:15:10 ajw Exp $
 #
 # Settings for the debug build
 
@@ -16,8 +16,8 @@ SETTYPE = SetType $@ Obey
 #Libraries
 MEMCHECKLIB =
 STUBS = C:o.stubs
-OSLIB = OSLib:o.OSLib
-OSLIBSUPPORT = C:OSLibSupport.o.OSLibSupport
+OSLIB = OSLib:o.OSLib32
+OSLIBSUPPORT = OSLibSupport:o.OSLibSupport32
 REGEX = C:regex.libregex
 
 #Compiler flags
@@ -27,7 +27,7 @@ WARNINGS = -strict -fah
 OPTIMISATION =
 DEBUG = -g
 INCLUDE = -IC: -IOSLib: -IC:regex
-GCCINCLUDE = -IL: -IOSLib:
+GCCINCLUDE = -IOSLib: -IOSLibSupport:
 
 #Linker flags
 LINKDEBUG = -d
