@@ -98,17 +98,17 @@ static void scan_filetype_list(char *list, struct attributes *attr, int allowed)
 
   more = 1;
   do {
-    int n, f;
+    int n, f, ch;
 
-    n = sscanf(list, "%x", &f);
-
-    if (n == 1)
+    n = sscanf(list, "%x%n", &f, &ch);
+    list += ch;
+    if (n == 1) {
       filetypeslist[count++] = f;
-
-    if (strchr(list, ','))
-      list = strchr(list, ',')+1;
-    else
+    } else {
       more = 0;
+    }
+
+    if (strchr(list, ',')) list = strchr(list, ',')+1;
   } while (more);
 
   if (!count)  return;
@@ -144,17 +144,18 @@ static void scan_host_list(char *list, struct attributes *attr, int allowed) {
 
   more = 1;
   do {
-    int n, a0, a1, a2, a3;
+    int n, a0, a1, a2, a3, ch;
 
-    n = sscanf(list, "%d.%d.%d.%d", &a0, &a1, &a2, &a3);
+    n = sscanf(list, "%d.%d.%d.%d%n", &a0, &a1, &a2, &a3, &ch);
+    list += ch;
 
-    if (n == 4)
+    if (n == 4) {
       hostlist[count++] = a0 | (a1<<8) | (a2<<16) | (a3<<24);
-
-    if (strchr(list, ','))
-      list = strchr(list, ',')+1;
-    else
+    } else {
       more = 0;
+    }
+
+    if (strchr(list, ',')) list = strchr(list, ',')+1;
   } while (more);
 
   if (!count)  return;
