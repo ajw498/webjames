@@ -8,15 +8,15 @@
 <center>
 <h1>Example pages</h1>
 </center>
-You should ensure that you have PHP RISC OS <b>version 2.02 or later</b> before running either of the PHP scripts,
-otherwise they may cause a filecore in use error.
+
 <h4>Redirect style CGI scripts</h4>
 <ul>
 <li><a href="cgi-bin2/show-vars">show-vars</a> - obey file that shows all cgi environment variables
 <li><a href="cgi-bin2/basic">basic</a> - simple script written in BASIC
 <li><a href="cgi-bin2/obey">obey</a> - simple script written as an obey file
 <li><a href="cgi-bin2/perl">perl</a> - simple script written in Perl <i>This needs !Perl to work</i>
-<li><a href="cgi-bin2/php">php</a> - simple script written in PHP <i>This needs <a href="http://www.ecs.soton.ac.uk/~ajw498/">!PHP</A> to work</i>
+<li><a href="cgi-bin2/php">php</a> - simple script written in PHP
+<li><a href="info.php">info.php</a> - gives information about the PHP options currently set
 <li><a href="webart.php">webart.php</a> - a more complicated PHP script that generates GIF images
 </ul>
 
