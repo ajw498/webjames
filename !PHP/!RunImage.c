@@ -2,7 +2,7 @@
 	!PHP
 	Copyright © Alex Waugh 2000
 
-	Version 1.01 19/2/00
+	$Id: !RunImage.c,v 1.6 2000/09/13 09:44:29 AJW Exp $
 
 
     This program is free software; you can redistribute it and/or modify
