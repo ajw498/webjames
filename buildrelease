@@ -56,32 +56,35 @@ if test $WJVERSION != test; then
     exit 1
   fi
 
-  # Make sure cvs is up to date
-  echo cvs commit
-  cvs tag v`echo $WJVERSION | sed 's/\.//'`_`echo $PHPVERSION | sed 's/\.//'`
 fi
 
 # Build the source zip
-zip -r9, webjames-source-$WJVERSION.zip * -x '*CVS*' '*.cvsignore' '\!System*' 'scripts*' 'WJ-PHP*'
+zip -r9, webjames-source-$WJVERSION.zip * -x '*CVS*' '*.svn*' '*.cvsignore' '\!System*' 'scripts*' 'WJ-PHP*' || exit 1
 
 # Build the release zip
 ./configure
 make
-zip -r9, webjames-$WJVERSION.zip \!WebJames Site Licences \!System -x '*CVS*' '*.cvsignore'
+zip -r9, webjames-$WJVERSION.zip \!WebJames Site Licences -x '*CVS*' '*.svn*' '*.cvsignore' || exit 1
 
 # Build the PHP cgi
 (cd $PHPDIR; ./riscos.configure) || exit 1
 (cd $PHPDIR; make) || exit 1
 cp $PHPDIR/sapi/cgi/php !PHP/php,ff8 || exit 1
-zip -r9, php-$PHPVERSION.zip \!PHP Licences php.ini \!System -x '*CVS*' '*.cvsignore' || exit 1
+zip -r9, php-$PHPVERSION.zip \!PHP Licences php.ini -x '*CVS*' '*.svn*' '*.cvsignore' || exit 1
 
-# Build WebJames/PHP 
+# Build WebJames/PHP
 ./configure --enable-php || exit 1
-(cd $PHPDIR; ./riscos.configure --with-webjames=../webjames/src --disable-pear --disable-cli) || exit 1
+SRCDIR=`pwd`/src
+(cd $PHPDIR; ./riscos.configure --with-webjames=$SRCDIR --disable-pear --disable-cli) || exit 1
 (cd $PHPDIR; make) || exit 1
 # make install is likely to fail as it tries to install the cli sapi or pear
 (cd $PHPDIR; make install)
 make || exit 1
-zip -r9, webjames-$WJVERSION-php-$PHPVERSION.zip \!WebJames Site Licences php.ini \!System -x '*CVS*' '*.cvsignore'
+zip -r9, webjames-$WJVERSION-php-$PHPVERSION.zip \!WebJames Site Licences php.ini -x '*CVS*' '*.svn*' '*.cvsignore' || exit 1
+
+if test $WJVERSION != test; then
+  echo Please tag:
+  echo svn cp http://svn.cp15.org/webjames/trunk http://svn.cp15.org/webjames/tags/v`echo $WJVERSION | sed 's/\.//'`_`echo $PHPVERSION | sed 's/\.//'`
+fi
 
 # Build example scripts
