@@ -213,11 +213,11 @@ void send_file(struct connection *conn)
 
 	/* check if object exist and get the filetype/mimetype at the same time */
 	conn->fileinfo.filetype = get_file_info(conn->filename, conn->fileinfo.mimetype, &conn->fileinfo.date, NULL, &conn->fileinfo.size,1);
+	len = strlen(conn->uri);
 	if (conn->fileinfo.filetype == FILE_DOESNT_EXIST) {
 		report_notfound(conn);
 		return;
 	} else if (conn->fileinfo.filetype == OBJECT_IS_DIRECTORY) {
-		len = strlen(conn->uri);
 		if (conn->uri[len-1] != '/') {
 			char newurl[MAX_FILENAME];
 			snprintf(newurl, MAX_FILENAME,"%s/", conn->uri);
@@ -235,6 +235,10 @@ void send_file(struct connection *conn)
 		return;
 	} else if (conn->fileinfo.filetype == FILE_ERROR) {
 		report_badrequest(conn, "error occured when reading file info");
+		return;
+	} else if (conn->uri[len-1] == '/') {
+		/* A file with a trailing / is not allowed */
+		report_notfound(conn);
 		return;
 	} else if (conn->fileinfo.filetype >= FILE_NO_MIMETYPE) {
 		wjstrncpy(conn->fileinfo.mimetype, "text/plain", MAX_MIMETYPE);
