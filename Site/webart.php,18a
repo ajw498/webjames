@@ -1,7 +1,7 @@
 <?
 if ($picture) {
 	#We are being called to generate the picture
-	Header("Content-type: image/gif");
+	Header("Content-type: image/png");
 	$im = imagecreate(300,300); #Create a blank image
 	$green = imagecolorallocate($im,0,255,0); #Declare the colours we will use
 	$red = imagecolorallocate($im,255,0,0);
@@ -23,7 +23,7 @@ if ($picture) {
 		}
 	}
 	imagestring($im,4,220,285,date("d/m/Y"),$black); #Add the date to the bottom right corner
-	imagegif($im); #Create the GIF
+	imagepng($im); #Create the GIF
 	imagedestroy($im); #Free the memory
 } else {
 #We are being called to generate the HTML bit of the page?>
