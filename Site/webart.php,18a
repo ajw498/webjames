@@ -1,5 +1,5 @@
-<?
-if ($picture) {
+<?php
+if ($HTTP_GET_VARS["picture"]) {
 	#We are being called to generate the picture
 	if (ImageTypes() & IMG_PNG) {
 		$png=1;
@@ -45,36 +45,36 @@ PHP Example
 <h1>WebArt</h1>
 <P>Select the shape you want to draw, then click on the image to add it. The PHP script can cope with any number of shapes being added, but as the length of URLs are limited then it only works up to about ten shapes.
 <P>There is one PHP script that generates both this HTML and the PNG or GIF image.
-<P><FORM ACTION="<? echo $PHP_SELF ?>" METHOD="GET">
+<P><FORM ACTION="<?php echo $_SERVER["PHP_SELF"] ?>" METHOD="GET">
 <INPUT TYPE=radio NAME="shape" VALUE="1" checked>Square<br>
 <INPUT TYPE=radio NAME="shape" VALUE="2">Circle<br>
 <INPUT TYPE=radio NAME="shape" VALUE="3">Triangle<br>
-<? #Add hidden items to store coordinates of all the shapes added so far
+<?php #Add hidden items to store coordinates of all the shapes added so far
 for ($i=0;$HTTP_GET_VARS["x".$i];$i++) {
 	printf("<INPUT TYPE=hidden NAME=\"%s\" VALUE=\"%d\">\n","x".$i,$HTTP_GET_VARS["x".$i]);
 	printf("<INPUT TYPE=hidden NAME=\"%s\" VALUE=\"%d\">\n","y".$i,$HTTP_GET_VARS["y".$i]);
 	printf("<INPUT TYPE=hidden NAME=\"%s\" VALUE=\"%d\">\n","s".$i,$HTTP_GET_VARS["s".$i]);
 }
-if ($sub_x) { #Add the new shape
-	printf("<INPUT TYPE=hidden NAME=\"%s\" VALUE=\"%d\">\n","x".$i,$sub_x);
-	printf("<INPUT TYPE=hidden NAME=\"%s\" VALUE=\"%d\">\n","y".$i,$sub_y);
-	printf("<INPUT TYPE=hidden NAME=\"%s\" VALUE=\"%d\">\n","s".$i,$shape);
+if ($HTTP_GET_VARS["sub_x"]) { #Add the new shape
+	printf("<INPUT TYPE=hidden NAME=\"%s\" VALUE=\"%d\">\n","x".$i,$HTTP_GET_VARS["sub_x"]);
+	printf("<INPUT TYPE=hidden NAME=\"%s\" VALUE=\"%d\">\n","y".$i,$HTTP_GET_VARS["sub_y"]);
+	printf("<INPUT TYPE=hidden NAME=\"%s\" VALUE=\"%d\">\n","s".$i,$HTTP_GET_VARS["shape"]);
 }
-echo "<INPUT TYPE=image src=\"$PHP_SELF?picture=1";
+echo "<INPUT TYPE=image src=\"".$_SERVER["PHP_SELF"]."?picture=1";
 for ($i=0;$HTTP_GET_VARS["x".$i];$i++) { #Add parameters to use when fetching the picture
 	printf("&%s=%d","x".$i,$HTTP_GET_VARS["x".$i]);
 	printf("&%s=%d","y".$i,$HTTP_GET_VARS["y".$i]);
 	printf("&%s=%d","s".$i,$HTTP_GET_VARS["s".$i]);
 }
-if ($sub_x) { #Add parameters for the shape just created
-	printf("&%s=%d","x".$i,$sub_x);
-	printf("&%s=%d","y".$i,$sub_y);
-	printf("&%s=%d","s".$i,$shape);
+if ($HTTP_GET_VARS["sub_x"]) { #Add parameters for the shape just created
+	printf("&%s=%d","x".$i,$HTTP_GET_VARS["sub_x"]);
+	printf("&%s=%d","y".$i,$HTTP_GET_VARS["sub_y"]);
+	printf("&%s=%d","s".$i,$HTTP_GET_VARS["shape"]);
 }
 echo '" width=300 height=300 name="sub">';
 ?>
 </FORM><BR>
-<A HREF="<? echo $PHP_SELF ?>">Clear picture</A><BR>
+<A HREF="<?php echo $_SERVER["PHP_SELF"] ?>">Clear picture</A><BR>
 <A HREF="./">Back</A>
 </BODY></HTML>
-<? } ?>
+<?php } ?>
