@@ -17,7 +17,7 @@ webmaster=i.havent@changed.the.emailaddress.com
 serverip=
 
 # server - included in the Server: fields when replying
-server=WebJames/0.28
+server=WebJames/0.29
 
 # port - http port number
 # Webjames can accept connections on up to 8 ports simultaneously - simply
@@ -87,7 +87,7 @@ panic=<html><head><title>HTTP request failed</title></head> <body bgcolor="#ffff
 
 # x-header - extra header-lines that are included when returning a file;
 # multiple x-header fields may be included, but only the first 16 are used;
-x-header=X-Server-Info: Acorn RiscPC, 200MHz StrongARM
+# eg. x-header=X-Server-Info: Acorn RiscPC, 200MHz StrongARM
 
 
 # the cache
@@ -135,7 +135,7 @@ logbuffersize=4096
 # this many seconds after a write; this removes the overhead involved in
 # opening/closing the log files repeatedly
 # if logbuffersize is nonzero  - write any data still in the buffer out
-# to disc after this many seconds 
+# to disc after this many seconds of inactivity
 keep-log-open=10
 
 # log-rotate - prevents the logfiles from getting too big
@@ -161,7 +161,7 @@ rename-cmd=rename %0 %1
 
 # log-header - extra header-lines that are written to the logfile if
 # present in the request;
-# multiple log-header fields may be included, but only the first 16 are used;
+# multiple log-header fields may be included, but only the first 16 are used
 # eg. log-header=Accept:
 
 

@@ -129,7 +129,12 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
   The rest of the <a href="#config">config file</a>, and the <a href="#attr">
  attributes file</a> can be edited to suit your requirements, but the default
  values should be suitable to start with.  
-
+ <p>
+  The above assumes that you are running your browser on the same machine as
+ WebJames is running on. If your broswer is running on another machine, either
+ on a LAN or over the internet, then you should enter http://host/ in your
+ browser where host is the hostname or IP address of the machine WebJames is
+ running on.
 
  <p>
  <h5>Installing this version on top of an older version</h5>
@@ -752,14 +757,19 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  # treat all files with a leafname of index as being normal files
  AddHandler static-content index
 
- # treat all files with a filetype of &amp;FFB (BASIC) as webjames style cgi scripts
+ # treat all files with a filetype of &amp;FFB (BASIC) as
+ # webjames style cgi scripts
  AddFiletypeHandler webjames-script FFB
 
  # treat all files with a filetype of Perl as cgi scripts
  AddFiletypeHandler cgi-script Perl
 
- # treat all files as cgi scripts
+ # treat any files that are not matched by another handler
+ # as cgi scripts
  AddFiletypeHandler cgi-script
+
+ # treat all files as webjames scripts. the ALL must be in capitals
+ AddFiletypeHandler webjames-script ALL
  </pre>
 
   <code>Addhandler</code> or <code>addfiletypehandler</code> can be used outside of all the attributes sections, in
@@ -1031,6 +1041,8 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
   If you define an action with the same name as one of the built in handlers, then the action will
  override the built in handler. Actions can be defined outside of all sections in the attributes file,
  or inside a section, but the effect is the same.
+ <p>
+  You must define an action before you can use it in an AddHandler statement.
 
 <p>
 <h3>
@@ -1101,9 +1113,10 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  config file</a>.
 
  <p>
-  The <code>CLF</code> logfile (and the normal log file) is kept open
- for a few minutes after a write to the file, to eliminate the overhead
- incurred by opening/closing the files.
+  For efficiency, the log data is buffered, so may not be written to the
+ logfile immediately. The delay before writing the buffer, and the size of
+ the buffer, are defined in the config file. Buffering can also be disabled
+ by setting the buffer size to zero.
 
  <p>
   Both log files may be rotated when they become too old or too big; this
@@ -1501,6 +1514,28 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 </td></tr></table>
 </h3>
 
+<i>0.29 (30/3/2001)</i>
+
+<ul>
+  <li>added support for %7E type escape characters in URLs.
+  <li>no longer faults POST requests from Oregano.
+  <li>fixed bug that stopped the homedir attribute from working.
+  <li>now treats image files as files rather than directories.
+  <li>ANTRESOLVE and SYSLOG switches work correctly again.
+  <li>added <code>#ifdef</code>s around all MemCheck code.
+  <li>logfile output is now buffered, so the file is not kept open.
+  <li>when a bad request is received, the reason why it was bad is
+      added to the logfile.
+  <li>if there is an error in a rexex or an unknown filetype when
+      parsing the attributes file, then this is reported in the logfile.
+  <li>added <code>log-header</code> command to config file, to allow
+      arbitrary headers to be logged.
+  <li>leaving the filetype empty in an <code>AddFileTypeHandler</code>
+      now only applies that handler to any file that is not explicitly
+      matched by another handler. The filetype of <code>ALL</code> can
+      be used to apply the handler to all filetypes.
+</ul>
+
 <i>0.28 (1/1/2001)</i>
 
 <ul>
@@ -1877,9 +1912,6 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
   The <code>ANTRESOLVER</code> switch enables reverse-DNS using the
  ANT/Acorn resolver module interface.
 
- <p>
-  If you don't have MemCheck, then comment out all function calls begginning with MemCheck_
- and it should compile fine.
 
 </body>
 </html>
