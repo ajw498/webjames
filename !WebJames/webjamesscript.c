@@ -13,7 +13,7 @@
 #include "wimp.h"
 
 #include "webjames.h"
-#include "cgi.h"
+#include "webjamesscript.h"
 #include "openclose.h"
 #include "report.h"
 #include "stat.h"
@@ -21,240 +21,14 @@
 #include "write.h"
 
 
-void script_start(int scripttype, struct connection *conn, char *script, int pwd, char *args) {
-/* start a script */
-
-/* scripttype       currently always SCRIPT_CGI */
-/* conn             connection structure */
-/* script           script filename */
-/* pwd              0 if not password-protected, 1 if password-protected */
-/* args             pointer to arguments-part of the URI (eg. 'arg=value') */
-
-	if (conn->flags.setcsd) {
-		char dirname[256], *dot;
-
-		strcpy(dirname,script);
-		dot = strrchr(dirname,'.');
-		if (dot != NULL) {
-			*dot = '\0';
-			xosfscontrol_dir(dirname);
-		}
-	}
-	if (conn->cgi_api == CGI_API_REDIRECT)
-		script_start_redirect(script, conn, args, pwd);
-	else if (conn->cgi_api == CGI_API_WEBJAMES)
-		script_start_webjames(scripttype, conn, script, pwd);
-
-	/* Set the CSD back to what it was if we changed it */
-	if (conn->flags.setcsd) xosfscontrol_back();
-
-	return;
-}
 
 
-
-static void set_var_val(char *name, char *value) {
-
-	xos_set_var_val(name, (byte *)value, strlen(value), 0, 4, NULL, NULL);
-}
-
-
-void script_start_redirect(char *script, struct connection *conn, char *args, int pwd) {
-/* start a script with redirection */
-
-/* script           script file nane */
-/* conn             connection structure */
-/* args             pointer to arguments-part of the URI */
-
-	char tempfile[256], input[256], cmd[256], temp[HTTPBUFFERSIZE+1];
-	int size;
-	FILE *file;
-	wimp_t task;
-
-	/* set up the system variables */
-
-	if (configuration.server[0])  set_var_val("SERVER_SOFTWARE", configuration.server);
-	set_var_val("SERVER_PORT", "80");
-	set_var_val("SERVER_PROTOCOL", "HTTP/1.0");
-	if (configuration.serverip[0])  set_var_val("SERVER_NAME", configuration.serverip);
-	set_var_val("SERVER_ADMIN", configuration.webmaster);
-
-	set_var_val("SCRIPT_NAME", conn->uri);
-	set_var_val("PATH_TRANSLATED", script);
-
-	if (args)
-		set_var_val("QUERY_STRING", args);
-	else
-		set_var_val("QUERY_STRING", "");
-
-	sprintf(temp, "%d.%d.%d.%d", conn->ipaddr[0], conn->ipaddr[1],
-					conn->ipaddr[2], conn->ipaddr[3]);
-	set_var_val("REMOTE_ADDR", temp);
-	if (conn->dnsstatus == DNS_OK)  set_var_val("REMOTE_HOST", conn->host);
-
-	if (conn->method == METHOD_HEAD)
-		strcpy(temp, "HEAD");
-	else if (conn->method == METHOD_POST)
-		strcpy(temp, "POST");
-	else if (conn->method == METHOD_GET)
-		strcpy(temp, "GET");
-	else if (conn->method == METHOD_PUT)
-		strcpy(temp, "PUT");
-	else if (conn->method == METHOD_DELETE)
-		strcpy(temp, "DELETE");
-	set_var_val("REQUEST_METHOD", temp);
-
-	if ((conn->method == METHOD_POST) || (conn->method == METHOD_PUT)) {
-		sprintf(temp, "%d", conn->bodysize);
-		set_var_val("CONTENT_LENGTH", temp);
-		set_var_val("CONTENT_TYPE", conn->type);
-	}
-
-	sprintf(temp, "%d", conn->port);
-	set_var_val("SERVER_PORT", temp);
-
-	if ((conn->method == METHOD_PUT) || (conn->method == METHOD_DELETE))
-		set_var_val("ENTITY_PATH", conn->requesturi);
-
-	if (pwd) {
-		set_var_val("AUTH_TYPE", "basic");
-		set_var_val("REMOTE_USER", conn->authorization);
-	} else {
-		set_var_val("AUTH_TYPE", "");
-		set_var_val("REMOTE_USER", "");
-	}
-
-	if (conn->cookie)
-		set_var_val("HTTP_COOKIE", conn->cookie);
-	else
-		set_var_val("HTTP_COOKIE", "");
-
-	if (conn->useragent)
-		set_var_val("HTTP_USER_AGENT", conn->useragent);
-	else
-		set_var_val("HTTP_USER_AGENT", "");
-
-	if (conn->referer)
-		set_var_val("HTTP_REFERER", conn->referer);
-	else
-		set_var_val("HTTP_REFERER", "");
-
-
-	input[0] = '\0';                      /* clear spool-input filename */
-
-	/* get unique, temporary file */
-	if (*configuration.cgi_out)
-		strcpy(tempfile, configuration.cgi_out);
-	else
-		tmpnam(tempfile);
-
-	if (conn->method == METHOD_POST) {
-		if (*configuration.cgi_in)
-			strcpy(input, configuration.cgi_in);
-		else
-			tmpnam(input);
-		/* generate input filename */
-		xosfile_save_stamped(input, 0xfff, (byte *)conn->body, (byte *)conn->body+conn->bodysize);
-		/* build command with redirection */
-		sprintf(cmd, "*%s { < %s > %s }", script, input, tempfile);
-	} else {
-		sprintf(cmd, "*%s { > %s }", script, tempfile);
-		input[0] = '\0';                    /* no file with input for the cgi-script */
-	}
-
-	/* execute the cgi-script */
-	if (xwimp_start_task(cmd, &task)) {
-		/* failed to start cgi-script */
-		if (input[0])   remove(input);
-		report_badrequest(conn, "script couldn't be started");
-		return;
-	}
-
-#ifdef LOG
-	writelog(LOGLEVEL_CGISTART, cmd);
-#endif
-
-	/* remove cgi-spool-input file (if any) */
-	if (input[0])   remove(input);
-
-	/* Remove all system variables that were set */
-	xos_set_var_val("SERVER_SOFTWARE",NULL,-1,0,os_VARTYPE_STRING,NULL,NULL);
-	xos_set_var_val("SERVER_PORT",NULL,-1,0,os_VARTYPE_STRING,NULL,NULL);
-	xos_set_var_val("SERVER_PROTOCOL",NULL,-1,0,os_VARTYPE_STRING,NULL,NULL);
-	xos_set_var_val("SERVER_NAME",NULL,-1,0,os_VARTYPE_STRING,NULL,NULL);
-	xos_set_var_val("SERVER_ADMIN",NULL,-1,0,os_VARTYPE_STRING,NULL,NULL);
-	xos_set_var_val("SCRIPT_NAME",NULL,-1,0,os_VARTYPE_STRING,NULL,NULL);
-	xos_set_var_val("PATH_TRANSLATED",NULL,-1,0,os_VARTYPE_STRING,NULL,NULL);
-	xos_set_var_val("QUERY_STRING",NULL,-1,0,os_VARTYPE_STRING,NULL,NULL);
-	xos_set_var_val("REMOTE_ADDR",NULL,-1,0,os_VARTYPE_STRING,NULL,NULL);
-	xos_set_var_val("REMOTE_HOST",NULL,-1,0,os_VARTYPE_STRING,NULL,NULL);
-	xos_set_var_val("REQUEST_METHOD",NULL,-1,0,os_VARTYPE_STRING,NULL,NULL);
-	xos_set_var_val("CONTENT_LENGTH",NULL,-1,0,os_VARTYPE_STRING,NULL,NULL);
-	xos_set_var_val("CONTENT_TYPE",NULL,-1,0,os_VARTYPE_STRING,NULL,NULL);
-	xos_set_var_val("SERVER_PORT",NULL,-1,0,os_VARTYPE_STRING,NULL,NULL);
-	xos_set_var_val("ENTITY_PATH",NULL,-1,0,os_VARTYPE_STRING,NULL,NULL);
-	xos_set_var_val("AUTH_TYPE",NULL,-1,0,os_VARTYPE_STRING,NULL,NULL);
-	xos_set_var_val("REMOTE_USER",NULL,-1,0,os_VARTYPE_STRING,NULL,NULL);
-	xos_set_var_val("HTTP_COOKIE",NULL,-1,0,os_VARTYPE_STRING,NULL,NULL);
-	xos_set_var_val("HTTP_USER_AGENT",NULL,-1,0,os_VARTYPE_STRING,NULL,NULL);
-	xos_set_var_val("HTTP_REFERER",NULL,-1,0,os_VARTYPE_STRING,NULL,NULL);
-
-	/* disable reading */
-	if (fd_is_set(select_read, conn->socket)) {
-		fd_clear(select_read, conn->socket);
-		readcount--;
-	}
-
-	/* already set up for writing (this is done in write.c) */
-
-	/* read filesize */
-	if (get_file_info(tempfile, NULL, NULL, &size, 0) < 0) {
-		report_badrequest(conn, "error occured when reading file info");
-		return;
-	}
-
-	/* open file for reading */
-	file = fopen(tempfile, "rb");
-	if (!file) {
-		report_notfound(conn);
-		return;
-	}
-
-
-	/* attempt to get a read-ahead buffer for the file */
-	/* notice: things will still work if malloc fails */
-	conn->filebuffer = malloc(readaheadbuffer*1024);
-	conn->flags.releasefilebuffer = 1;    /* ignored if filebuffer == NULL */
-	conn->leftinbuffer = 0;
-
-	conn->flags.deletefile = 1;           /* delete the file when done */
-	strcpy(conn->filename, tempfile);
-
-	conn->flags.is_cgi = 0;               /* make close() output clf-info */
-
-	/* set the fields in the structure, and that's it! */
-	conn->file = file;
-	conn->fileused = 0;
-	conn->filesize = size;
-
-	writestring(conn->socket, "HTTP/1.0 200 OK\r\n");
-}
-
-
-
-void script_start_webjames(int scripttype, struct connection *conn, char *script, int pwd) {
+void webjamesscript_start(struct connection *conn)
 /* start a 'webjames-style' cgi-script */
-
-/* scripttype       cgi-, DELETE- or PUT- */
-/* conn             connection structure */
-/* script           script filename */
-/* pwd              0 if not password-protected, 1 if password-protected */
-
+{
 	int size;
 	char *ptr;
 	wimp_t handle;
-
-	scripttype = scripttype;
 
 	size = conn->headersize ;
 	if (conn->bodysize > 0)  size += conn->bodysize;
@@ -273,7 +47,7 @@ void script_start_webjames(int scripttype, struct connection *conn, char *script
 	/* start cgi-script */
 	sprintf(temp,
 			"*%s -http %d -socket %d -remove -size %d -rma %d -bps %d -port %d -host %d.%d.%d.%d",
-			script, conn->httpmajor*10+conn->httpminor, conn->socket, size,
+			conn->filename, conn->httpmajor*10+conn->httpminor, conn->socket, size,
 			(int)ptr, configuration.bandwidth/100, conn->port, conn->ipaddr[0], conn->ipaddr[1],
 			conn->ipaddr[2], conn->ipaddr[3]);
 	if (conn->method == METHOD_HEAD)
@@ -285,7 +59,7 @@ void script_start_webjames(int scripttype, struct connection *conn, char *script
 	else if (conn->method == METHOD_PUT)
 		strcat(temp, " -put");
 
-	if (pwd) {
+	if (conn->pwd) {
 		*strchr(conn->authorization, ':') = '\0';
 		strcat(temp, " -user ");
 		strcat(temp, conn->authorization);
@@ -302,6 +76,8 @@ void script_start_webjames(int scripttype, struct connection *conn, char *script
 		return;
 	}
 
+	MemCheck_UnRegisterMiscBlock(ptr);
+
 	/* cgi-script started ok, so let the cgi-script close the socket */
 	if (fd_is_set(select_read, conn->socket)) {
 		fd_clear(select_read, conn->socket);
@@ -314,3 +90,4 @@ void script_start_webjames(int scripttype, struct connection *conn, char *script
 	conn->socket = -1;
 	close(conn->index, 0);
 }
+

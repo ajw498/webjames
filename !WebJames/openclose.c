@@ -7,7 +7,7 @@
 #include "cache.h"
 #include "webjames.h"
 #include "ip.h"
-#include "cgi.h"
+#include "attributes.h"
 #include "stat.h"
 #include "openclose.h"
 #include "resolve.h"
@@ -23,7 +23,7 @@ struct connection *create_conn(void) {
 	if (!conn) return NULL;
 
 	conn->bodysize = conn->headersize = -1;
-	conn->used = conn->filesize = conn->fileused = 0;
+	conn->used = conn->fileinfo.size = conn->fileused = 0;
 	conn->if_modified_since.tm_year = -1;
 	/* various header lines */
 	conn->uri = conn->body = conn->accept = conn->header = NULL;
@@ -48,6 +48,8 @@ struct connection *create_conn(void) {
 	conn->allowedfiletypescount=0;
 	conn->forbiddenfiletypescount=0;
 	conn->errordocs = NULL;
+	conn->handlers = NULL;
+	conn->handler = NULL;
 
 	conn->flags.releasefilebuffer = 0;
 	conn->flags.deletefile = 0;
@@ -157,7 +159,7 @@ void close(int cn, int force) {
 			dummy[0] = '\0';
 			ptr = dummy;
 		}
-		bps = 100*conn->filesize/(clk-conn->starttime);
+		bps = 100*conn->fileinfo.size/(clk-conn->starttime);
 		if (bps <= 0)
 			sprintf(temp, "CLOSE %s", ptr);
 		else if (bps < 4000)

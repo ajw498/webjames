@@ -222,6 +222,12 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
   There are rather a lot of options in the config file, but usually you
  will only need to edit the first field - the webmaster-email-address.
 
+ <p>
+ <h5>Case sensitivity</h5>
+  The case sensitive option allows you check that all your links between files
+ are in the correct case. It works on standard filecore filling systems such as
+ ADFS that are not normally case sensitive, but it is not quite as efficient
+ as the default case insensivity.
 
 
 <p>
@@ -331,7 +337,7 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  those in a <code>&lt;location&gt;</code> section.
 
  <p>
-  Old style [/uri/] sections still work.
+  Old style [/uri/] sections still work, although their use is deprecated.
 
  <p>
 
@@ -543,11 +549,19 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
      </td>
  </tr>
+
+ <tr>
  <td><code>stripextensions</code></td>
  <td>this attribute strips the filename extensions from URIs before looking for the file.
      this includes the default files if a directory is requested, and any errordocument files as well.<br>
      example: a request of <code>/wibble.html</code> would return the file <code>wibble</code>
+     </td>
+ </tr>
 
+ <tr>
+ <td><code>setcsd</code></td>
+ <td>when set, the currently selected directory (CSD) will be set to the directory containing
+     the CGI script before running the script
      </td>
  </tr>
 
@@ -620,7 +634,9 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
  <p>
   Please note that the <code>htaccess</code> files are cached, so if you alter one,
- then it may not take effect until you restart WebJames.
+ then it may not take effect until you restart WebJames. Also, it you specify a
+ <code>&lt;directory&gt;</code> section for a directory, then any <code>htaccess</code>
+ file in that directory will be ignored.
 
 <p>
 <h3>
@@ -1341,6 +1357,18 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 </td></tr></table>
 </h3>
 
+<i>0.27 (19/12/2000)</i>
+
+<ul>
+  <li>new attributes <code>stripextensions</code> and <code>setcsd</code>
+  <li>redirect cgi environment variables are now removed after the script has finished executing
+  <li>removed CASESENSITIVE compiler switch
+  <li>added casesensitive config option (which works on case-insensitive filesystems)
+  <li>changed C++ style comments to C style and indentation spaces to tabs
+  <li>added support for <code>&lt;files&gt;</code> sections in <a href="#attr">attributes</a> file
+  <li>added support for <code>&lt;locationmatch&gt;</code>, <code>&lt;directorymatch&gt;</code> and <code>&lt;filesmatch&gt;</code> sections in <a href="#attr">attributes</a> file
+</ul>
+
 <i>0.26 (19/10/2000)</i>
 
 <ul>
@@ -1681,12 +1709,6 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  <code>ANTRESOLVER</code> switches <i>off</i>.
 
  <p>
-  If you want to recompile WebJames, you should notice that the source
- is not written in 100% ANSI C. It has been written so that is doesn't
- generate any warnings (or errors) on Acorns C v5, but as it uses
- <code>//</code> for comments, it may fail on other compilers.
-
- <p>
   The <code>LOG</code> switch enables logging.
 
  <p>
@@ -1697,12 +1719,6 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
   The <code>ANTRESOLVER</code> switch enables reverse-DNS using the
  ANT/Acorn resolver module interface.
 
- <p>
-  The <code>CASESENSITIVE</code> switch causes filename matching to be
- case-sensitive, however, as FileSwitch is case-insensitive, it should
- only be used when the <em>entire</em> website is stored on a
- non-FileSwitch filing-system. <em>The use of this switch has not been
- fully tested yet.</em>
 
 
 </body>

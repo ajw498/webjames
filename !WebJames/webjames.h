@@ -114,7 +114,13 @@ typedef struct connection {
 	char *filebuffer;           /* if file == NULL, data will be read from */
 								/* the filebuffer (typically the cached file) */
 	char filename[256];
-	int filesize;               /* no. of bytes to write */
+	struct {
+		int filetype;
+		char mimetype[128];
+		int size;               /* no. of bytes to write */
+		struct tm date;
+	} fileinfo;
+	
 	int fileused;               /* no. of bytes left */
 	int leftinbuffer;           /* no. of bytes left in temp buffer (if */
 								/*  file == NULL) */
@@ -129,6 +135,14 @@ typedef struct connection {
 	char buffer[HTTPBUFFERSIZE+4];
 
 	struct errordoc *errordocs;    /* linked list used to hold custom error reports */
+
+	struct handlerlist *handlers; /* linked list of handlers to apply */
+	struct handler *handler; /* handler that is chosen from above list */
+
+	
+	int pwd; /* if if the file is password-protected */
+	char *args; /* arguments passed to script */
+
 
 } connection;
 

@@ -11,6 +11,7 @@
 #include "report.h"
 #include "write.h"
 #include "attributes.h"
+#include "handler.h"
 
 
 struct reportcache reports[REPORTCACHECOUNT];
@@ -303,7 +304,7 @@ void report(struct connection *conn, int code, int subno, int headerlines) {
 			reporttext++;
 			conn->flags.releasefilebuffer = 0;
 			conn->filebuffer = reporttext;
-			conn->filesize = strlen(reporttext);
+			conn->fileinfo.size = strlen(reporttext);
 			conn->file = NULL;
 			conn->fileused = 0;
 			conn->flags.is_cgi = 0;
@@ -331,16 +332,17 @@ void report(struct connection *conn, int code, int subno, int headerlines) {
 
 						/* check if object is cached */
 						if (tempconn->flags.cacheable) {
-							cacheentry = get_file_through_cache(tempconn->uri, conn->filename);
+							int fixme;
+							cacheentry = NULL; /*get_file_through_cache(tempconn->uri, conn->filename);*/
 						} else {
 							cacheentry = NULL;
 						}
-						free(tempconn);
+						free(tempconn); { int fixme; } /* memory leak if uri_to_filename fails */
 
 						/* prepare to send file */
 						if (cacheentry) {
 							conn->filebuffer = cacheentry->buffer;
-							size = conn->filesize = cacheentry->size;
+							size = conn->fileinfo.size = cacheentry->size;
 							conn->flags.releasefilebuffer = 0;
 							conn->flags.is_cgi = 0;
 							conn->file = NULL;
@@ -371,7 +373,7 @@ void report(struct connection *conn, int code, int subno, int headerlines) {
 								/* set the fields in the structure, and that's it! */
 								conn->file = handle;
 								fseek(handle,0,SEEK_END);
-								size = conn->filesize = (int)ftell(handle);
+								size = conn->fileinfo.size = (int)ftell(handle);
 								fseek(handle,0,SEEK_SET);
 
 								for (i = 0; i < headerlines; i++) {
@@ -440,7 +442,7 @@ void report(struct connection *conn, int code, int subno, int headerlines) {
 		/* send the generated file - the buffer is released afterwards */
 		conn->flags.releasefilebuffer = 1;
 		conn->filebuffer = buffer;
-		conn->filesize = size;
+		conn->fileinfo.size = size;
 		conn->file = NULL;
 		conn->fileused = 0;
 		conn->flags.is_cgi = 0;
@@ -465,6 +467,8 @@ void report(struct connection *conn, int code, int subno, int headerlines) {
 		}
 		writestring(conn->socket, "\r\n");
 	}
+
+	conn->handler = get_handler("static-content");
 }
 
 

@@ -10,6 +10,7 @@ typedef struct cache {
 	int namelen, checksum;	/* namelen and checksum are used */
 							/* to speed up the cache-scanning */
 	struct tm date;
+	int filetype;
 	char mimetype[128];
 
 	char *buffer;
@@ -20,7 +21,7 @@ typedef struct cache {
 } cache;
 
 
-struct cache *get_file_through_cache(char *name, char *filename);
+struct cache *get_file_through_cache(struct connection *conn);
 void flushcache(char *name);
 void init_cache(char *list);
 void cache_release_file(struct cache *entry);

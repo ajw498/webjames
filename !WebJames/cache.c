@@ -25,18 +25,11 @@ static byte *cachestart;
 static struct cache *cachedfiles[MAXCACHEFILES];
 
 
-struct cache *get_file_through_cache(char *name, char *filename) {
+struct cache *get_file_through_cache(struct connection *conn)
 /* return pointer to cache structure or NULL */
-
-/* name             string unique describing the file (eg. the uri) */
-/* filename         RISC OS file name */
-
-	int i, namelen, checksum, filesize, freesize, use;
-	bits filetype, load, exec, attr;
-	fileswitch_object_type objtype;
-	char utc[5], typename[128];
-	char buffer[256];
-	struct tm filedate;
+{
+	int i, namelen, checksum, freesize, use;
+	char *name;
 
 	if (!cachestart)  return NULL;
 
@@ -45,37 +38,21 @@ struct cache *get_file_through_cache(char *name, char *filename) {
 	/* checksum are the same */
 	namelen = 0;
 	checksum = 0;
+	name = conn->uri;
 	while (name[namelen]) {
 		checksum += (name[namelen])<<(namelen &15);
 		namelen++;
 	}
 
-	/* read file info (this is also done in write.c !!!) */
-	if (xosfile_read_stamped_no_path(filename, &objtype, &load, &exec, &filesize, &attr, &filetype)) return NULL;
-	if (objtype != 1)  return NULL;       /* cache only real files */
-
-	if (configuration.casesensitive) {
-		if (xosfscontrol_canonicalise_path(filename,buffer,0,0,256,NULL)) return NULL;
-		if (strcmp(filename,buffer) != 0) return NULL;
-	}
-
-	if (filesize > maxcachefilesize)  return NULL;  /* too big */
-	if (filetype == -1)  return NULL;     /* cache only files with filetypes/datestamps */
-
-	/* read timestamp - we need it later */
-	utc[4] = load &255;
-	utc[3] = (exec>>24) &255;
-	utc[2] = (exec>>16) &255;
-	utc[1] = (exec>>8) &255;
-	utc[0] = exec &255;
-	utc_to_time(utc, &filedate); /* convert 5 byte cs since 1/1/1900 to struct tm */
+	if (conn->fileinfo.size > maxcachefilesize)  return NULL;  /* too big */
+	if (conn->fileinfo.filetype == -1)  return NULL;     /* cache only files with filetypes/datestamps */
 
 	/* scan the cache */
 	for (i = 0; i < MAXCACHEFILES; i++) {
 		if (!cachedfiles[i])  continue;
 		if ( (cachedfiles[i]->checksum != checksum) || (cachedfiles[i]->namelen != namelen) )  continue;
 		if (strcmp(name, cachedfiles[i]->name))      continue;
-		if (compare_time(&cachedfiles[i]->date, &filedate) < 0) {
+		if (compare_time(&cachedfiles[i]->date, &conn->fileinfo.date) < 0) {
 #ifdef LOG
 			sprintf(temp, "UN-CACHING %s", cachedfiles[i]->name);
 			writelog(LOGLEVEL_CACHE, temp);
@@ -93,7 +70,7 @@ struct cache *get_file_through_cache(char *name, char *filename) {
 	freesize = heap_largest();
 	if (!freesize)  return NULL;
 
-	if (freesize < filesize) {
+	if (freesize < conn->fileinfo.size) {
 		/* remove the oldest file that is large enough to make a difference */
 		int lastaccess;
 
@@ -101,7 +78,7 @@ struct cache *get_file_through_cache(char *name, char *filename) {
 		lastaccess = clock()/100;
 		for (i = 0; i < MAXCACHEFILES; i++) {
 			if (!cachedfiles[i])  continue;
-			if ((freesize + cachedfiles[i]->size > filesize)    &&
+			if ((freesize + cachedfiles[i]->size > conn->fileinfo.size)    &&
 				(cachedfiles[i]->timeoflastaccess < lastaccess) &&
 				(cachedfiles[i]->accesses == 0) )  {
 				lastaccess = cachedfiles[i]->timeoflastaccess;
@@ -117,7 +94,7 @@ struct cache *get_file_through_cache(char *name, char *filename) {
 		remove_from_cache(use);
 
 		freesize = heap_largest();
-		if (freesize < filesize)  return NULL;   /* still not enough room */
+		if (freesize < conn->fileinfo.size)  return NULL;   /* still not enough room */
 
 	} else {
 
@@ -130,39 +107,30 @@ struct cache *get_file_through_cache(char *name, char *filename) {
 	cachedfiles[use] = heap_allocate(sizeof(struct cache));
 	if (!cachedfiles[use])  return NULL;
 
-	cachedfiles[use]->buffer = heap_allocate(filesize);
+	cachedfiles[use]->buffer = heap_allocate(conn->fileinfo.size);
 	if (!cachedfiles[use]->buffer) {
 		remove_from_cache(use);
 		return NULL;
 	}
 
-	if (xosfile_load_stamped_no_path(filename, (byte *)cachedfiles[use]->buffer, &objtype, &load, &exec, &filesize, &attr)) {
+	if (xosfile_load_stamped_no_path(conn->filename, (byte *)cachedfiles[use]->buffer, NULL, NULL, NULL, NULL, NULL)) {
 		remove_from_cache(use);
 		return NULL;
 	}
 
-/*  file = fopen(filename, "r");
-	if (!file) {
-		remove_from_cache(use);
-		return NULL;
-	}
-	fread(cachedfiles[use]->buffer, 1, filesize, file);
-	fclose(file); */
+	cachedfiles[use]->filetype = conn->fileinfo.filetype;
 
-	if (mimemap_fromfiletype(filetype,MMM_TYPE_MIME,typename) == typename)
-		strcpy(cachedfiles[use]->mimetype, typename);
-	else
-		strcpy(cachedfiles[use]->mimetype, "application/octet-stream");
+	strcpy(cachedfiles[use]->mimetype, conn->fileinfo.mimetype);
 
-	memcpy(&cachedfiles[use]->date, &filedate, sizeof(struct tm));
+	memcpy(&cachedfiles[use]->date, &conn->fileinfo.date, sizeof(struct tm));
 
-	cachedfiles[use]->size = filesize;
+	cachedfiles[use]->size = conn->fileinfo.size;
 	cachedfiles[use]->timeoflastaccess = clock()/100;
 	cachedfiles[use]->accesses = cachedfiles[use]->totalaccesses = 0;
 	cachedfiles[use]->namelen = namelen;
 	cachedfiles[use]->checksum = checksum;
 	cachedfiles[use]->removewhenidle = 0;
-	strcpy(cachedfiles[use]->filename, filename);
+	strcpy(cachedfiles[use]->filename, conn->filename);
 	strcpy(cachedfiles[use]->name, name);
 
 #ifdef LOG

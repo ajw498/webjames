@@ -62,32 +62,38 @@
 # Allow PHP scripts to be run as cgi, all other files served normally
 <location />
 #is-cgi
-cgi-api=redirect
-allowed-filetypes=18a
+#cgi-api=redirect
+#allowed-filetypes=18a
 </location>
 
-<filesmatch web.+php>
-is-cgi
-</files>
+addfiletypehandler cgi-script PHP
+addfiletypehandler cgi-script Perl
+addfiletypehandler cgi-script Obey
+addfiletypehandler cgi-script BASIC
+
+#<filesmatch web.+php>
+#is-cgi
+#</files>
 
 # define which directory holds 'webjames-style' cgi-scripts
 <location /cgi-bin/>
-is-cgi
-cgi-api=webjames
-allowed-filetypes=
+#is-cgi
+#cgi-api=webjames
+#allowed-filetypes=
+addfiletypehandler webjames-script BASIC
 </location>
 
 # define which directory holds cgi-scripts using redirection
-<locationmatch cgi.bin2>
-is-cgi
-cgi-api=redirect
-allowed-filetypes=
-</locationmatch>
+#<locationmatch cgi.bin2>
+#is-cgi
+#cgi-api=redirect
+#allowed-filetypes=
+#</locationmatch>
 
 # protect .htaccess files
-<filesmatch "^\.ht.*">
+<files .htaccess>
 hidden
-</filesmatch>
+</files>
 
 # password-protect the query-cgi-script
 <location /cgi-bin/query>

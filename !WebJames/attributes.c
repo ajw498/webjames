@@ -8,12 +8,14 @@
 #include "write.h"
 #include "attributes.h"
 #include "stat.h"
-#include "cgi.h"
+#include "handler.h"
 
 #include "osfscontrol.h"
 
 #define STACKSIZE 10
 #define HASHINCREMENT 20
+
+#define filetype_NONE -1
 
 typedef enum sectiontype {
 	section_NONE,
@@ -27,10 +29,20 @@ typedef struct hashentry {
 	struct attributes *attr;
 } hashentry;
 
+typedef struct handlerlist {
+	char *extension;
+	int filetype;
+	struct handler *handler;
+	struct handlerlist *attrnext; /* next entry in attributes linked list */
+	struct handlerlist *connnext; /* next entry in connection linked list */
+} handlerlist;
+
 static struct hashentry *hash=NULL;
 static int hashsize, hashentries;
 
 static struct attributes *globalfiles=NULL,*globallocations=NULL,*globaldirectories=NULL;
+
+static struct handlerlist *globalhandlers=NULL;
 
 static int generate_key(char *uri, int size) {
 /* generate a hash table key for given uri */
@@ -248,6 +260,7 @@ static struct attributes *create_attribute_structure(char *uri) {
 	attr->forbiddenfiletypescount = attr->allowedfiletypescount = 0;
 	attr->errordocs = NULL;
 	attr->errordocscount = 0;
+	attr->handlers = NULL;
 	attr->methods = (1<<METHOD_GET)|(1<<METHOD_HEAD)|(1<<METHOD_POST);
 	/* the flags indicate which attributes are defined for an URI */
 	/* this is necessary as attributes may be NULL, so it is not */
@@ -547,8 +560,60 @@ static struct attributes *read_attributes_file(char *filename, char *base) {
 				}
 			}
 
-			/* **** either inside a section */
-			if (attr) {
+			/* Sort out attributes that may or may not be inside a section */
+			if (strcmp(attribute, "action") == 0) {
+				/* define a *command as a handler */
+				char *command = value;
+				
+				/* skip the action name */
+				while (!isspace(*command) && *command != '\0') command++;
+				if (*command != '\0') *command++ = '\0';
+				/* skip whitespace */
+				while (isspace(*command) && *command != '\0') command++;
+
+				add_handler(value,command);
+				free(value);
+
+			} else if (strcmp(attribute, "addhandler") == 0 || strcmp(attribute, "addfiletypehandler") == 0) {
+				char *filetypetext;
+				int filetype = filetype_NONE, filetypehandler = 0;
+				struct handlerlist *newhandler;
+
+				if (attribute[10] != '\0') filetypehandler = 1;
+
+				filetypetext = value;
+				/* skip the action name */
+				while (!isspace(*filetypetext) && *filetypetext != '\0') filetypetext++;
+				if (*filetypetext != '\0') *filetypetext++ = '\0';
+				/* skip whitespace */
+				while (isspace(*filetypetext) && *filetypetext != '\0') filetypetext++;
+
+				if (filetypehandler) if (xosfscontrol_file_type_from_string(filetypetext,(bits*)&filetype)) filetype = filetype_NONE;
+
+				newhandler = malloc(sizeof(struct handlerlist));
+				if (newhandler == NULL) {
+					fclose(file);
+					return NULL;
+				}
+
+				/* fill in details */
+				newhandler->filetype = filetype;
+				if (filetypetext[0] == '\0') filetypetext = NULL;
+				if (filetypehandler) newhandler->extension = NULL; else newhandler->extension = filetypetext;
+				newhandler->handler = get_handler(value);
+
+				/* add to linked list */
+				if (attr) {
+					newhandler->attrnext = attr->handlers;
+					attr->handlers = newhandler;
+				} else {
+					newhandler->attrnext = globalhandlers;
+					globalhandlers = newhandler;
+				}
+				
+
+			} else if (attr) {
+				/* **** either inside a section */
 
 				if (strcmp(attribute, "defaultfile") == 0) {
 					if (section == section_LOCATION && attr->uri[attr->urilen-1] != '/') continue;
@@ -827,6 +892,23 @@ static void merge_attributes1(struct connection *conn, struct attributes *attr) 
 	if (attr->defined.tempmoved)    conn->tempmoved       = attr->tempmoved;
 }
 
+static void merge_handlers(struct handlerlist *head, struct connection *conn)
+/* add all handlers in given linked list onto the end of the connection linked list */
+{
+	struct handlerlist *entry=head;
+
+	if (head == NULL) return;
+	/* link all the entries in the attributes list together */
+	while (entry->attrnext != NULL) {
+		entry->connnext = entry->attrnext;
+		entry = entry->attrnext;
+	}
+
+	/* add the attributes entries to the top of the connection list */
+	entry->attrnext = conn->handlers;
+	conn->handlers = head;
+}
+
 static void merge_attributes(struct connection *conn, struct attributes *attr) {
 /* merge all attributes from attr into conn */
 /* split into 3 separate functions, as otherwise cc gives an internal inconsistency when memcheck is enabled */
@@ -834,6 +916,79 @@ static void merge_attributes(struct connection *conn, struct attributes *attr) {
 	merge_attributes1(conn,attr);
 	merge_attributes2(conn,attr);
 	merge_attributes3(conn,attr);
+	merge_handlers(attr->handlers,conn);
+}
+
+void find_handler(struct connection *conn)
+/* find the appropriate handler from the handlers list in conn to apply to this file */
+{
+	struct handlerlist *entry;
+
+	entry = conn->handlers;
+
+	while (entry != NULL) {
+		if (entry->filetype == filetype_NONE) {
+			if (entry->extension == NULL) {
+				/* unconditional match */
+				conn->handler = entry->handler;
+				return;
+			} else {
+				char *leafname, *ext;
+
+				leafname = strrchr(conn->filename,'.');
+				if (leafname) {
+					ext = strrchr(leafname,'/');
+					if (entry->extension[0] == '.') {
+						/* match extension */
+						int fixme; /*case sensitive?*/
+						if (ext) {
+							if (strcmp(ext+1,entry->extension+1) == 0) {
+								/* extesions matched */
+								conn->handler = entry->handler;
+								return;
+							}
+						}
+					} else {
+						/* match whole leafname */
+						int fixme; /*case sensitive?*/
+						if (strcmp(leafname,entry->extension) == 0) {
+							/* leafname matched */
+							conn->handler = entry->handler;
+							return;
+						}
+					}
+				}
+			}
+		} else {
+			if (entry->filetype == conn->fileinfo.filetype) {
+				/* filetypes matched */
+				conn->handler = entry->handler;
+				return;
+			}
+		}
+		entry = entry->connnext;
+	}
+	/* no match, so use default handler */
+	conn->handler = get_handler("static-content");
+}
+
+static void check_regex(struct attributes *attr, char *match, struct connection *conn)
+{
+	while (attr != NULL) {
+		if (attr->regex) {
+			switch (regexec(attr->regex,match,0,NULL,0)) {
+				case REG_OKAY:
+					merge_attributes(conn,attr);
+					break;
+				case REG_NOMATCH:
+					break;
+				/*default: use regerror? */
+			}
+		} else if (strcmp(attr->uri,match) == 0) {
+			merge_attributes(conn,attr);
+		}
+		attr = attr->next;
+	}
 }
 
 void get_attributes(char *uri, struct connection *conn) {
@@ -884,6 +1039,9 @@ void get_attributes(char *uri, struct connection *conn) {
 				}
 			}
 		}
+
+		/* Add any global handlers to the beginning of the list */
+		merge_handlers(globalhandlers,conn);
 	} else {
 		/* It is actually a URI */
 		strcpy(buffer,uri);
@@ -918,26 +1076,7 @@ void get_attributes(char *uri, struct connection *conn) {
 			if (strcmp(hash[key].uri,path) == 0) {
 				found = 1;
 				merge_attributes(conn,hash[key].attr);
-				if (leafname) {
-					/* Check to see if the leafname matches any <files> sections within this directory */
-					struct attributes *filesattr;
-					filesattr = hash[key].attr->next;
-					while (filesattr != NULL) {
-						if (filesattr->regex) {
-							switch (regexec(filesattr->regex,leafname,0,NULL,0)) {
-								case REG_OKAY:
-									merge_attributes(conn,filesattr);
-									break;
-								case REG_NOMATCH:
-									break;
-								/*default: use regerror? */
-							}
-						} else if (strcmp(filesattr->uri,leafname) == 0) {
-							merge_attributes(conn,filesattr);
-						}
-						filesattr = filesattr->next;
-					}
-				}
+				if (leafname) check_regex(hash[key].attr->next,leafname,conn);
 			}
 			key++;
 			if (key>=hashsize) key = 0;
@@ -960,64 +1099,15 @@ void get_attributes(char *uri, struct connection *conn) {
 
 	} while (!last);
 
-	if (leafname) {
-		/* Check to see if the leafname matches any global <files> sections */
-		struct attributes *filesattr;
-
-		filesattr = globalfiles;
-		while (filesattr != NULL) {
-			if (filesattr->regex) {
-				switch (regexec(filesattr->regex,leafname,0,NULL,0)) {
-					case REG_OKAY:
-						merge_attributes(conn,filesattr);
-						break;
-					case REG_NOMATCH:
-						break;
-					/*default: use regerror? */
-				}
-			} else if (strcmp(filesattr->uri,leafname) == 0) {
-				merge_attributes(conn,filesattr);
-			}
-			filesattr = filesattr->next;
-		}
-	}
+	/* Check to see if the leafname matches any global <files> sections */
+	if (leafname) check_regex(globalfiles,leafname,conn);
 
 	if (uri[0] == '/') {
 		/* Check to see if the uri matches any <locationmatch> sections */
-		struct attributes *locationattr;
-
-		locationattr = globallocations;
-		while (locationattr != NULL) {
-			if (locationattr->regex) {
-				switch (regexec(locationattr->regex,buffer,0,NULL,0)) {
-					case REG_OKAY:
-						merge_attributes(conn,locationattr);
-						break;
-					case REG_NOMATCH:
-						break;
-					/*default: use regerror? */
-				}
-			}
-			locationattr = locationattr->next;
-		}
+		check_regex(globallocations,buffer,conn);
 	} else {
 		/* Check to see if the filename matches any <directorymatch> sections */
-		struct attributes *dirattr;
-
-		dirattr = globaldirectories;
-		while (dirattr != NULL) {
-			if (dirattr->regex) {
-				switch (regexec(dirattr->regex,buffer,0,NULL,0)) {
-					case REG_OKAY:
-						merge_attributes(conn,dirattr);
-						break;
-					case REG_NOMATCH:
-						break;
-					/*default: use regerror? */
-				}
-			}
-			dirattr = dirattr->next;
-		}
+		check_regex(globaldirectories,buffer,conn);
 	}
 
 	if (conn->attrflags.hidden)  conn->attrflags.accessallowed = 0;

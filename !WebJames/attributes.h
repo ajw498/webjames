@@ -1,11 +1,7 @@
 #include "regex/regex.h"
 
-
-#define ATTR___A              0
-#define ATTR_A_Z              1
-#define ATTR_Z_a              27
-#define ATTR_a_z              28
-#define ATTR_z__              56
+#define CGI_API_WEBJAMES      0
+#define CGI_API_REDIRECT      1
 
 #ifndef ERRORDOC
 #define ERRORDOC
@@ -61,6 +57,8 @@ typedef struct attributes {
 	struct errordoc *errordocs;  /* list of custom error reports */
 	int errordocscount;
 
+	struct handlerlist *handlers; /* linked list of handlers to apply */
+
 	regex_t *regex; /* ptr to compiled regex */
 
 	struct {
@@ -89,4 +87,5 @@ typedef struct attributes {
 
 void init_attributes(char *filename);
 void get_attributes(char *uri, struct connection *conn);
+void find_handler(struct connection *conn);
 

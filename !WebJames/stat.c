@@ -263,7 +263,7 @@ void clf_connection_closed(int cn) {
 	strftime(clk, 100, "%d/%b/%Y:%H:%M:%S", localtime(&rightnow));
 	sprintf(temp, "%s - - [%s +0000] \"%s\" %d %d \"%s\" \"%s\"",
 			conn->host, clk, conn->requestline, conn->statuscode,
-			conn->filesize, referer, useragent);
+			conn->fileinfo.size, referer, useragent);
 	writeclf(temp);
 }
 

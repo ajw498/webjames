@@ -5,7 +5,6 @@
 #include <time.h>
 
 #include "webjames.h"
-#include "cgi.h"
 #include "attributes.h"
 #include "stat.h"
 #include "ip.h"

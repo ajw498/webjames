@@ -20,6 +20,7 @@
 #include "openclose.h"
 #include "attributes.h"
 #include "resolve.h"
+#include "handler.h"
 
 
 /* configuration */
@@ -88,6 +89,9 @@ int webjames_init(char *config) {
 	/* slowdown is a delay (in cs) that is adjusted when the bandwidth */
 	/* exceeds the max allowed bandwidth */
 	slowdown = 0;
+
+	/* initilise any handler modules */
+	init_handlers();
 
 	init_attributes(configuration.attributesfile);
 
@@ -205,6 +209,8 @@ void webjames_kill() {
 	/* update statistics */
 	update_statistics();
 
+	quit_handlers();
+	
 	kill_cache();
 
 	/* close all open sockets */

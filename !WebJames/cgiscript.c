@@ -1,5 +1,3 @@
-#include "MemCheck:MemCheck.h"
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -13,65 +11,36 @@
 #include "wimp.h"
 
 #include "webjames.h"
-#include "cgi.h"
+#include "cgiscript.h"
 #include "openclose.h"
 #include "report.h"
 #include "stat.h"
 #include "ip.h"
 #include "write.h"
 
+#define remove_var(name) xos_set_var_val(name,NULL,-1,0,os_VARTYPE_STRING,NULL,NULL)
+#define set_var_val(name,value) xos_set_var_val(name, (byte *)value, strlen(value), 0, 4, NULL, NULL)
 
-void script_start(int scripttype, struct connection *conn, char *script, int pwd, char *args) {
-/* start a script */
-
-/* scripttype       currently always SCRIPT_CGI */
-/* conn             connection structure */
-/* script           script filename */
-/* pwd              0 if not password-protected, 1 if password-protected */
-/* args             pointer to arguments-part of the URI (eg. 'arg=value') */
-
-	if (conn->flags.setcsd) {
-		char dirname[256], *dot;
-
-		strcpy(dirname,script);
-		dot = strrchr(dirname,'.');
-		if (dot != NULL) {
-			*dot = '\0';
-			xosfscontrol_dir(dirname);
-		}
-	}
-	if (conn->cgi_api == CGI_API_REDIRECT)
-		script_start_redirect(script, conn, args, pwd);
-	else if (conn->cgi_api == CGI_API_WEBJAMES)
-		script_start_webjames(scripttype, conn, script, pwd);
-
-	/* Set the CSD back to what it was if we changed it */
-	if (conn->flags.setcsd) xosfscontrol_back();
-
-	return;
-}
-
-
-
-static void set_var_val(char *name, char *value) {
-
-	xos_set_var_val(name, (byte *)value, strlen(value), 0, 4, NULL, NULL);
-}
-
-
-void script_start_redirect(char *script, struct connection *conn, char *args, int pwd) {
-/* start a script with redirection */
-
-/* script           script file nane */
-/* conn             connection structure */
-/* args             pointer to arguments-part of the URI */
-
+void cgiscript_start(struct connection *conn)
+/* start a CGI script with redirection */
+{
 	char tempfile[256], input[256], cmd[256], temp[HTTPBUFFERSIZE+1];
 	int size;
 	FILE *file;
 	wimp_t task;
 
 	/* set up the system variables */
+
+	if (conn->flags.setcsd) {
+		char dirname[256], *dot;
+
+		strcpy(dirname,conn->filename);
+		dot = strrchr(dirname,'.');
+		if (dot != NULL) {
+			*dot = '\0';
+			xosfscontrol_dir(dirname);
+		}
+	}
 
 	if (configuration.server[0])  set_var_val("SERVER_SOFTWARE", configuration.server);
 	set_var_val("SERVER_PORT", "80");
@@ -80,10 +49,10 @@ void script_start_redirect(char *script, struct connection *conn, char *args, in
 	set_var_val("SERVER_ADMIN", configuration.webmaster);
 
 	set_var_val("SCRIPT_NAME", conn->uri);
-	set_var_val("PATH_TRANSLATED", script);
+	set_var_val("PATH_TRANSLATED", conn->filename);
 
-	if (args)
-		set_var_val("QUERY_STRING", args);
+	if (conn->args)
+		set_var_val("QUERY_STRING", conn->args);
 	else
 		set_var_val("QUERY_STRING", "");
 
@@ -116,7 +85,7 @@ void script_start_redirect(char *script, struct connection *conn, char *args, in
 	if ((conn->method == METHOD_PUT) || (conn->method == METHOD_DELETE))
 		set_var_val("ENTITY_PATH", conn->requesturi);
 
-	if (pwd) {
+	if (conn->pwd) {
 		set_var_val("AUTH_TYPE", "basic");
 		set_var_val("REMOTE_USER", conn->authorization);
 	} else {
@@ -156,9 +125,9 @@ void script_start_redirect(char *script, struct connection *conn, char *args, in
 		/* generate input filename */
 		xosfile_save_stamped(input, 0xfff, (byte *)conn->body, (byte *)conn->body+conn->bodysize);
 		/* build command with redirection */
-		sprintf(cmd, "*%s { < %s > %s }", script, input, tempfile);
+		sprintf(cmd, "*%s { < %s > %s }", conn->filename, input, tempfile);
 	} else {
-		sprintf(cmd, "*%s { > %s }", script, tempfile);
+		sprintf(cmd, "*%s { > %s }", conn->filename, tempfile);
 		input[0] = '\0';                    /* no file with input for the cgi-script */
 	}
 
@@ -178,26 +147,29 @@ void script_start_redirect(char *script, struct connection *conn, char *args, in
 	if (input[0])   remove(input);
 
 	/* Remove all system variables that were set */
-	xos_set_var_val("SERVER_SOFTWARE",NULL,-1,0,os_VARTYPE_STRING,NULL,NULL);
-	xos_set_var_val("SERVER_PORT",NULL,-1,0,os_VARTYPE_STRING,NULL,NULL);
-	xos_set_var_val("SERVER_PROTOCOL",NULL,-1,0,os_VARTYPE_STRING,NULL,NULL);
-	xos_set_var_val("SERVER_NAME",NULL,-1,0,os_VARTYPE_STRING,NULL,NULL);
-	xos_set_var_val("SERVER_ADMIN",NULL,-1,0,os_VARTYPE_STRING,NULL,NULL);
-	xos_set_var_val("SCRIPT_NAME",NULL,-1,0,os_VARTYPE_STRING,NULL,NULL);
-	xos_set_var_val("PATH_TRANSLATED",NULL,-1,0,os_VARTYPE_STRING,NULL,NULL);
-	xos_set_var_val("QUERY_STRING",NULL,-1,0,os_VARTYPE_STRING,NULL,NULL);
-	xos_set_var_val("REMOTE_ADDR",NULL,-1,0,os_VARTYPE_STRING,NULL,NULL);
-	xos_set_var_val("REMOTE_HOST",NULL,-1,0,os_VARTYPE_STRING,NULL,NULL);
-	xos_set_var_val("REQUEST_METHOD",NULL,-1,0,os_VARTYPE_STRING,NULL,NULL);
-	xos_set_var_val("CONTENT_LENGTH",NULL,-1,0,os_VARTYPE_STRING,NULL,NULL);
-	xos_set_var_val("CONTENT_TYPE",NULL,-1,0,os_VARTYPE_STRING,NULL,NULL);
-	xos_set_var_val("SERVER_PORT",NULL,-1,0,os_VARTYPE_STRING,NULL,NULL);
-	xos_set_var_val("ENTITY_PATH",NULL,-1,0,os_VARTYPE_STRING,NULL,NULL);
-	xos_set_var_val("AUTH_TYPE",NULL,-1,0,os_VARTYPE_STRING,NULL,NULL);
-	xos_set_var_val("REMOTE_USER",NULL,-1,0,os_VARTYPE_STRING,NULL,NULL);
-	xos_set_var_val("HTTP_COOKIE",NULL,-1,0,os_VARTYPE_STRING,NULL,NULL);
-	xos_set_var_val("HTTP_USER_AGENT",NULL,-1,0,os_VARTYPE_STRING,NULL,NULL);
-	xos_set_var_val("HTTP_REFERER",NULL,-1,0,os_VARTYPE_STRING,NULL,NULL);
+	remove_var("SERVER_SOFTWARE");
+	remove_var("SERVER_PORT");
+	remove_var("SERVER_PROTOCOL");
+	remove_var("SERVER_NAME");
+	remove_var("SERVER_ADMIN");
+	remove_var("SCRIPT_NAME");
+	remove_var("PATH_TRANSLATED");
+	remove_var("QUERY_STRING");
+	remove_var("REMOTE_ADDR");
+	remove_var("REMOTE_HOST");
+	remove_var("REQUEST_METHOD");
+	remove_var("CONTENT_LENGTH");
+	remove_var("CONTENT_TYPE");
+	remove_var("SERVER_PORT");
+	remove_var("ENTITY_PATH");
+	remove_var("AUTH_TYPE");
+	remove_var("REMOTE_USER");
+	remove_var("HTTP_COOKIE");
+	remove_var("HTTP_USER_AGENT");
+	remove_var("HTTP_REFERER");
+
+	/* Set the CSD back to what it was if we changed it */
+	if (conn->flags.setcsd) xosfscontrol_back();
 
 	/* disable reading */
 	if (fd_is_set(select_read, conn->socket)) {
@@ -235,82 +207,9 @@ void script_start_redirect(char *script, struct connection *conn, char *args, in
 	/* set the fields in the structure, and that's it! */
 	conn->file = file;
 	conn->fileused = 0;
-	conn->filesize = size;
+	conn->fileinfo.size = size;
 
 	writestring(conn->socket, "HTTP/1.0 200 OK\r\n");
 }
 
 
-
-void script_start_webjames(int scripttype, struct connection *conn, char *script, int pwd) {
-/* start a 'webjames-style' cgi-script */
-
-/* scripttype       cgi-, DELETE- or PUT- */
-/* conn             connection structure */
-/* script           script filename */
-/* pwd              0 if not password-protected, 1 if password-protected */
-
-	int size;
-	char *ptr;
-	wimp_t handle;
-
-	scripttype = scripttype;
-
-	size = conn->headersize ;
-	if (conn->bodysize > 0)  size += conn->bodysize;
-	if (xosmodule_alloc(size+16, (void **)&ptr)) {
-		/* failed to allocate rma-block */
-		report_badrequest(conn, "cannot allocate memory");
-		return;
-	}
-	
-	MemCheck_RegisterMiscBlock(ptr,size+16);
-
-	memcpy(ptr, conn->header, conn->headersize);
-	if (conn->bodysize > 0)
-		memcpy(ptr + conn->headersize, conn->body, conn->bodysize);
-
-	/* start cgi-script */
-	sprintf(temp,
-			"*%s -http %d -socket %d -remove -size %d -rma %d -bps %d -port %d -host %d.%d.%d.%d",
-			script, conn->httpmajor*10+conn->httpminor, conn->socket, size,
-			(int)ptr, configuration.bandwidth/100, conn->port, conn->ipaddr[0], conn->ipaddr[1],
-			conn->ipaddr[2], conn->ipaddr[3]);
-	if (conn->method == METHOD_HEAD)
-		strcat(temp, " -head");
-	else if (conn->method == METHOD_POST)
-		strcat(temp, " -post");
-	else if (conn->method == METHOD_DELETE)
-		strcat(temp, " -delete");
-	else if (conn->method == METHOD_PUT)
-		strcat(temp, " -put");
-
-	if (pwd) {
-		*strchr(conn->authorization, ':') = '\0';
-		strcat(temp, " -user ");
-		strcat(temp, conn->authorization);
-	}
-
-#ifdef LOG
-	writelog(LOGLEVEL_CGISTART, temp);
-#endif
-
-	if (xwimp_start_task(temp, &handle)) {
-		/* failed to start cgi-script */
-		xosmodule_free(ptr);
-		report_badrequest(conn, "script couldn't be started");
-		return;
-	}
-
-	/* cgi-script started ok, so let the cgi-script close the socket */
-	if (fd_is_set(select_read, conn->socket)) {
-		fd_clear(select_read, conn->socket);
-		readcount--;
-	}
-	if (fd_is_set(select_write, conn->socket)) {
-		fd_clear(select_write, conn->socket);
-		writecount--;
-	}
-	conn->socket = -1;
-	close(conn->index, 0);
-}
