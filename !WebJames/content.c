@@ -91,9 +91,10 @@ static void content_freeaccept(struct accept *accept)
 }
 
 static struct accept *content_parseaccept(char *a)
-/*parse an accept header line and store in a struct accept linked list*/ 
+/*parse an accept header line and store in a struct accept linked list*/
 {
 	struct accept *parsed=NULL,*parse;
+	struct accept *wildlist=NULL, *semiwildlist=NULL, *normallist=NULL;
 	int fudgequality=1;
 	char *b;
 
@@ -126,19 +127,43 @@ static struct accept *content_parseaccept(char *a)
 	/*Find all the wildcards, alter their quality if the browser does not supply any qualities at all*/
 	/*This is to catch cases such as text/html, text/plain, * / *  where the wildcard would have equal*/
 	/*priority, which was not intended*/
+	/*Also, split into separate lists for each type (normal/semi/wild)*/
 	parse=parsed;
 	while (parse) {
 		if (strcmp(parse->type,"*")==0 || strcmp(parse->type,"*/*")==0) {
+			struct accept *tmp;
+
 			parse->wild=wild;
 			if (fudgequality) parse->q=(float)0.01;
+			tmp=parse;
+			parse=parse->next;
+			tmp->next=wildlist;
+			wildlist=tmp;
 		} else if (strncmp(parse->type+strlen(parse->type)-2,"/*",2)==0) {
+			struct accept *tmp;
+
 			parse->wild=semiwild;
 			if (fudgequality) parse->q=(float)0.02;
+			tmp=parse;
+			parse=parse->next;
+			tmp->next=semiwildlist;
+			semiwildlist=tmp;
 		} else {
+			struct accept *tmp;
+
 			parse->wild=normal;
+			tmp=parse;
+			parse=parse->next;
+			tmp->next=normallist;
+			normallist=tmp;
 		}
-		parse=parse->next;
 	}
+	/*Now re-join the three lists into one, so all wildcards are at the end of the list*/
+	parse=parsed=normallist;
+	while (parse && parse->next) parse=parse->next;
+	if (parse) parse->next=semiwildlist; else parsed=parse=semiwildlist;
+	while (parse && parse->next) parse=parse->next;
+	if (parse) parse->next=wildlist; else parsed=parse=wildlist;
 	return parsed;
 }
 
@@ -171,6 +196,7 @@ static int content_updatescores(struct varmap *map,char *line,enum field field)
 								}
 							}
 						} else {
+							match=1;
 							map->score*=(float)0.01; /*give variants with no language a low score*/
 						}
 					} else {
@@ -210,11 +236,10 @@ static int content_updatescores(struct varmap *map,char *line,enum field field)
 		}
 		if (!match
 			&& !(field==field_encoding && (map->encoding==NULL ||  strcmp(map->encoding,"identity")==0))
-			&& !(field==field_charset && (map->charset==NULL || strcmp(map->charset,"ISO-8859-1")==0 || strcmp(map->charset,"iso-8859-1")==0))
-			) {
+			&& !(field==field_charset && (map->charset==NULL || strcmp(map->charset,"ISO-8859-1")==0 || strcmp(map->charset,"iso-8859-1")==0))) {
 				map->score=0;
 				vary=1;
-			}
+		}
 		if (match) vary=1;
 		/*identity encoding and ISO-8859-1 charset are always acceptable unless specifically mentioned as not acceptable*/
 		map=map->next;
@@ -226,24 +251,25 @@ static int content_updatescores(struct varmap *map,char *line,enum field field)
 static struct varmap *content_multiviews(char *dirname,char *leafname)
 /* Creates a map structure based on directory contents */
 {
-	char buffer[256];
+	char buf[256];
+	osgbpb_info_stamped_list *info=(osgbpb_info_stamped_list *)buf;
 	int count;
 	int more = 0;
 	size_t len = strlen(leafname);
 	struct varmap *maps=NULL;
 
 	do {
-		if (xosgbpb_dir_entries(dirname,(osgbpb_string_list *)buffer,1,more,256,NULL,&count,&more)) return NULL;
+		if (xosgbpb_dir_entries_info_stamped(dirname,info,1,more,256,NULL,&count,&more)) return NULL;
 		if (count) {
-			if (strncmp(buffer,leafname,len) == 0) {
+			if (strncmp(info->info[0].name,leafname,len) == 0) {
 				struct varmap *map;
 				size_t len2;
 				char buf2[256];
 				char *extn,*lang;
 
-				extn=strrchr(buffer,'/');
+				extn=strrchr(info->info[0].name,'/');
 				if (extn==NULL) continue;
-				lang=strchr(buffer,'/'); /*assume all files are name/lang/extn or name/extn */
+				lang=strchr(info->info[0].name,'/'); /*assume all files are name/lang/extn or name/extn */
 				if (lang==extn) lang=NULL;
 
 				map=malloc(sizeof(struct varmap));
@@ -254,13 +280,13 @@ static struct varmap *content_multiviews(char *dirname,char *leafname)
 				map->next=maps;
 				maps=map;
 				map->language=map->charset=map->encoding=map->description=NULL;
-				len2=strlen(buffer);
+				len2=strlen(info->info[0].name);
 				map->uri=malloc(len2+1);
 				if (map->uri==NULL) {
 					content_freemap(maps);
 					return NULL;
 				}
-				memcpy(map->uri,buffer,len2+1);
+				memcpy(map->uri,info->info[0].name,len2+1);
 
 				map->qs=1;
 				if (lang) {
@@ -273,7 +299,7 @@ static struct varmap *content_multiviews(char *dirname,char *leafname)
 					map->language[extn-lang-1]='\0';
 				}
 
-				if (xmimemaptranslate_extension_to_mime_type(extn+1,buf2)) strcpy(buf2,"text/plain");
+				if (xmimemaptranslate_filetype_to_mime_type(info->info[0].file_type,buf2)) strcpy(buf2,"text/plain");
 				len2=strlen(buf2);
 				map->type=malloc(len2+1);
 				if (map->type==NULL) {
@@ -526,7 +552,7 @@ int content_negotiate(struct connection *conn)
 	bestmap=NULL;
 	tempmap=map;
 	while (tempmap) {
-		if (tempmap->score>0 && tempmap->score>bestquality) {
+		if (tempmap->score>0 && tempmap->score>=bestquality) {
 			bestquality=tempmap->score;
 			bestmap=tempmap;
 		}
