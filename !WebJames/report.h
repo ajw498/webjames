@@ -7,6 +7,7 @@
 #define REPORT_SUBSTITUTE_NOT_NEEDED    1
 #define REPORT_SUBSTITUTE_NEEDED        2
 
+#include "content.h"
 
 typedef struct reportcache {
 	char *buffer;
@@ -31,6 +32,7 @@ void report_moved(struct connection *conn, char *newurl);
 void report_movedtemporarily(struct connection *conn, char *newurl);
 void report_notmodified(struct connection *conn);
 void report_nocontent(struct connection *conn);
+void report_notacceptable(struct connection *conn,struct varmap *map);
 void report_badrequest(struct connection *conn, char *info);
 void report_unauthorized(struct connection *conn, char *realm);
 void report_forbidden(struct connection *conn);

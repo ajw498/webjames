@@ -14,21 +14,22 @@
 #define METHOD_DELETE     3
 #define METHOD_PUT        4
 
-#define HTTP_OK           200
-#define HTTP_NOCONTENT    204
+#define HTTP_OK            200
+#define HTTP_NOCONTENT     204
 
-#define HTTP_MOVED        301
-#define HTTP_TEMPMOVED    302
-#define HTTP_NOTMODIFIED  304
+#define HTTP_MOVED         301
+#define HTTP_TEMPMOVED     302
+#define HTTP_NOTMODIFIED   304
 
-#define HTTP_BADREQUEST   400
-#define HTTP_UNAUTHORIZED 401
-#define HTTP_FORBIDDEN    403
-#define HTTP_NOTFOUND     404
+#define HTTP_BADREQUEST    400
+#define HTTP_UNAUTHORIZED  401
+#define HTTP_FORBIDDEN     403
+#define HTTP_NOTFOUND      404
+#define HTTP_NOTACCEPTABLE 406
 
-#define HTTP_SERVERERR    500
+#define HTTP_SERVERERR      500
 #define HTTP_NOTIMPLEMENTED 501
-#define HTTP_BUSY         503
+#define HTTP_BUSY           503
 
 #define DNS_FAILED        0
 #define DNS_TRYING        1

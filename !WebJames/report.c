@@ -35,6 +35,7 @@ static struct reportname rnames[] = {
 		{ HTTP_UNAUTHORIZED,   "Unauthorized access"},
 		{ HTTP_FORBIDDEN,      "No permission"},
 		{ HTTP_NOTFOUND,       "File not found"},
+		{ HTTP_NOTACCEPTABLE,  "No acceptable content"},
 		{ HTTP_NOTIMPLEMENTED, "Not implemented"},
 		{ HTTP_BUSY,           "Busy"},
 		{ HTTP_SERVERERR,      "Unexpected server error"},
@@ -550,6 +551,67 @@ void report_nocontent(struct connection *conn) {
 	report(conn, HTTP_NOCONTENT, 1, 0, "");
 }
 
+void report_notacceptable(struct connection *conn,struct varmap *map) {
+	size_t len=0;
+    struct varmap *tempmap=map;
+    char *list;
+
+	while (tempmap) {
+		if (tempmap->uri) {
+			len+=22+2*strlen(tempmap->uri);
+			if (tempmap->description) len+=strlen(tempmap->description);
+		}
+		tempmap=tempmap->next;
+	}
+
+	list=malloc(len+1);
+	if (!list) {
+		report_quickanddirty(conn, HTTP_NOTACCEPTABLE);
+		close(conn->index, 0);
+		return;
+	}
+
+	list[0]='\0';
+	tempmap=map;
+	while (tempmap) {
+		if (tempmap->uri) {
+			char buffer[256];
+			char *s,*d;
+
+			s=tempmap->uri;
+			d=buffer;
+			while (*s) {
+				if (*s=='/') {
+					*d='.';
+				} else if (*s=='.') {
+					*d='/';
+				} else {
+					*d=*s;
+				}
+				s++;
+				d++;
+			}
+			*d='\0';
+			strcat(list,"<A HREF=\"");
+			strcat(list,buffer);
+			strcat(list,"\">");
+			strcat(list,buffer);
+			strcat(list,"</A> \n");
+			if (tempmap->description) strcat(list,tempmap->description);
+			strcat(list,"<BR>\n");
+		}
+		tempmap=tempmap->next;
+	}
+
+	subs[0].name = "%URL%";
+	subs[0].value = conn->uri;
+
+	subs[1].name = "%LIST%";
+	subs[1].value = list;
+
+	report(conn, HTTP_NOTACCEPTABLE, 2, 0, "");
+	free(list);
+}
 
 void report_badrequest(struct connection *conn, char *info) {
 

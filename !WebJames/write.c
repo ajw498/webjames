@@ -176,10 +176,8 @@ void send_file(struct connection *conn) {
 	if (conn->pwd == ACCESS_FAILED)  return;
 
 	/* Content negotiation */
-	content_negotiate(conn);
-	{
-		int fixme; /*what about index.html as it is tested above for a file existing before content has been negotiated?*/
-	}
+	if (content_negotiate(conn)) return;
+
 	/* check if object exist and get the filetype/mimetype at the same time */
 	conn->fileinfo.filetype = get_file_info(conn->filename, conn->fileinfo.mimetype, &conn->fileinfo.date, &conn->fileinfo.size,1);
 	if (conn->fileinfo.filetype == FILE_DOESNT_EXIST) {

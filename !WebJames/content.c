@@ -8,25 +8,16 @@
 
 #include "oslib/osfile.h"
 #include "oslib/osfscontrol.h"
+#include "oslib/osgbpb.h"
+#include "oslib/mimemap.h"
 
 #include "webjames.h"
 #include "write.h"
+#include "report.h"
 #include "content.h"
 
 #define MAP_CACHE_SIZE 10
 
-
-struct varmap {
-	char *uri;
-	char *type;
-	float qs;
-	float score;
-	char *language;
-	char *charset;
-	char *encoding;
-	char *description;
-	struct varmap *next;
-};
 
 static struct {
 	struct varmap *map;
@@ -158,12 +149,16 @@ static void content_updatescores(struct varmap *map,char *line,enum field field)
 				case normal:
 					if (field==field_language) {
 						size_t len=strlen(accept->type);
-						if (strncmp(map->language,accept->type,len)==0) {
-							/*allow "en" to match "en" or "en-gb" */
-							if (map->language[len]=='\0' || map->language[len]=='-') {
-								match=1;
-								map->score*=(field==field_accept ? map->qs : 1)* (accept->q);
+						if (map->language) {
+							if (strncmp(map->language,accept->type,len)==0) {
+								/*allow "en" to match "en" or "en-gb" */
+								if (map->language[len]=='\0' || map->language[len]=='-') {
+									match=1;
+									map->score*=1 * (accept->q);
+								}
 							}
+						} else {
+							map->score*=(float)0.01; /*give variants with no language a low score*/
 						}
 					} else {
 						char *str="";
@@ -195,7 +190,7 @@ static void content_updatescores(struct varmap *map,char *line,enum field field)
 					break;
 				case wild:
 					match=1;
-					map->score*=(field==field_accept ? map->qs : 1)*accept->q;
+					map->score*=(field==field_accept ? map->qs : (field==field_language && map->language==NULL) ? (float)0.01 : 1)*accept->q;
 					break;
 			}
 			accept=accept->next;
@@ -208,6 +203,58 @@ static void content_updatescores(struct varmap *map,char *line,enum field field)
 		map=map->next;
 	}
 	content_freeaccept(acceptlist);
+}
+
+static struct varmap *content_multiviews(char *dirname,char *leafname)
+/* Creates a map structure based on directory contents */
+{
+	char buffer[256];
+	int count;
+	int more = 0;
+	size_t len = strlen(leafname);
+	struct varmap *maps=NULL;
+
+	do {
+		if (xosgbpb_dir_entries(dirname,(osgbpb_string_list *)buffer,1,more,256,NULL,&count,&more)) return 0;
+		if (count) {
+			if (strncmp(buffer,leafname,len) == 0) {
+				struct varmap *map;
+				size_t len2;
+				char buf2[256];
+				char *extn,*lang;
+
+				extn=strrchr(buffer,'/');
+				if (extn==NULL) continue;
+				lang=strchr(buffer,'/'); /*assume all files are name/lang/extn or name/extn */
+				if (lang==extn) lang=NULL;
+
+				map=malloc(sizeof(struct varmap));
+				if (map==NULL) return NULL;
+				map->next=maps;
+				maps=map;
+				len2=strlen(buffer);
+				map->uri=malloc(len2+1);
+				if (map->uri==NULL) return NULL;
+				memcpy(map->uri,buffer,len2+1);
+
+				map->language=map->charset=map->encoding=map->description=NULL;
+				map->qs=1;
+				if (lang) {
+					map->language=malloc(extn-lang);
+					if (map->language==NULL) return NULL;
+					memcpy(map->language,lang+1,extn-lang-1);
+					map->language[extn-lang-1]='\0';
+				}
+
+				if (xmimemaptranslate_extension_to_mime_type(extn+1,buf2)) strcpy(buf2,"text/plain");
+				len2=strlen(buf2);
+				map->type=malloc(len2+1);
+				if (map->type==NULL) return NULL;
+				memcpy(map->type,buf2,len2+1);
+			}
+		}
+	} while(more != -1);
+	return maps;
 }
 
 static struct varmap *content_readmap(char *filename)
@@ -317,14 +364,23 @@ static struct varmap *content_readmap(char *filename)
 
 			if (mapcache[i].map==NULL) break;
 			if (*p=='\0') continue;
-			mapcache[i].map->type=malloc(strlen(p)+1);
+			d=mapcache[i].map->type=malloc(strlen(p)+1);
 			if (mapcache[i].map->type==NULL) return NULL;
-			d=mapcache[i].map->type;
 			while (*p!='\0' && *p!='\n' && *p!=';') *d++=*p++; /* copy mime type */
 			*d='\0';
-			if (*p==';') {
-				while (isspace(*++p));
-				if (strncmp(p,"qs=",3)==0) mapcache[i].map->qs=(float)atof(p+3);
+			while (*p) {
+				if (*p==';') {
+					while (isspace(*++p));
+					if (strncmp(p,"qs=",3)==0) {
+						mapcache[i].map->qs=(float)atof(p+3);
+					} else if (strncmp(p,"charset=",8)==0) {
+						d=mapcache[i].map->charset=malloc(strlen(p)+1);
+						if (mapcache[i].map->charset==NULL) return NULL;
+						while (*p!='\0' && *p!='\n' && *p!=';') *d++=*p++; /* copy charset */
+						*d='\0';
+					}
+				}
+				while (*p && *p!=';') p++;
 			}
 		} else if (strcmp(category,"content-language")==0) {
 			size_t len;
@@ -346,16 +402,6 @@ static struct varmap *content_readmap(char *filename)
 			if (mapcache[i].map->encoding==NULL) return NULL;
 			memcpy(mapcache[i].map->encoding,p,len);
 			if (mapcache[i].map->encoding[len-2]=='\n') mapcache[i].map->encoding[len-2]='\0';
-		} else if (strcmp(category,"content-charset")==0) {
-			size_t len;
-
-			if (mapcache[i].map==NULL) break;
-			if (*p=='\0') continue;
-			len=strlen(p)+1;
-			mapcache[i].map->charset=malloc(len);
-			if (mapcache[i].map->charset==NULL) return NULL;
-			memcpy(mapcache[i].map->charset,p,len);
-			if (mapcache[i].map->charset[len-2]=='\n') mapcache[i].map->charset[len-2]='\0';
 		} else if (strcmp(category,"description")==0) {
 			size_t len;
 
@@ -372,33 +418,39 @@ static struct varmap *content_readmap(char *filename)
 	return mapcache[i].map;
 }
 
-void content_negotiate(struct connection *conn)
+int content_negotiate(struct connection *conn)
+/* Try to negotiate the content*/
+/* returns non-zero if it failed to find any suitable content*/
 {
 	char *leafname;
 	char filename[256];
 	size_t len;
-	struct varmap *map,*bestmap;
+	struct varmap *map,*bestmap,*tempmap;
 	float bestquality;
 
 	leafname=strrchr(conn->filename,'.'); /* find start of leafname */
-	if (leafname==NULL) return; /*There should always be at least one '/' */
-	if (strchr(leafname,'/')!=NULL) return; /* leafname does have an extention, so we don't need to negotiate the content */
-	/*should check that file without extension does not actually exist*/
+	if (leafname==NULL) return 0; /*There should always be at least one '/' */
+	if (strchr(leafname,'/')!=NULL) return 0; /* leafname does have an extention, so we don't need to negotiate the content */
 	strcpy(filename,conn->filename);
 	strcat(filename,"/var"); /*should be configurable/use addhandler like apache */
 	map=content_readmap(filename);
 
 	if (map==NULL) {
+		size_t len;
 		/*Try multiviews if configured */
+		filename[strlen(filename)-3]='\0';
+		len=leafname-conn->filename;
+		filename[len]='\0';
+		map=content_multiviews(filename,filename+len+1);
 	}
 
-	if (map==NULL) return; /* will give a 404 not found report*/
+	if (map==NULL) return 0; /* will give a 404 not found report*/
 
 	/*reset all scores*/
-	bestmap=map;
-	while (bestmap) {
-		bestmap->score=1;
-		bestmap=bestmap->next;
+	tempmap=map;
+	while (tempmap) {
+		tempmap->score=1;
+		tempmap=tempmap->next;
 	}
 
 	if (conn->accept) content_updatescores(map,conn->accept,field_accept);
@@ -408,19 +460,21 @@ void content_negotiate(struct connection *conn)
 
 	bestquality=0;
 	bestmap=NULL;
-	while (map) {
-		fprintf(stderr,"%s,%s,%f\n",map->uri,map->language,map->score);
-		if (map->score>0 && map->score>bestquality) {
-			bestquality=map->score;
-			bestmap=map;
+	tempmap=map;
+	while (tempmap) {
+		if (tempmap->score>0 && tempmap->score>bestquality) {
+			bestquality=tempmap->score;
+			bestmap=tempmap;
 		}
-		map=map->next;
+		tempmap=tempmap->next;
 	}
-	if (bestmap==NULL) return; /* give a no suitable content report */
-	fprintf(stderr,"best,%s,%s,%f\n",bestmap->uri,bestmap->language,bestmap->score);
+	if (bestmap==NULL) {
+		report_notacceptable(conn,map);
+		return 1; /* give a no suitable content report */
+	}
 
 	len=(leafname-conn->filename);
 	strcpy(conn->filename+len+1,bestmap->uri);
 
-	return;
+	return 0;
 }
