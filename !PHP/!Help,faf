@@ -33,6 +33,7 @@ scripting language.  Much of its syntax is borrowed from C, Java and
 Perl with a couple of unique PHP-specific features thrown in.  The goal
 of the language is to allow web developers to write dynamically
 generated pages quickly.
+The scripts are interpreted by the server, so it works with all browsers.
 
 As a simple example:
 
@@ -55,7 +56,7 @@ use.
 
 I have tried to make the minimum of changes whilst porting PHP, so it
 should behave very similar to any other platform.  Thus a script written
-in RISC OS should behave the same when uploaded to a unix web server, or
+in RISC OS should behave the same when uploaded to a Unix web server, or
 vice versa.
 
 
@@ -63,13 +64,15 @@ Documentation
 ~~~~~~~~~~~~~
 This file only deals with RISC OS specific issues, for general
 information about PHP you should look at the PHP manual, or
-http://www.php.net/ There is a simple introduction at
-http://www.somewhere.com?? The PHP manual is available is several formats
-(html, lmth, etc), and I have also converted to to StrongHelp format.
-(Please note that the formatting of the StrongHelp manual is not
-particularly good in places, as it was automatically converted from the
-HTML, but it is useful to be able to search for a particular function
-easily.)
+http://www.php.net/
+There is a simple introduction and links to other tutorials at
+http://www.php.net/tut.php3
+The PHP manual is available is several formats from
+http://www.php.net/manual/, and also in HTML and StrongHelp formats from
+http://www.ecs.soton.ac.uk/~ajw498/ (Please note that the formatting of
+the StrongHelp manual is not particularly good in places, as it was
+automatically converted from the HTML, but it is useful to be able to
+search for a particular function easily.)
 
 
 Using PHP
@@ -77,18 +80,19 @@ Using PHP
 Ensure that the !PHP application has been seen before you try to run any
 PHP scripts. You will also need a web browser to view the output. Double
 click on !PHP, then select the Stand alone icon, then click on Save.
-Enter you script in a text editor such as !StrongEd, !Zap or !Edit, and
+Enter your script in a text editor such as !StrongEd, !Zap or !Edit, and
 then save it. Set it's filetype to PHP. Double click on it, and it will
 be interpreted, and the output loaded into your browser.
 
 
 Using PHP with a web server
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
-I have tested PHP with the Navaho server suite
-http://www.navaho.co.uk/support/index.html ?? and NetPlex
-http://java.cms.livjm.ac.uk/cmsdthorn/ ??. Other servers may work, or
-may need the wrapper to be altered (see below). Double click on !PHP,
-then select the Run as a CGI program icon, then click on Save.
+I have tested PHP with the Navaho server suite (2.00b24)
+http://www.navaho.co.uk/support/ and Netplex (0.22)
+http://www.tristone.co.uk/davespace/netplexpublic/index.html
+Other servers may work, or may need the wrapper to be altered (see below).
+Double click on !PHP, then select the Run as a CGI program icon, then
+click on Save.
 
 To use with Navaho, simply create you script as above, make sure that
 it's filetype is PHP, then put the script into Navaho's cgi-bin
@@ -98,8 +102,9 @@ To use with Netplex, it is slightly more complicated, as Netplex will
 only run certain filetypes as CGI programs, therefore put your PHP
 script in Netplex's cgi-bin directory, with a name of (for example)
 Splodge. Then create an Obey file in the same directory, called (for
-example) Squiggle. The obey file should contain the line Run
-<Obey$Dir>.Splodge Then in your browser, entering
+example) Squiggle. The obey file should contain the line
+Run <Obey$Dir>.Splodge
+Then in your browser, entering
 http://www.your.domain.com/cgi-bin/squiggle will run the PHP script.
 
 
@@ -166,7 +171,7 @@ If people find PHP useful, then let me know, then I might be persuaded
 to port PHP 4 when it comes out of beta testing.
 
 
-31/1/00
+4/2/00
 
 Alex Waugh   mailto:ajw498@ecs.soton.ac.uk
 
