@@ -107,6 +107,19 @@ Run <Obey$Dir>.Splodge
 Then in your browser, entering
 http://www.your.domain.com/cgi-bin/squiggle will run the PHP script.
 
+Errors
+~~
+If you get the following error then it is usually because you are
+running PHP from a web server, but have not selected the web server icon
+in !PHP.
+
+X-Powered-By: PHP/3.0.14 Content-type: text/html
+Fatal error: Unable to open -f in - on line 0
+No input file specified.
+
+If you get the output scrolling in a command window, then you are
+trying to run PHP standalone, but have not selected the stand alone icon
+in !PHP
 
 Filenames
 ~~~~~~~~~
