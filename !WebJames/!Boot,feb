@@ -1,2 +1,3 @@
 Set WebJames$Dir <Obey$Dir>
 IconSprites <WebJames$Dir>.!Sprites
+Set File$Type_18A PHP
