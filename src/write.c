@@ -224,7 +224,10 @@ void send_file(struct connection *conn)
 	} else if (conn->fileinfo.filetype == OBJECT_IS_DIRECTORY) {
 		if (conn->uri[len-1] != '/') {
 			char newurl[MAX_FILENAME];
-			snprintf(newurl, MAX_FILENAME,"%s/", conn->uri);
+			if (conn->vhost && conn->vhost->domain[0])
+				snprintf(newurl, MAX_FILENAME, "http://%s%s/", conn->vhost->domain, conn->uri);
+			else
+				snprintf(newurl, MAX_FILENAME,"%s/", conn->uri);
 			report_moved(conn, newurl);
 			return;
 		}
