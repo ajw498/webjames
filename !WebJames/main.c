@@ -35,7 +35,7 @@ void init_task() {
   wimpmsg[1] = 0;
 
   // initialise the wimp
-  if (xwimp_initialise(350, "WebJames", (wimp_message_list *)wimpmsg,
+  if (xwimp_initialise(310, "WebJames", (wimp_message_list *)wimpmsg,
                (wimp_version_no *)&dummy, &task))   quit = 1;
 }
 

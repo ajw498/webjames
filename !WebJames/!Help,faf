@@ -13,7 +13,7 @@ WebJames - the web server
 </td></tr>
 <tr>
 <td><center><h5>
-Version 0.25
+Version 0.26
 </h5></center>
 </td>
 </tr></table>
@@ -680,6 +680,11 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  </tr>
 
  <tr>
+ <td><code>SCRIPT_NAME</code></td>
+ <td>uri of the script without the hostname, eg. <code>/cgi-bin2/test.php</code></td>
+ </tr>
+
+ <tr>
  <td><code>CONTENT_LENGTH</code></td>
  <td>size of the request-body - only valid for <code>POST</code> and
      <code>PUT</code> requests</td>
@@ -1329,7 +1334,7 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 </td></tr></table>
 </h3>
 
-<i>0.26 (10/10/2000)</i>
+<i>0.26 (19/10/2000)</i>
 
 <ul>
   <li>attribute <code>defaultfile</code> can now take a list of files to look for
@@ -1344,6 +1349,7 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
       (<code>&lt;files&gt;</code> to follow shortly)
   <li>added support for htaccess files
   <li>a new <a href="#attr">attribute</a> has been defined <code>errordocument</code>
+  <li>changed value passed to Wimp_Initialise so it <i>might</i> work on RISC OS 3.10
 </ul>
 
 

@@ -21,8 +21,8 @@ Objects       = main.o webjames.o ip.o stat.o report.o write.o openclose.o \
                 resolve.o cacheheap.o
 
 !RunImage:    $(Objects)
-              Link -d $(Linkflags) $(Objects) $(Libs)
-#              Squeeze -f -v !WebJames.!RunImage
+              Link $(Linkflags) $(Objects) $(Libs)
+              Squeeze -f -v !RunImage
 
 .c.o:
 	$(CC) $(CCFlags) $< -o $@
