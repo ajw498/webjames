@@ -361,7 +361,7 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
   The regular expression matching is done by Henry Spencer's regex library.
  <p>
  Regular expressions are potentially complex, so I am not going to describe their syntax here.
- See the <a href="regex/manpage">regex manpage</a> for more details.
+ See the <a href="regex/re_formatmanpage">regex manpage</a> for more details.
  <pre>
  # this matches all leafnames that have between
  # 1 and 3 digits followed by .gif or .jpg
