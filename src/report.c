@@ -8,10 +8,6 @@
 #include <time.h>
 #include <stdlib.h>
 
-#ifdef PHP
-#include <unixlib/local.h>
-#endif
-
 #include "webjames.h"
 #include "wjstring.h"
 #include "cache.h"
@@ -208,9 +204,6 @@ struct reportcache *report_getfile(int report) {
 
 	/* cache the file */
 	snprintf(filename, MAX_FILENAME, "<WebJames$Dir>.Reports.%d", report);
-#ifdef PHP
-	__riscosify_control &= ~__RISCOSIFY_DONT_CHECK_DIR; /* Temporary bodge*/
-#endif
 	file = fopen(filename, "r");
 	if (file==NULL) {
 		webjames_writelog(LOGLEVEL_OSERROR,"ERROR couldn't open report file %s",filename);
@@ -383,9 +376,6 @@ void report(struct connection *conn, int code, int subno, int headerlines, char 
 
 						} else {
 							FILE *handle;
-#ifdef PHP
-							__riscosify_control &= ~__RISCOSIFY_DONT_CHECK_DIR; /* Temporary bodge*/
-#endif
 							handle = fopen(conn->filename, "rb");
 							if (handle) {
 								/* attempt to get a read-ahead buffer for the file */
