@@ -256,7 +256,7 @@ static struct attributes *create_attribute_structure(char *uri) {
 		attr->defined.homedir = attr->defined.is_cgi = attr->defined.cgi_api =
 		attr->defined.methods = attr->defined.port = attr->defined.hidden =
 		attr->defined.defaultfile = attr->defined.allowedfiletypes =
-		attr->defined.forbiddenfiletypes = attr->defined.stripextensions = 0;
+		attr->defined.forbiddenfiletypes = attr->defined.stripextensions = attr->defined.setcsd = 0;
 
 	attr->urilen = strlen(uri);
 	attr->uri = malloc(attr->urilen+1);
@@ -523,6 +523,12 @@ static struct attributes *read_attributes_file(char *filename, char *base) {
 					attr->stripextensions = 1;
 					if (value) free(value);
 
+				} else if (strcmp(attribute, "setcsd") == 0) {
+					/* Set CSD to dir containing CGI script */
+					attr->defined.setcsd = 1;
+					attr->setcsd = 1;
+					if (value) free(value);
+
 				} else if (strcmp(attribute, "is-cgi") == 0) {
 					/* URI is cgi */
 					attr->defined.is_cgi = 1;
@@ -694,6 +700,7 @@ static void merge_attributes3(struct connection *conn, struct attributes *attr) 
 static void merge_attributes2(struct connection *conn, struct attributes *attr) {
 /* merge all attributes from attr into conn */
 	
+	if (attr->defined.setcsd)          conn->flags.setcsd          = attr->setcsd;
 	if (attr->defined.methods)
 		if (!(attr->methods & (1<<conn->method)))
 			conn->attrflags.accessallowed = 0;

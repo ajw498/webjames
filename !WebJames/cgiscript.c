@@ -8,6 +8,7 @@
 
 #include "os.h"
 #include "osfile.h"
+#include "osfscontrol.h"
 #include "osmodule.h"
 #include "wimp.h"
 
@@ -29,6 +30,16 @@ void script_start(int scripttype, struct connection *conn, char *script, int pwd
 /* pwd              0 if not password-protected, 1 if password-protected */
 /* args             pointer to arguments-part of the URI (eg. 'arg=value') */
 
+	if (conn->flags.setcsd) {
+		char dirname[256], *dot;
+
+		strcpy(dirname,script);
+		dot = strrchr(dirname,'.');
+		if (dot != NULL) {
+			*dot = '\0';
+			xosfscontrol_dir(dirname);
+		}
+	}
 	if (conn->cgi_api == CGI_API_REDIRECT)
 		script_start_redirect(script, conn, args, pwd);
 	else if (conn->cgi_api == CGI_API_WEBJAMES)

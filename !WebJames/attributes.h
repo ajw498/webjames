@@ -29,6 +29,7 @@ typedef struct attributes {
 	char cacheable;        /* 0 no, 1 yes */
 	char hidden;           /* 0 no, 1 yes */
 	char is_cgi;           /* 0 no, 1 yes */
+	char setcsd;           /* 0 no, 1 yes */
 	char stripextensions;  /* 0 no, 1 yes */
 	char cgi_api;          /* 0 normal, 1 redirect */
 
@@ -66,6 +67,7 @@ typedef struct attributes {
 		unsigned int tempmoved          : 1;
 		unsigned int cacheable          : 1;
 		unsigned int stripextensions    : 1;
+		unsigned int setcsd             : 1;
 		unsigned int is_cgi             : 1;
 		unsigned int cgi_api            : 1;
 		unsigned int homedir            : 1;

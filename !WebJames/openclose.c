@@ -53,6 +53,7 @@ struct connection *create_conn(void) {
 	conn->flags.deletefile = 0;
 	conn->flags.cacheable = 1;
 	conn->flags.is_cgi = 0;
+	conn->flags.setcsd = 0;
 	conn->flags.stripextensions = 0;
 	conn->statuscode = HTTP_OK;
 	conn->starttime = clock();

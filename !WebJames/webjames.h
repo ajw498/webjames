@@ -73,6 +73,7 @@ typedef struct connection {
 		unsigned int cacheable         : 1;
 		unsigned int is_cgi            : 1;
 		unsigned int stripextensions   : 1;  /* strip any filename extension when looking for the file */
+		unsigned int setcsd            : 1;  /* set the currently selected directory to the dir containing the cgi script */
 	} flags;
 
 	/* various header-lines, all malloc()'ed */
