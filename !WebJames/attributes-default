@@ -30,9 +30,6 @@
 # tempmoved=newuri
 # notcacheable
 # cacheable
-# cgi-api=webjames or redirect
-# is-cgi
-# isnt-cgi
 # hidden
 # nothidden
 # methods=allowedmethods
@@ -43,8 +40,6 @@
 # ram-faster
 # more-attributes=filename
 # defaultfile=filename
-# allowed-filetypes=list-of-filetypes
-# forbidden-filetypes=list-of-filetypes
 # errordocument statuscode "message
 # errordocument statuscode urltoredirectto
 # stripextensions
@@ -56,46 +51,43 @@
 #  you can only specify homedir and defaultfile for
 # directories, ie. if the URI ends in a /
 #
-#  URIs (like filenames) are case-insensitive in WebJames, unless the casesensitive option is set in the config file
+#  URIs and filenames are case-insensitive in WebJames, unless the casesensitive option is set in the config file
 
 # global atttributes
 # Allow PHP scripts to be run as cgi, all other files served normally
 <location />
-#is-cgi
-#cgi-api=redirect
-#allowed-filetypes=18a
+
 </location>
 
-action perl-script perl %f %u
+# Set up some handlers for specific filetypes
+Action perl-script perl %f %u
+Action php-script  php %f %u
 
-addfiletypehandler cgi-script 18a
-addhandler cgi-script obey
-addfiletypehandler perl-script perl
-addhandler static-content .html
+# These allow all PHP and Perl files to be run as cgi scripts, wherever they are, unless specifically overridden
+AddFiletypeHandler php-script  PHP
+AddFiletypeHandler perl-script Perl
 
-#<filesmatch web.+php>
-#is-cgi
-#</files>
 
 # define which directory holds 'webjames-style' cgi-scripts
+# Using AddHandler or AddFiletypeHandler with no filetype or extension means apply it to all files
 <location /cgi-bin/>
-#is-cgi
-#cgi-api=webjames
-#allowed-filetypes=
-addfiletypehandler webjames-script
+AddHandler webjames-script
 </location>
 
 # define which directory holds cgi-scripts using redirection
-#<locationmatch cgi.bin2>
-#is-cgi
-#cgi-api=redirect
-#allowed-filetypes=
-#</locationmatch>
+<location /cgi-bin2/>
+AddHandler cgi-script
+</location>
 
 # protect .htaccess files
 <files .htaccess>
 hidden
 </files>
+
+# alternative to the above, but protects all files starting with .ht eg. .htaccess, .htpasswd etc.
+#<filesmatch "^\.ht.*">
+#hidden
+#</filesmatch>
 
 # password-protect the query-cgi-script
 <location /cgi-bin/query>

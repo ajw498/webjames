@@ -12,14 +12,16 @@
 
 static struct handlerentry handlers[] = {
 	{
-		"cgi-script",
-		NULL,
-		cgiscript_start,
-		staticcontent_poll,
-		NULL
+		"cgi-script",       /* name of handler */
+		0,                  /* should the files be cached */
+		NULL,               /* function to call once to initialise handler */
+		cgiscript_start,    /* called to start a script */
+		staticcontent_poll, /* called every so often to send a bit of the script output */
+		NULL                /* function to call just before WebJames quits */
 	},
 	{
 		"webjames-script",
+		0,
 		NULL,
 		webjamesscript_start,
 		NULL,
@@ -27,6 +29,7 @@ static struct handlerentry handlers[] = {
 	},
 	{
 		"static-content",
+		1,
 		NULL,
 		staticcontent_start,
 		staticcontent_poll,
@@ -34,6 +37,7 @@ static struct handlerentry handlers[] = {
 	},
 	{
 		NULL,  /* last entry should be all NULLs */
+		NULL,
 		NULL,
 		NULL,
 		NULL,
@@ -70,6 +74,7 @@ void add_handler(char *name, char *command)
 	if (new->command == NULL) return;
 	strcpy(new->command,command);
 	new->unix = 0;
+	new->cache = 0;
 	percent = strchr(new->command,'%');
 	ffound = 0;
 	while (percent) {
@@ -128,6 +133,8 @@ void init_handlers(void)
 	
 		new->name = handlers[i].name;
 		new->command = NULL;
+		new->unix = 0;
+		new->cache = handlers[i].cache;
 		new->startfn = handlers[i].startfn;
 		new->pollfn = handlers[i].pollfn;
 		new->next = handlerslist;

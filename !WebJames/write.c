@@ -98,7 +98,7 @@ int uri_to_filename(char *uri, char *filename, int stripextension) {
 
 void send_file(struct connection *conn) {
 /* parse the header, find file, do the job etc. */
-	int size, len;
+	int len;
 	char *ptr, *name;
 
 	/* select the socket for writing */
@@ -156,8 +156,8 @@ void send_file(struct connection *conn) {
 		strcpy(testfile,conn->filename);
 		uri_to_filename("index.html", testfile+len, conn->flags.stripextensions); /* incase the list is empty */
 		for(i=0; i<conn->defaultfilescount; i++) {
-			int type;
-			int fixme; /* cache type? */
+			int type, size;
+
 			uri_to_filename(conn->defaultfiles[i], testfile+len, conn->flags.stripextensions);
 			type = get_file_info(testfile,NULL,NULL,&size,1);
 			if (type != FILE_DOESNT_EXIST) break;
@@ -202,6 +202,8 @@ void send_file(struct connection *conn) {
 		conn->fileinfo.filetype-=FILE_NO_MIMETYPE;
 	}
 
+	/*must be a real file if we get here */
+
 	/* check if it is a cgi-script */
 	if (conn->flags.is_cgi) {
 		/* this is only for backwards compatibility */
@@ -245,12 +247,8 @@ void send_file(struct connection *conn) {
 		find_handler(conn);
 	}
 
-{
-	int fixme;
-	/* set flags.cacheable according to handler type */
-}
-
-	/*must be a real file if we get here */
+	/* don't cache CGI scripts if the handler can't cope with it */
+	if (conn->handler != NULL) if (conn->handler->cache == 0) conn->flags.cacheable = 0;
 
 	/* check if object is cached */
 	if (conn->flags.cacheable) {

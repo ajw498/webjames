@@ -523,6 +523,15 @@ void read_config(char *config) {
 		}
 	} while (!feof(file));
 	fclose(file);
+	/* change homedir to lowercase if needed */
+	/* we can't do this when homedir is defined as the casesensitive option might not have been read at that time */
+	if (!configuration.casesensitive) {
+		char *ptr = configuration.site;
+		while (*ptr) {
+			*ptr = tolower(*ptr);
+			ptr++;
+		}
+	}
 }
 
 

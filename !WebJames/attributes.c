@@ -303,6 +303,14 @@ static int stack(int value, int push) {
 	return section_NONE;
 }
 
+static void lower_case(char *str)
+{
+	while (*str) {
+		*str = tolower(*str);
+		str++;
+	}
+}
+
 static struct attributes *read_attributes_file(char *filename, char *base) {
 /* filename - name of the attributes file */
 /* base - base uri */
@@ -423,7 +431,7 @@ static struct attributes *read_attributes_file(char *filename, char *base) {
 						return NULL;
 					}
 
-					if (regcomp(attr->regex,ptr,REG_EXTENDED | REG_NOSUB)) {
+					if (regcomp(attr->regex,ptr,REG_EXTENDED | REG_NOSUB | (configuration.casesensitive ? 0 : REG_ICASE))) {
 						/* use regerror to give a meaning full error message */
 						free(attr->regex);
 						attr->regex = NULL;
@@ -511,7 +519,6 @@ static struct attributes *read_attributes_file(char *filename, char *base) {
 				}
 
 				if (!match && !configuration.casesensitive) for (i = 0; i < len; i++)  ptr[i] = tolower(ptr[i]);
-				/* Is/should regex matching case sensitive? */
 
 				attr = create_attribute_structure(ptr);
 				if (!attr) {
@@ -559,17 +566,25 @@ static struct attributes *read_attributes_file(char *filename, char *base) {
 					strcpy(value, ptr);            /* make copy of value */
 				}
 			}
+			/* make attribute matching case insensitive */
+			lower_case(attribute);
 
 			/* Sort out attributes that may or may not be inside a section */
 			if (strcmp(attribute, "action") == 0) {
 				/* define a *command as a handler */
-				char *command = value;
+				char *command = value, *ptr = value;
 				
 				/* skip the action name */
 				while (!isspace(*command) && *command != '\0') command++;
 				if (*command != '\0') *command++ = '\0';
 				/* skip whitespace */
 				while (isspace(*command) && *command != '\0') command++;
+
+				/* change handler name to lowercase */
+				while (*ptr) {
+					*ptr = tolower(*ptr);
+					ptr++;
+				}
 
 				add_handler(value,command);
 				free(value);
@@ -588,7 +603,15 @@ static struct attributes *read_attributes_file(char *filename, char *base) {
 				/* skip whitespace */
 				while (isspace(*filetypetext) && *filetypetext != '\0') filetypetext++;
 
-				if (filetypehandler) if (xosfscontrol_file_type_from_string(filetypetext,(bits*)&filetype)) filetype = filetype_NONE;
+				/* change handler name to lowercase */
+				lower_case(value);
+
+				if (filetypehandler) {
+					if (xosfscontrol_file_type_from_string(filetypetext,(bits*)&filetype)) filetype = filetype_NONE;
+				} else if (!configuration.casesensitive) {
+					/* change file extension to lowercase */
+					lower_case(filetypetext);
+				}
 
 				newhandler = malloc(sizeof(struct handlerlist));
 				if (newhandler == NULL) {
@@ -627,6 +650,8 @@ static struct attributes *read_attributes_file(char *filename, char *base) {
 					if (section == section_LOCATION && attr->uri[attr->urilen-1] == '/') continue;
 					/* define where on the harddisc the directory is stored */
 					if (attr->homedir)  free(attr->homedir);
+
+					if (!configuration.casesensitive) lower_case(value);
 					/* canonicalise the path, so <WebJames$Dir> etc are expanded, otherwise they can cause problems */
 					if (xosfscontrol_canonicalise_path(value,NULL,NULL,NULL,0,&size) == NULL) {
 						buffer = malloc(-size);
@@ -951,7 +976,6 @@ void find_handler(struct connection *conn)
 					ext = strrchr(leafname,'/');
 					if (entry->extension[0] == '.') {
 						/* match extension */
-						int fixme; /*case sensitive?*/
 						if (ext) {
 							if (strcmp(ext+1,entry->extension+1) == 0) {
 								/* extesions matched */
@@ -961,7 +985,6 @@ void find_handler(struct connection *conn)
 						}
 					} else {
 						/* match whole leafname */
-						int fixme; /*case sensitive?*/
 						if (strcmp(leafname+1,entry->extension) == 0) {
 							/* leafname matched */
 							conn->handler = entry->handler;

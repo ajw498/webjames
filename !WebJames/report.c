@@ -3,9 +3,9 @@
 #include <time.h>
 #include <stdlib.h>
 
+#include "webjames.h"
 #include "cache.h"
 #include "stat.h"
-#include "webjames.h"
 #include "ip.h"
 #include "openclose.h"
 #include "report.h"
@@ -330,14 +330,14 @@ void report(struct connection *conn, int code, int subno, int headerlines) {
 
 						strcpy(conn->filename,tempconn->filename);
 
+						tempconn->fileinfo.filetype = get_file_info(tempconn->filename, NULL, &tempconn->fileinfo.date, &tempconn->fileinfo.size,1);
+
 						/* check if object is cached */
 						if (tempconn->flags.cacheable) {
-							int fixme;
-							cacheentry = NULL; /*get_file_through_cache(tempconn->uri, conn->filename);*/
+							cacheentry = get_file_through_cache(tempconn);
 						} else {
 							cacheentry = NULL;
 						}
-						free(tempconn); { int fixme; } /* memory leak if uri_to_filename fails */
 
 						/* prepare to send file */
 						if (cacheentry) {
@@ -392,6 +392,7 @@ void report(struct connection *conn, int code, int subno, int headerlines) {
 					} else {
 						errordoc = NULL;
 					}
+					free(tempconn);
 				} else {
 					errordoc = NULL;
 				}

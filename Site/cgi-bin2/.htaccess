@@ -1,2 +1,2 @@
 # Give a custom error message for any file not found errors
-errordocument 404 /filenotfound.html
+ErrorDocument 404 /filenotfound.html

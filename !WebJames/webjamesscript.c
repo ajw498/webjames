@@ -88,6 +88,7 @@ void webjamesscript_start(struct connection *conn)
 		writecount--;
 	}
 	conn->socket = -1;
+	conn->flags.is_cgi = 1;
 	close(conn->index, 0);
 }
 
