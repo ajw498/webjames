@@ -1,6 +1,6 @@
 # Makefile for WebJames the web server
 #
-# $Id: cross,v 1.10 2002/12/14 00:34:43 ajw Exp $
+# $Id: cross,v 1.11 2003/06/25 21:52:58 ajw Exp $
 #
 # Settings for the gcc/unixlib build using the gccsdk cross compiler
 
@@ -21,7 +21,7 @@ OSLIBSUPPORT = -loslibsupport
 REGEX = -lregex
 
 #Compiler flags
-THROWBACK =
+THROWBACK = -mpoke-function-name
 DEPEND =
 WARNINGS = -Wall -Wundef -Wpointer-arith -Wmissing-prototypes
 OPTIMISATION = -O2
