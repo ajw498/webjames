@@ -176,7 +176,6 @@ void send_file(struct connection *conn)
 		return;
 	}
 
-fprintf(stderr,"uri %s filename %s\n",conn->uri,conn->filename);
 	/* if requesting a directory (ie. the uri ends with a /) use index.html */
 	len = strlen(conn->filename);
 	if (conn->filename[len-1] == '.') {
@@ -199,8 +198,6 @@ fprintf(stderr,"uri %s filename %s\n",conn->uri,conn->filename);
 			}
 		}
 	}
-
-fprintf(stderr,"new filename %s\n",conn->filename);
 
 	/* check if the file has been moved */
 	if (conn->moved)
