@@ -1,5 +1,5 @@
 /*
-	$Id: read.c,v 1.4 2002/10/20 11:22:37 ajw Exp $
+	$Id: read.c,v 1.5 2003/06/25 21:54:50 ajw Exp $
 	Reading requests
 */
 
@@ -552,7 +552,7 @@ void pollread(int cn) {
 	/* check if there's any data ready on the socket */
 	bytes = ip_ready(conn->socket,&err);
 	if (err) {
-		if (err->errnum==socket_EPIPE) {
+		if (CHECK_INET_ERR(err->errnum,socket_EPIPE)) {
 			webjames_writelog(LOGLEVEL_ABORT, "ABORT connection closed by client");
 		} else {
 			webjames_writelog(LOGLEVEL_OSERROR,"ERROR %s",err->errmess);

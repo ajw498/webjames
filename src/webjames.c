@@ -1,5 +1,5 @@
 /*
-	$Id: webjames.c,v 1.4 2002/10/20 15:40:31 ajw Exp $
+	$Id: webjames.c,v 1.5 2003/06/25 21:54:50 ajw Exp $
 	General functions for WebJames
 */
 
@@ -382,7 +382,7 @@ int webjames_writestring(struct connection *conn, const char *string)
 		statistics.written += written;
 		len-=written;
 		if (err) {
-			if (err->errnum==socket_EPIPE) {
+			if (CHECK_INET_ERR(err->errnum,socket_EPIPE)) {
 				webjames_writelog(LOGLEVEL_ABORT, "ABORT connection closed by client");
 			} else {
 				webjames_writelog(LOGLEVEL_OSERROR,"ERROR %s",err->errmess);
@@ -403,7 +403,7 @@ int webjames_writebuffer(struct connection *conn, const char *buffer, int size)
 	size = ip_write(conn->socket, buffer, size, &err);
 	statistics.written += size;
 	if (err) {
-		if (err->errnum==socket_EPIPE) {
+		if (CHECK_INET_ERR(err->errnum,socket_EPIPE)) {
 			webjames_writelog(LOGLEVEL_ABORT, "ABORT connection closed by client");
 		} else {
 			webjames_writelog(LOGLEVEL_OSERROR,"ERROR %s",err->errmess);
@@ -422,7 +422,7 @@ int webjames_readbuffer(struct connection *conn, char *buffer, int size)
 
 	size = ip_read(conn->socket, buffer, size, &err);
 	if (err) {
-		if (err->errnum==socket_EPIPE) {
+		if (CHECK_INET_ERR(err->errnum,socket_EPIPE)) {
 			webjames_writelog(LOGLEVEL_ABORT, "ABORT connection closed by client");
 		} else {
 			webjames_writelog(LOGLEVEL_OSERROR,"ERROR %s",err->errmess);

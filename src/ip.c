@@ -1,5 +1,5 @@
 /*
-	$Id: ip.c,v 1.2 2003/06/18 21:31:05 ajw Exp $
+	$Id: ip.c,v 1.3 2003/06/25 21:54:50 ajw Exp $
 	Socket access
 */
 
@@ -68,10 +68,9 @@ int ip_read(socket_s socket, char *buffer, int size, os_error **err)
 	*err=(os_error *)_kernel_swi(Socket_Read,&regs,&regs);
 	read=regs.r[0];
 
-	if ((*err)->errnum >= 0x20E00) (*err)->errnum -= 0x20E00;
 
 	if (*err) {
-		if ((*err)->errnum==socket_EWOULDBLOCK) {
+		if (CHECK_INET_ERR((*err)->errnum,socket_EWOULDBLOCK)) {
 			*err=NULL;
 		} else {
 			read=0;
@@ -94,10 +93,9 @@ int ip_write(socket_s socket, const char *buffer, int size, os_error **err)
 	*err=(os_error *)_kernel_swi(Socket_Write,&regs,&regs);
 	written=regs.r[0];
 
-	if ((*err)->errnum >= 0x20E00) (*err)->errnum -= 0x20E00;
 
 	if (*err) {
-		if ((*err)->errnum==socket_EWOULDBLOCK) {
+		if (CHECK_INET_ERR((*err)->errnum,socket_EWOULDBLOCK)) {
 			*err=NULL;
 		} else {
 			written=0;
@@ -125,7 +123,6 @@ int ip_ready(socket_s socket, os_error **err)
 
 	*err=xsocket_ioctl(socket, socket_FIONREAD, (byte *)&arg);
 
-	if ((*err)->errnum >= 0x20E00) (*err)->errnum -= 0x20E00;
 
 	if (*err != NULL) return -1;
 	return arg;

@@ -1,7 +1,7 @@
 #ifndef WEBJAMES_H
 #define WEBJAMES_H
 
-#define WEBJAMES_H_REVISION "$Revision: 1.11 $"
+#define WEBJAMES_H_REVISION "$Revision: 1.12 $"
 
 #define WEBJAMES_VERSION "0.39"
 #define WEBJAMES_DATE "18/6/03"
@@ -73,6 +73,8 @@ typedef int socket_s;
 #define SysLog_GetLogLevel 0x4c881
 #define SysLog_LogUnstamped 0x4c884
 #endif
+
+#define CHECK_INET_ERR(err,num) (((err) == (num)) || ((err) == 0x20E00 + (num)))
 
 typedef struct listeninfo {
 	int port;
