@@ -1,0 +1,13 @@
+Run <Obey$Dir>.!Boot
+
+|Enable the following line if you want PHP to use a dynamic area
+Set PHP$Heap ""
+
+|Unset any leftover CGI variables
+Unset SERVER_SOFTWARE
+Unset SERVER_NAME
+Unset GATEWAY_INTERFACE
+Unset REQUEST_METHOD
+
+WimpSlot -Min 64k -Max 64k
+Run <Obey$Dir>.!RunImage
