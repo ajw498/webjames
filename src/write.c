@@ -125,6 +125,7 @@ void send_file(struct connection *conn)
 	int len;
 	char *ptr, *name;
 	char buffer[MAX_FILENAME];
+	int indexadded = 0;
 
 	/* select the socket for writing */
 	select_writing(conn->index);
@@ -175,6 +176,7 @@ void send_file(struct connection *conn)
 		return;
 	}
 
+fprintf(stderr,"uri %s filename %s\n",conn->uri,conn->filename);
 	/* if requesting a directory (ie. the uri ends with a /) use index.html */
 	len = strlen(conn->filename);
 	if (conn->filename[len-1] == '.') {
@@ -192,11 +194,13 @@ void send_file(struct connection *conn)
 			type = get_file_info(testfile,NULL,NULL,NULL,&size,1);
 			if (type != FILE_DOESNT_EXIST) {
 				wjstrncpy(conn->filename,testfile,MAX_FILENAME);
+				indexadded = 1;
 				break;
 			}
 		}
 	}
 
+fprintf(stderr,"new filename %s\n",conn->filename);
 
 	/* check if the file has been moved */
 	if (conn->moved)
@@ -236,7 +240,7 @@ void send_file(struct connection *conn)
 	} else if (conn->fileinfo.filetype == FILE_ERROR) {
 		report_badrequest(conn, "error occured when reading file info");
 		return;
-	} else if (conn->uri[len-1] == '/') {
+	} else if (conn->uri[len-1] == '/' && !indexadded) {
 		/* A file with a trailing / is not allowed */
 		report_notfound(conn);
 		return;
