@@ -14,11 +14,12 @@
 </td></tr></table>
 </h3>
 
-<i>0.45 (??/??/2005)</i>
+<i>0.45 (2/4/2005)</i>
 
 <ul>
   <li>Requesting a file with a trailing slash now results in a 404 error rather than serving the file.
   <li>A moved attribute on a file that doesn't exist now only sends the moved report and not the 404 report as well.
+  <li>Moved reports are now generated correctly when virtual hosts are in use.
 </ul>
 
 <i>0.44 (3/1/2005)</i>
