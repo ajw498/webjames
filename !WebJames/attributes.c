@@ -905,7 +905,7 @@ static void merge_handlers(struct handlerlist *head, struct connection *conn)
 	}
 
 	/* add the attributes entries to the top of the connection list */
-	entry->attrnext = conn->handlers;
+	entry->connnext = conn->handlers;
 	conn->handlers = head;
 }
 
@@ -951,7 +951,7 @@ void find_handler(struct connection *conn)
 					} else {
 						/* match whole leafname */
 						int fixme; /*case sensitive?*/
-						if (strcmp(leafname,entry->extension) == 0) {
+						if (strcmp(leafname+1,entry->extension) == 0) {
 							/* leafname matched */
 							conn->handler = entry->handler;
 							return;
@@ -1027,11 +1027,11 @@ void get_attributes(char *uri, struct connection *conn) {
 			leafname = NULL;
 		} else {
 			/* Find the leafname */
-			leafname = strrchr(buffer,splitchar) + 1;
+			leafname = strrchr(buffer,splitchar);
 			if (leafname) {
 				/* Convert leafname to unix style */
 				/* Convieniently uri_to_filename works both ways */
-				if (uri_to_filename(leafname,leafnamebuffer,0)) {
+				if (uri_to_filename(leafname+1,leafnamebuffer,0)) {
 					/* Invalid characters in leafname */
 					leafname = NULL;
 				} else {
@@ -1040,13 +1040,14 @@ void get_attributes(char *uri, struct connection *conn) {
 			}
 		}
 
-		/* Add any global handlers to the beginning of the list */
-		merge_handlers(globalhandlers,conn);
 	} else {
 		/* It is actually a URI */
 		strcpy(buffer,uri);
 		splitchar = '/';
 		leafname = NULL;
+
+		/* Add any global handlers to the beginning of the list */
+		merge_handlers(globalhandlers,conn);
 	}
 
 	ptr = buffer;
