@@ -1,0 +1,158 @@
+#  WebJames configuration file
+#
+#  empty lines and lines starting with # are ignored; no leading/trailing
+# spaces are allowed; spaces on either side of the '=' are not allowed
+
+# the site
+# --------
+
+# webmaster - the emailaddress of the webmaster; this is used to replace
+# %EMAIL% in reports; the SERVER_ADMIN enviromentvariable (used by
+# 'redirect' cgi-scripts) is set to this value
+webmaster=i.havent@changed.the.emailaddress.com
+
+# serverip - the ip-address (eg. 192.168.1.100) or full domain name
+# (eg. www.myserver.com) of the server; if not known, leave empty; if
+# possible, use the full domain name
+serverip=
+
+# server - included in the Server: fields when replying
+server=WebJames/0.22
+
+# port - http port number
+# Webjames can accept connections on up to 8 ports simultaneously - simply
+# specify a commaseperated list of portnumbers, eg.:   port=80,8080
+port=80
+
+# homedir - directory holding the files
+homedir=<webjames$dir>.site
+
+# attributes - name of attributes file
+attributes=<webjames$dir>.attributes
+
+
+# connection control
+# ------------------
+
+# timeout - idle delay in seconds before sockets are closed
+timeout=200
+
+# bandwidth - max bandwidth in bytes/minute
+# this indicates how much of the bandwidth the web-server is allowed to use;
+# set to 0 to allow unlimited bandwidth-usage; should otherwise not be lower
+# than 30000
+bandwidth=0
+
+# readaheadbuffer - size (in kb) of file buffer
+readaheadbuffer=24
+
+# max-request-size
+# first number is the maximum allowed size of a request body/header (in
+# kbytes) second value selects when the server starts using the disc
+# instead of the RMA for storing requests (currently not used)
+max-request-size=200 100
+
+# cgi-input - name of temporary file to use for redirecting input for
+# cgi-script; the file is created when a POST request is received for
+# a 'redirected' cgi-script, the request-body is written to the file and
+# the cgi-script is started with input redirected so that standard input
+# comes from this file; set to empty to use a file in the scrap-directory
+# or set to somewhere on a RAMdisc to get speed
+cgi-input=
+
+# cgi-output - output from 'redirected' cgi-script goes to this file; set
+# to empty to use a file in the scrap-directory or set to somewhere on a
+# RAMdisc to get speed notice: 'redirected' cgi-scripts are always
+# single-tasking so the same filename may be used for all requests... the
+# same applies to cgi-input, although cgi-output and cgi-input cannnot
+# refer to the same file...
+# cgi-output=RAM:$.cgi-out
+cgi-output=
+
+
+# reports/replies
+# ---------------
+
+# panic - html data that is send if something goes wrong,
+# eg. if a report-html-file is missing; max 500 chars
+panic=<html><head><title>HTTP request failed</title></head> <body bgcolor=\"#ffffff\"><h3>HTTP request failed</h3></body></html>
+
+# x-header - extra header-lines that are included when returning a file;
+# multiple x-header fields may be included, but only the first 16 are used;
+x-header=X-Server-Info: Acorn RiscPC, 200MHz StrongARM
+
+
+# the cache
+# ---------
+
+# cachesize - cache size in kb
+# to cache the entire site, the cache size should be the total size of the
+# site + 1 kb for each file; also, MAXCACHEFILES (in cache.h) should be set
+# to the number of files in the site; to disable caching, set cachesize=0
+cachesize=512
+
+# maxcachefilesize - files larger than this value (in kb) will never be
+# cached; very large values will temporarily halt the server whilst the file
+# is read in from disc...
+maxcachefilesize=100
+
+
+# logging/statistics
+# ------------------
+
+# log - log file
+# remove the line to disable logging
+log=<webjames$dir>.log
+
+# loglevel - controls how much log data is output
+# values from 0 (least logging) or 10 (most logging) are allowed; default
+# is 5
+loglevel=7
+
+# clf - common logfile format - as used by Apache
+clf=<webjames$dir>.clf
+
+# reversedns - do reverse dns on connections
+# -1    don't do reverse dns
+# 0     only do reverse dns until all data has been sent
+# > 0   attempt reverse dns for this many seconds after all data has been
+# sent currently, reverse dns requires the ANT/Acorn resolver module
+reversedns=10
+
+# keep-log-open - keep the log/clflog open for this many seconds after a
+# write; this removes the overhead involved in opening/closing the log files
+# repeatedly
+keep-log-open=90
+
+# log-rotate - prevents the logfiles from getting too big
+# first number is the maximum age (in hours)
+# second number is the maximum logfile size (in kbytes) (0 for no limit)
+# third number is the number of logfiles to keep (set to 0 to disable
+#   rotation or to 1 to reset the logfile whenever it gets too big/old)
+#
+# to rotate the logs once a week, and keep the logs for 6 months, use:
+# log-rotate=168 0 26
+# clf-rotate=168 0 26
+log-rotate=168 500 4
+clf-rotate=168 500 4
+
+# rotate-rename - command to execute when the log files are rotated
+# %0 is replaced with the name of the log file
+# %1 is replaced with the suggested name for the renamed file
+# %2 is replaced with the leaf of the log file name
+# you may use this to compress the old logs using your favorite archiver;
+# notice that if you don't use %0 and %1 for the source/destination
+# filenames, WebJames may not be able to rotate subsequent logfiles
+rename-cmd=rename %0 %1
+
+
+# PUT and DELETE
+# --------------
+
+# put-script, delete-script - when WebJames receives a PUT (or DELETE)
+# request, it executes the 'put-script'; if 'put-script' points to a
+# file that isn't a cgi-script, the file will be returned as usual
+# PLEASE NOTICE: the scripts should be password protected to prevent
+# just anybody from accessing them!
+put-script=
+delete-script=

@@ -1,0 +1,20 @@
+||
+||
+||
+Set WebJames$Dir <Obey$Dir>
+
+RMEnsure MimeMap 0.10 RMLoad <WebJames$Dir>.MimeMap
+RMEnsure MimeMap 0.10 Error You need version 0.10 (or later) of the MimeMap module
+
+
+|| insert initialisation of other programs/tools below here
+
+|| PHP3
+SetMacro Alias$@RunType_18A Run <WebJames$Dir>.cgi-res.startphp %%*0
+
+|| insert initialisation of other programs/tools above here
+
+
+WimpSlot -min 120k -max 120k
+Run <WebJames$Dir>.Restart
+Run <WebJames$Dir>.!RunImage <WebJames$dir>.config

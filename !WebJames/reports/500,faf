@@ -1,0 +1,13 @@
+<HTML>
+<TITLE>Unexpected server error</TITLE>
+<BODY bgcolor="#ffffff">
+<H1>Unexpected server error</H1>
+
+<P>
+ The server is (temporarily?) unable to fulfill your request.
+
+<P>
+ Please contact <A HREF="mailto:%EMAIL%">the webmaster</A>
+
+</BODY>
+</HTML>

@@ -1,0 +1,16 @@
+<HTML>
+<TITLE>Busy</TITLE>
+<BODY bgcolor="#ffffff">
+<H1>Busy</H1>
+
+<P>
+ %WHY%
+
+<P>
+ The webserver is busy - try again later.
+
+<P>
+ Please contact <A HREF="mailto:%EMAIL%">the webmaster</A>
+
+</BODY>
+</HTML>

@@ -1,0 +1,48 @@
+
+# Makefile for WebJames the web server
+
+CC            = cc
+
+# possible flags:
+# ANTRESOLVER     use the ANT resolver module API for reverse DNS
+# LOG             enable logging
+# SYSLOG          use SysLog instead of internal log
+# CASESENSITIVE   use case-sensitive filename matching
+
+# CCFlags       = -c -throwback -IC: -IOS: -DANTRESOLVER -DLOG -DSYSLOG
+# CCFlags       = -c -throwback -IC: -IOS: -DLOG -DSYSLOG
+CCFlags       = -c -throwback -IC: -IOS: -DLOG
+LinkFlags     = -o $@
+
+Libs          = OSLib:o.OSLib C:o.Stubs C:o.socklib
+Objects       = o.main o.webjames o.ip o.stat o.report o.write o.openclose \
+                o.read o.cache o.coding o.mimemap o.attributes o.cgi \
+                o.resolve o.cacheheap
+
+!WebJames.!RunImage:    $(Objects)
+              Link $(Linkflags) $(Objects) $(Libs)
+              Squeeze -f -v !WebJames.!RunImage
+
+.c.o:;        $(CC) $(CCflags) $< -o $@
+
+# Dynamic dependencies:
+o.main:       c.main h.global h.webjames
+o.webjames:   c.webjames h.webjames h.global h.ip h.stat h.report h.write \
+              h.openclose h.read h.attributes h.cache h.resolve
+o.stat:       c.stat h.webjames h.stat h.ip
+o.report:     c.report h.report h.webjames h.ip h.stat h.cache h.write \
+              h.openclose
+o.write:      c.write h.write h.webjames h.ip h.stat h.report \
+              h.cache h.openclose h.attributes h.cgi h.mimemap
+o.openclose:  c.openclose h.openclose h.webjames h.ip h.stat h.cache h.cgi \
+              h.resolve
+o.read:       c.read h.read h.webjames h.ip h.report h.write \
+              h.stat h.coding h.cgi h.attributes
+o.ip:         c.ip h.ip
+o.cache:      c.cache h.cache h.webjames h.stat h.mimemap h.write h.cacheheap
+o.coding:     c.coding h.coding
+o.mimemap:    c.mimemap h.mimemap 
+o.attributes: c.attributes h.attributes h.cgi h.stat h.webjames
+o.cgi:        c.cgi h.cgi h.openclose h.report h.webjames h.stat h.ip
+o.resolve:    c.resolve h.resolve h.webjames h.ip h.stat
+o.cacheheap:  c.cacheheap h.cacheheap

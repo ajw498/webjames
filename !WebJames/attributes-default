@@ -1,0 +1,78 @@
+# WebJames attributes file
+#
+#  this file defines various attributes for URIs; an entry
+# starts with an URI enclosed in [], the following lines
+# (until next entry starts or until the end of the file)
+# define the attributes
+#
+#  if the URI is a directory (ie. it ends with a /), the
+# attributes will affect all files and subdirectories in
+# the directory; otherwise the attributes will only affect
+# a single file
+#
+#  if you define attributes for both a file AND the
+# directory in which the file is stored, the attributes
+# defined for the file will overwrite the attributes for
+# the directory
+#
+#  possible attributes:
+#
+# userandpwd=login:password
+# accessfile=filename
+# realm=realmname
+# homedir=path
+# moved=newuri
+# tempmoved=newuri
+# notcacheable
+# cacheable
+# cgi-api=webjames or redirect
+# is-cgi
+# isnt-cgi
+# hidden
+# nothidden
+# methods=allowedmethods
+# port=portnumber
+# allowed-hosts=list-of-hosts
+# forbidden-hosts=list-of-hosts
+# priority=value
+# ram-faster
+# more-attributes=filename
+# defaultfile=filename
+#
+#  if a file/directory is password-protected, a realm MUST
+# be defined for that file/directory, otherwise it cannot
+# be accessed
+#
+#  you can only specify homedir and defaultfile for
+# directories, ie. if the URI ends in a /
+#
+#  URIs (like filenames) are case-insensitive in WebJames
+
+# global atttributes
+[/]
+
+# define which directory holds 'webjames-style' cgi-scripts
+[/cgi-bin/]
+is-cgi
+
+# define which directory holds cgi-scripts using redirection
+[/cgi-bin2/]
+is-cgi
+cgi-api=redirect
+
+# password-protect the query-cgi-script
+[/cgi-bin/query]
+userandpwd=henrik:xxxx
+realm=the search engine
+
+
+# password-protect the PUT script
+#[/cgi-bin/PUT]
+#userandpwd=putuser:putpassword
+#realm='put'
+#methods="PUT"
+# password-protect the DELETE script
+#[/cgi-bin/DELETE]
+#userandpwd=deleteuser:deletepassword
+#realm='delete'
+#methods="DELETE"

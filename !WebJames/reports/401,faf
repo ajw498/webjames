@@ -1,0 +1,13 @@
+<HTML>
+<TITLE>Unauthorized access</TITLE>
+<BODY bgcolor="#ffffff">
+<H1>Unauthorized access</H1>
+
+<P>
+ You do not have access to the requested file.
+
+<P>
+ Please contact <A HREF="mailto:%EMAIL%">the webmaster</A>
+
+</BODY>
+</HTML>
