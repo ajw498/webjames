@@ -95,6 +95,7 @@ void script_start_redirect(char *script, struct connection *conn, char *args, in
   if (serverip[0])  set_var_val("SERVER_NAME", serverip);
   set_var_val("SERVER_ADMIN", webmaster);
 
+  set_var_val("SCRIPT_NAME", conn->uri);
   set_var_val("PATH_TRANSLATED", script);
 
   if (args)
