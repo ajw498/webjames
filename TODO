@@ -3,7 +3,6 @@
  - GUI for choices or a web configuration frontend
  - Act as a proxy / cache
  - Better support for encodings
- - Virtual hosts
  - HTTP 1.1
  - HTTPS
  - Resolve allow-hosts list?
