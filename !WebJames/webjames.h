@@ -1,7 +1,7 @@
 #ifndef WEBJAMES_H
 #define WEBJAMES_H
 
-#define WEBJAMES_H_REVISION "$Revision: 1.28 $"
+#define WEBJAMES_H_REVISION "$Revision: 1.29 $"
 
 #define WEBJAMES_VERSION "0.31"
 #define WEBJAMES_DATE "31/9/01"
@@ -222,21 +222,23 @@ extern void *webjames_last_malloc;
 
 #define DEBUG_FMT " %s, line %d"
 #define DEBUG_ARGS ,__FILE__,__LINE__
+#define DEBUG_REGISTER MemCheck_RegisterMiscBlock(webjames_last_error,sizeof(os_error)),
+#define DEBUG_UNREGISTER MemCheck_UnRegisterMiscBlock(webjames_last_error),
 
 #else
 
-#define MemCheck_RegisterMiscBlock(x,y) NULL
-#define MemCheck_UnRegisterMiscBlock(x) NULL
 #define DEBUG_FMT
 #define DEBUG_ARGS
+#define DEBUG_REGISTER
+#define DEBUG_UNREGISTER
 
 #endif
 
 /*Check the return from a SWI call, log the error if the was one, then return the error block pointer (or NULL)*/
 #define E(x) ((webjames_last_error=(x))==NULL ? NULL : (\
-MemCheck_RegisterMiscBlock(webjames_last_error,sizeof(os_error)),\
+DEBUG_REGISTER \
 webjames_writelog(LOGLEVEL_OSERROR,"ERROR %s" DEBUG_FMT,webjames_last_error->errmess DEBUG_ARGS),\
-MemCheck_UnRegisterMiscBlock(webjames_last_error),\
+DEBUG_UNREGISTER \
 webjames_last_error))
 /*As above, but prevent warning when used as a statement rather than as a test*/
 #define EV(x) ((void)(E(x)))
