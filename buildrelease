@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# $Id: buildrelease,v 1.5 2002/02/24 14:19:47 ajw Exp $
+# $Id: buildrelease,v 1.6 2002/07/22 14:52:25 ajw Exp $
 #
 # usage: buildrelease --webjames=0.34 --php=2.04 --php-dir=../php4
 
@@ -58,7 +58,7 @@ if test $WJVERSION != test; then
 
   # Make sure cvs is up to date
   echo cvs commit
-  echo cvs tag v`echo $WJVERSION | sed 's/\.//'`_`echo $PHPVERSION | sed 's/\.//'`
+  cvs tag v`echo $WJVERSION | sed 's/\.//'`_`echo $PHPVERSION | sed 's/\.//'`
 fi
 
 # Build the source zip
@@ -70,16 +70,16 @@ make
 zip -r9, webjames-$WJVERSION.zip \!WebJames Site Licences \!System -x '*CVS*' '*.cvsignore'
 
 # Build the PHP cgi
-(cd $PHPDIR; ./riscos.configure || exit 1)
-(cd $PHPDIR; make)
+(cd $PHPDIR; ./riscos.configure) || exit 1
+(cd $PHPDIR; make) || exit 1
 cp $PHPDIR/php !PHP/php,ff8
-zip -r9, php-$PHPVERSION.zip \!PHP Licences \!System -x '*CVS*' '*.cvsignore'
+zip -r9, php-$PHPVERSION.zip \!PHP Licences php.ini \!System -x '*CVS*' '*.cvsignore'
 
 # Build WebJames/PHP 
-./configure --enable-php
-(cd $PHPDIR; ./riscos.configure --with-webjames=../webjames/src --disable-pear || exit 1)
-(cd $PHPDIR; make install)
-make
-zip -r9, webjames-$WJVERSION-php-$PHPVERSION.zip \!WebJames Site Licences \!System -x '*CVS*' '*.cvsignore'
+./configure --enable-php || exit 1
+(cd $PHPDIR; ./riscos.configure --with-webjames=../webjames/src --disable-pear --disable-cli) || exit 1
+(cd $PHPDIR; make install) || exit 1
+make || exit 1
+zip -r9, webjames-$WJVERSION-php-$PHPVERSION.zip \!WebJames Site Licences php.ini \!System -x '*CVS*' '*.cvsignore'
 
 # Build example scripts
