@@ -1,0 +1,43 @@
+<html>
+<head>
+  <title>WebJames - Problems and bug reporting</title>
+</head>
+
+<body bgcolor="#ffffff">
+<p>
+<h3>
+<table bgcolor="#cccccc" width="99%"><tr><td>
+<a name="attr">Problems and bug reporting</a>
+</td></tr></table>
+</h3>
+
+ If you have problems with WebJames, the first thing to do is look in
+ the log file. This may contain details if an error occured, or provide
+ some clue as to what has happened. The logfile might be stored in !Syslog,
+ or (if you have Select) from the Syslog configuration plug-in, or inside the
+ !WebJames application directory.
+ <p>
+ If the problem is that WebJames is crashing or silently quitting, then it is
+ usually best to use syslog rather than WebJames' internal logging, as if
+ WebJames crashes it might not get a chance to write its internal log out to disc.
+ <p>
+ There is a mailing list for discussion of WebJames, PHP and anything related,
+ see <a href="http://www.alexwaugh.com/">http://www.alexwaugh.com/</a> for details
+ of how to join. If you want to know if something is possible, or how to achieve
+ something, or to request a new feature, then the mailing list is the best place to
+ ask, as other users may be able to help. I also read the mailing list.
+ <p>
+ Alternatively, you can <a href="mailto:alex@alexwaugh.com">email me</a>, especially
+ if it is a bug report. In both cases, please state which version of WebJames you are
+ using, and whether it includes the PHP handler or not. If you think it is appropriate,
+ or if it is a bug report, please include the logfile.
+ <p>
+ Remember that the source code to WebJames is available, so if you are able to fix a
+ bug or add a new feature then please send me a patch.
+<p>
+<a href="index.html">Back to contents</a>
+<p>
+
+
+</body>
+</html>

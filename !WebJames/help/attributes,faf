@@ -38,6 +38,8 @@
  attributes for a file or directory.
  A section starts with eg. <code>&lt;location /uri/&gt;</code> and finished with
  <code>&lt;/location&gt;</code>.
+ <p>
+  <a href="vhosts">Virtual hosts</a> may also be defined in an attributes file.
 
  <p>
   If the URI ends in a <code>/</code>, it refers to a directory and all the
@@ -183,53 +185,56 @@
  <col span="1" width="150">
 
  <tr>
- <td><code>notcacheable</code></td>
+ <td><code>NotCacheable</code></td>
  <td>makes a file (or the contents of a directory) non-cacheable</td>
  </tr>
 
  <tr>
- <td><code>cacheable</code></td>
+ <td><code>Cacheable</code></td>
  <td>makes a file/directory cacheable (default) </td>
  </tr>
 
  <tr>
- <td><code>homedir</code></td>
- <td>sets the path to the directory where part of the website is stored;
-     default is the value of <code>homedir</code> in the <a href="config#config">
-     config file</a><br>
-     example: <code>homedir=RAM:$.oftenused</code></td>
+ <td><code>DocumentRoot</code></td>
+ <td>sets the path to the directory where part of the website is stored<br>
+     example: <code>DocumentRoot RAM:$.oftenused</code></td>
  </tr>
 
  <tr>
- <td><code>userandpwd</code></td>
+ <td><code>HomeDir</code></td>
+ <td>an alias for DocumentRoot</td>
+ </tr>
+
+ <tr>
+ <td><code>UserAndPwd</code></td>
  <td>sets the username and password for a file or directory - the format
      is <code>username:password</code><br>
      example: <code>userandpwd=henrik:mypassword</code></td>
  </tr>
 
  <tr>
- <td><code>accessfile</code></td>
+ <td><code>AccessFile</code></td>
  <td>the file holds a list of username:password pairs<br>
      example: <code>accessfile=&lt;WebJames$Dir&gt;.cgi-res.access0</code>
      </td>
  </tr>
 
  <tr>
- <td><code>realm</code></td>
+ <td><code>Realm</code></td>
  <td>sets the name of the realm to which a password-protected
      file/directory belongs<br>
      example: <code>realm='search engine'</code></td>
  </tr>
 
  <tr>
- <td><code>moved</code></td>
+ <td><code>Moved</code></td>
  <td>requests for the URI will result in a respons which redirects the
      requesting browser to the new URI<br>
      example: <code>moved=http://www.xyz.com/</code></td>
  </tr>
 
  <tr>
- <td><code>tempmoved</code></td>
+ <td><code>TempMoved</code></td>
  <td>requests for the URI will result in a respons which redirects the
      requesting browser to the new URI - should be used if the file has
      only been moved temporarily<br>
@@ -237,7 +242,7 @@
  </tr>
 
  <tr>
- <td><code>methods</code></td>
+ <td><code>Methods</code></td>
  <td>this attribute tells WebJames which request-methods are allowed for
      the URI - the value is a comma-seperated list of the allowed methods,
      default is 
@@ -248,7 +253,7 @@
  </tr>
 
  <tr>
- <td><code>port</code></td>
+ <td><code>Port</code></td>
  <td>this attribute tells WebJames which portnumber requests for the
      URI may be accepted on; if WebJames is configured to listen on
      multiple ports, this attribute can be used to hide the URI from
@@ -257,7 +262,7 @@
  </tr>
 
  <tr>
- <td><code>allowed-hosts</code></td>
+ <td><code>Allowed-Hosts</code></td>
  <td>this attribute lists the ip-addresses of all the hosts that are
      allowed to access the URI; the value is a comma-seperated list of
      ip-addresses - you may have multiple <code>allowed-hosts</code>-lines
@@ -266,13 +271,13 @@
  </tr>
 
  <tr>
- <td><code>forbidden-hosts</code></td>
+ <td><code>Forbidden-Hosts</code></td>
  <td>this attribute lists the ip-addresses of all the hosts that aren't
      allowed to access the URI; default is nobody</td>
  </tr>
 
  <tr>
- <td><code>priority</code></td>
+ <td><code>Priority</code></td>
  <td>this attribute controls how fast the respons will be returned to the
      requesting browser; the first value is the priority level - from 0
      (lowest priority) to 100 (highst priority), the second value is
@@ -283,14 +288,14 @@
  </tr>
 
  <tr>
- <td><code>ram-faster</code></td>
+ <td><code>Ram-Faster</code></td>
  <td>when this attribute is set for a cgi-script, WebJames is <i>allowed</i>
      to move the cgi-script to/from a faster filing-system (eg. RAM disc)
      whenever it is considered beneficial</td>
  </tr>
 
  <tr>
- <td><code>more-attributes</code></td>
+ <td><code>More-Attributes</code></td>
  <td>this attribute specifies the name of a file containing additional
      attributes; if the <code>more-attributes</code> appears inside an
      URI-section, the URIs in the file are considered relative to the
@@ -300,7 +305,7 @@
  </tr>
 
  <tr>
- <td><code>defaultfile</code></td>
+ <td><code>DefaultFile</code></td>
  <td>this attribute lists the names of the files to look for if the remote
      host requests a directory, eg. <code>GET / HTTP/1.0</code>; the list is
      searched from left to right, and the first matching file found is returned;
@@ -310,13 +315,13 @@
  </tr>
 
  <tr>
- <td><code>hidden</code></td>
+ <td><code>Hidden</code></td>
  <td>when set, the file (or the contents of the directory) cannot be
      accessed</td>
  </tr>
 
  <tr>
- <td><code>nothidden</code></td>
+ <td><code>NotHidden</code></td>
  <td>when set, the file (or the contents of the directory) <em>can</em>
      be accessed; this attribute is mainly useful for enabling access to
      files that are stored in a directory which has the <code>hidden</code>
@@ -324,7 +329,7 @@
  </tr>
 
  <tr>
- <td><code>errordocument</code></td>
+ <td><code>ErrorDocument</code></td>
  <td>this attribute allows error messages to be customised for individual directories.
      the first parameter is the http status code that the error message refers to. the second
      parameter is either a <code>&quot;</code> character followed by the text to send, or
@@ -339,7 +344,7 @@
  </tr>
 
  <tr>
- <td><code>stripextensions</code></td>
+ <td><code>StripExtensions</code></td>
  <td>this attribute strips the filename extensions from URIs before looking for the file.
      this includes the default files if a directory is requested, and any errordocument files as well.<br>
      example: a request of <code>/wibble.html</code> would return the file <code>wibble</code>
@@ -347,7 +352,7 @@
  </tr>
 
  <tr>
- <td><code>multiviews</code></td>
+ <td><code>MultiViews</code></td>
  <td>this attribute enables <a href="content#multiviews">MultiViews</a>. It can be considered as the
      opposite of <code>stripextensions</code>, and thus both should not be enabled within the
      same directory.
@@ -355,26 +360,26 @@
  </tr>
 
  <tr>
- <td><code>setcsd</code></td>
+ <td><code>Setcsd</code></td>
  <td>when set, the currently selected directory (CSD) will be set to the directory containing
      the CGI script before running the script
      </td>
  </tr>
 
  <tr>
- <td><code>action</code></td>
+ <td><code>Action</code></td>
  <td>see the section on <a href="handlers#handlers">handlers</a> for more details
      </td>
  </tr>
 
  <tr>
- <td><code>addfiletypehandler</code></td>
+ <td><code>AddFiletypeHandler</code></td>
  <td>see the section on <a href="handlers#handlers">handlers</a> for more details
      </td>
  </tr>
 
  <tr>
- <td><code>addhandler</code></td>
+ <td><code>AddHandler</code></td>
  <td>see the section on <a href="handlers#handlers">handlers</a> for more details
      </td>
  </tr>

@@ -1,0 +1,90 @@
+<html>
+<head>
+  <title>WebJames - Virtual Hosts</title>
+</head>
+
+<body bgcolor="#ffffff">
+<p>
+<h3>
+<table bgcolor="#cccccc" width="99%"><tr><td>
+<a name="attr">Virtual Hosts</a>
+</td></tr></table>
+</h3>
+
+  WebJames supports name-based virtual hosts. A virtual host allows you
+ to have several different domain names all mapping to the same server,
+ and the server can return different content based on which domain name
+ it was accessed as.
+ <p>
+  To use virtual hosts, you must set up appropriate domain names to map
+ to the ip address of the machine that WebJames is running on. You cannot
+ just set up virtual hosts in the attributes file and expect them to work.
+ The details of how to achieve this are outside the scope of this document,
+ however if you only want to use virtual hosts for testing several sites and
+ you are only ever going access them from the same machine as WebJames is
+ running on then it is sufficient to add the domain names as aliases to
+ localhost in your hosts file.
+ <p>
+  Once your domain as set up, you can define the behaviour of each virtual
+ host in the <a href="attributes">attributes file</a>. A virtual host is defined
+ between <code>&lt;virtualhost&gt;</code> and <code>&lt;/virtualhost&gt;</code>
+ sections. Within a virtual host section you may put anything that can
+ normally appear in an attributes file, except for another virtualhost section.
+ <p>
+ The only thing that is mandatory within a virtualhost section is a servername
+ attribute. This is nessacery to define what domain name maps to this virtual host.
+ It is usual for each virtual host to have its own documentroot attribute as well.
+
+ <p>
+  An example of an attributes file defining several virtual hosts:<br>
+
+ <pre>
+
+ # Set the default attributes; these will be used for any request
+ # that does not match a specific virtual host
+
+ # The default servername attribute can be a hostname, an IP address,
+ # or blank
+ ServerName 192.168.0.1
+ DocumentRoot IDEFS::Toffee.$.default
+
+ # Set up a virtual host for the domain 'www.foo.com'
+ &lt;VirtualHost&gt;
+ # The servername attribute for a virtual host must be a hostname,
+ # it cannot be a IP or blank
+ ServerName www.foo.com
+ DocumentRoot IDEFS::Toffee.$.foo
+
+ &lt;Location /&gt;
+ DefaultFile index.php
+ &lt;/Location&gt;
+
+ &lt;/VirtualHost&gt;
+
+ # Set up a virtual host for the domain 'bar'
+ &lt;VirtualHost&gt;
+ ServerName bar
+ DocumentRoot IDEFS::Toffee.$.bar
+
+ &lt;Location /baz/&gt;
+ ErrorDocument 404 /error.html
+ &lt;/Location&gt;
+
+ &lt;Location /&gt;
+ # The port attribute restricts this virtual host to only accept
+ # connections on port 8080 (The port option in the config file must
+ # also contain this port in its list)
+ Port 8080
+ &lt;/Location&gt;
+
+ &lt;/VirtualHost&gt;
+
+ </pre>
+
+<p>
+<a href="index.html">Back to contents</a>
+<p>
+
+
+</body>
+</html>

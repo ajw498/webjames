@@ -58,7 +58,7 @@
  for each page. If you give a page or directory the multiviews attribute, then whenever
  a page is requested that does not have a filename extension, WebJames will scan the
  directory for other files with the same name but with an extension. It will
- effectively create a type-map on-the-fly based on the directory contents, and the proceed
+ effectively create a type-map on-the-fly based on the directory contents, and then proceed
  as with standard content negotiation. Files should be named <code>name.ext</code> or
  <code>name.lang.ext</code>. The ext will be converted to a mime type, and the lang,
  if present, will be used as the language.

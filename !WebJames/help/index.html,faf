@@ -13,7 +13,7 @@ WebJames - the web server
 </td></tr>
 <tr>
 <td><center><h5>
-Version 0.36
+Version 0.37
 </h5></center>
 </td>
 </tr></table>
@@ -24,6 +24,7 @@ Version 0.36
 <li><a href="#install">Installation</a><br>
 <li><a href="#yoursite">Your site</a><br>
 <li><a href="config#config">Configuration</a><br>
+<li><a href="vhosts">Virtual hosts</a><br>
 <li><a href="attributes#attr">Attributes</a><br>
 <li><a href="handlers#handlers">Handlers</a><br>
  <ul>
@@ -42,7 +43,8 @@ Version 0.36
 <li><a href="history#todo">Things that need to be improved</a><br>
 <li><a href="history#history">History</a><br>
 <li><a href="ack#ack">Acknowledgements</a><br>
-<li><a href="compiling#compiling">Compiling</a><br>
+<li><a href="compiling#compiling">Compiling WebJames</a><br>
+<li><a href="bugs">Problems and bug reporting</a><br>
 </ul>
 
 
@@ -163,7 +165,11 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
   The web site to be served by WebJames is usually stored in a single
  directory, and may hold any number of files and subdirectories. The path
- to the directory is set in the <a href="config#config">config file</a>.
+ to the directory is set with the DocumentRoot attribute in the
+ <a href="attributes">attributes file</a>.
+ <p>
+  However, much more complex arrangements are possible if desired
+ by editing the attributes file.
 
  <p>
   The filepaths in incoming request will use unix-syntax instead of RISC OS
