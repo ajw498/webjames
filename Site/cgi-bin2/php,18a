@@ -1,0 +1,12 @@
+<!-- This is an example of how to make a cgi-script in the form of an php script -->
+<!-- Make sure that !PHP is setup to run cgi scripts and not standalone -->
+<html>
+<body bgcolor="#ffffff">
+<?
+# this comment won't show up in the script output
+for ($i=1; $i<7; $i++) {
+  echo "<h$i>Hello!!!!</h$i>\n";
+}
+?>
+</body>
+</html>
