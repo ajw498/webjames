@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# $Id: buildrelease,v 1.1 2002/02/19 20:35:11 ajw Exp $
+# $Id: buildrelease,v 1.2 2002/02/19 20:53:11 ajw Exp $
 #
 # usage: buildrelease 0.34 2.04
 WJVERSION=0.34
@@ -26,15 +26,15 @@ make
 zip -r9, webjames-$WJVERSION.zip \!WebJames Site Licences \!System -x '*CVS*' '*.cvsignore'
 
 # Build the PHP cgi
-(cd $PHPDIR; ./riscos.configure)
-(cd $PHPDIR; make)
+(cd $PHPDIR; ./riscos.configure || exit 1)
+(cd $PHPDIR; make || exit 1)
 cp $PHPDIR/php !PHP/php,ff8
 zip -r9, php-$PHPVERSION.zip \!PHP Licences \!System -x '*CVS*' '*.cvsignore'
 
 # Build WebJames/PHP 
 ./configure --enable-php
-(cd $PHPDIR; ./riscos.configure --with-webjames=../webjames/src --disable-pear)
-(cd $PHPDIR; make install)
+(cd $PHPDIR; ./riscos.configure --with-webjames=../webjames/src --disable-pear || exit 1)
+(cd $PHPDIR; make install || exit 1)
 make
 zip -r9, webjames-$WJVERSION-php-$PHPVERSION.zip \!WebJames Site Licences \!System -x '*CVS*' '*.cvsignore'
 
