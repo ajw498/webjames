@@ -14,7 +14,7 @@
 </td></tr></table>
 </h3>
 
-<i>0.35-dev (??/1/2002)</i>
+<i>0.35 (20/5/2002)</i>
 
 <ul>
   <li>Uses separate files for each CGI script request to prevent problems with one script starting before the previous one's output has been read

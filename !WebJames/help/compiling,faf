@@ -13,31 +13,36 @@
 
  WebJames can be compiled with Norcroft cc and linked with the shared C library,
  or compiled with gcc and linked with UnixLib, either natively or cross compiled
- with the <a href="http://www.hard-mofo.dsvr.net/gcc/index.html">gccsdk</a>.
+ with the <a href="http://www.hard-mofo.dsvr.net/gcc/">gccsdk</a>.
  <p>
- To choose how to build WebJames, edit the Makefile, changing the BUILD= line as
- described in the makefile. If you are cross compiling you will also need to change
- DIRSEP to a slash rather than a dot.
- <p>
- If you are cross compiling then <code>make setup</code> will move all the .c and .h files
- out of their directories and add the appropriate extension.
- <p>
- There are several flags that can be defined to control which handlers get included:
+ To build WebJames under RISC OS, run the config script, then make. The build type can be specified
+ with the --build option to the config script. This can take one of the values:
  <ul>
- <li><code>SSI</code> include the server side includes handler
- <li><code>CGISCRIPT</code> include the CGI script handler
- <li><code>WEBJAMESSCRIPT</code> include the WebJames style CGI script handler
- <li><code>SENDASIS</code> include the send-as-is handler
- <li><code>CONTENT</code> enable content negotiation
- <li><code>LOG</code> enable logging
+ <li><code>normal</code> Normal release build
+ <li><code>debug</code> Enable compiler debug info
+ <li><code>memcheck</code> Compile for MemCheck
+ <li><code>gcc</code> Compile with gcc and link with UnixLib
  </ul>
 
- The pre-compiled version of WebJames is usually compiled with all flags defined.
+ To cross compile WebJames, run the configure script, then make.
+ <p>
+ There are several flags that can passes to either of the config scripts:
+ <ul>
+ <li><code>--enable-ssi</code> include the server side includes handler
+ <li><code>--enable--cgiscript</code> include the CGI script handler
+ <li><code>--enable--webjamesscript</code> include the WebJames style CGI script handler
+ <li><code>--enable-sendasis</code> include the send-as-is handler
+ <li><code>--enable-content</code> enable content negotiation
+ <li><code>--enable-log</code> enable logging
+ </ul>
+ disable can be subsituted for enable to turn the various features off.
+ <p>
+ The pre-compiled version of WebJames is usually compiled with all options enabled.
  <p>
  To prevent the possibility of security holes due to buffer overflows, string
  functions such as strcpy and sprintf that do not have length checking of the output buffer
  are not used in WebJames. To prevent any of these functions slipping in unnoticed,
- webjames.h #defines them to non-existant functions. 
+ webjames.h #defines them to non-existant functions, so they will cause errors if you try to use them. 
 
 <p>
 <a href="index.html">Back to contents</a>
