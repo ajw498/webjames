@@ -1,3 +1,9 @@
+v1.06 17-May-00
+Fixed bug in CGI wrapper that had been introduced with the previous bug fix.
+Added support for ANT server suite.
+
+v1.05 8-May-00
+Fixed bug in CGI wrapper that prevented Netplex 0.22 receiving POST data
 
 v1.04 26-Apr-00
 Updated to PHP 3.0.16

@@ -24,7 +24,7 @@
 | contact core@php.net.                                                |
 +----------------------------------------------------------------------+
 
-                    PHP 3.0.16  RISC OS version 1.04
+                    PHP 3.0.16  RISC OS version 1.06
                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 What is it?
 ~~~~~~~~~~~
@@ -86,29 +86,37 @@ be interpreted, and the output loaded into your browser.
 If you want PHP to multi-task when interpreting your scripts, then tick
 the Run in a task window icon.
 
+While quite a few scripts will work like this, ones that use GET and
+POST variables from forms, generate GIF images and so forth will only
+work correctly when running under a web server.
+
 
 Using PHP with a web server
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 I have tested PHP with the Navaho server suite (2.00b24)
 http://www.navaho.co.uk/support/ and Netplex (0.22 and 1.70)
-http://www.tristone.co.uk/davespace/netplexpublic/index.html
-Other servers may work, or may need the wrapper to be altered (see below).
-Double click on !PHP, then select the Run as a CGI program icon, then
+http://www.tristone.co.uk/davespace/netplexpublic/index.html and the ANT
+server suite X.XX
+Other servers may work, or may need the wrapper to be altered (see
+below). Double click on !PHP, then select the Run as a CGI program icon, then
 click on Save.
 
 To use with Navaho, simply create you script as above, make sure that
 it's filetype is PHP, then put the script into Navaho's cgi-bin
 directory.
 
-To use with Netplex, it is slightly more complicated, as Netplex will
-only run certain filetypes as CGI programs, therefore put your PHP
-script in Netplex's cgi-bin directory, with a name of (for example)
-Splodge. Then create an Obey file in the same directory, called (for
-example) Squiggle. The obey file should contain the line
+To use with the unregistered version of Netplex, or the ANT server, it
+is slightly more complicated, as they will only run certain filetypes as
+CGI programs, therefore put your PHP script in the cgi-bin directory,
+with a name of (for example) Splodge. Then create an Obey file in the same
+directory, called (for example) Squiggle. The obey file should contain the
+line
 Run <Obey$Dir>.Splodge
 Then in your browser, entering
 http://www.your.domain.com/cgi-bin/squiggle will run the PHP script.
-Alternatively, with version 1.70 open the !Netplex.Resources.UK.Messages
+
+For registered versions of Netplex (1.62 or later) you can either
+use the above method, or you can open the !Netplex.Resources.UK.Messages
 file and change the line PerlFiletype:&102 to PerlFiletype:&18A (This
 will mean that you can't run Perl scripts though). Thanks to Nik Gare
 for pointing this out.
@@ -202,7 +210,7 @@ http://www.ecs.soton.ac.uk/~ajw498/
 General information about PHP can be found at http://www.php.net/
 
 If people find PHP useful, then let me know, then I might be persuaded
-to port PHP 4 when it comes out of beta testing.
+to port PHP 4.
 
 
 4/2/00
