@@ -1,5 +1,5 @@
 /*
-	$Id: content.c,v 1.9 2001/09/03 14:10:32 AJW Exp $
+	$Id: content.c,v 1.10 2001/09/07 16:07:00 AJW Exp $
 	Content negotiation
 */
 
@@ -266,7 +266,7 @@ static struct varmap *content_multiviews(char *dirname,char *leafname)
 	struct varmap *maps=NULL;
 
 	do {
-		if (xosgbpb_dir_entries_info_stamped(dirname,info,1,more,256,NULL,&count,&more)) return NULL;
+		if (E(xosgbpb_dir_entries_info_stamped(dirname,info,1,more,256,NULL,&count,&more))) return NULL;
 		if (count) {
 			if (strncmp(info->info[0].name,leafname,len) == 0) {
 				struct varmap *map;
