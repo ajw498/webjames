@@ -1,12 +1,12 @@
 # Makefile for WebJames the web server
 #
-# $Id: common,v 1.13 2002/11/21 22:14:04 ajw Exp $
+# $Id: common,v 1.14 2002/12/14 00:34:56 ajw Exp $
 #
 # Parts common to all builds
 
 WIMPSLOT_UNIXLIB = 400k
 WIMPSLOT_SCL = 144k
-WIMPSLOT_PHP = 2200k
+WIMPSLOT_PHP = 2700k
 WIMPSLOT_DEBUG = 3000k
 
 CFLAGS = $(THROWBACK) $(DEPEND) $(INCLUDE) $(WARNINGS) $(OPTIMISATION) $(DEBUG) $(FLAGS)
