@@ -179,7 +179,6 @@ Symbolic and hard links won't work as RISC OS doesn't support them.
 The uniqid function may give the same value if called twice in close
 succession.
 Not all of the dbm functions work correctly.
-The sleep function does not do anything.
 
 
 
