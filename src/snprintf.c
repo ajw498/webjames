@@ -53,6 +53,8 @@
  * <panos@alumni.cs.colorado.edu> for xinetd.
  */
 
+#include "snprintf.h"
+
 #if !defined(HAVE_SNPRINTF) || !defined(HAVE_VSNPRINTF)
 
 #include <stdio.h>
@@ -63,7 +65,6 @@
 #include <stdlib.h>
 #include <math.h>
 
-#include "snprintf.h"
 #define isascii(c) ((unsigned)(c) <= 0x7f)
 
 #ifdef HAVE_GCVT
@@ -930,5 +931,5 @@ int vsnprintf(char *buf, size_t len, const char *format, va_list ap)
 }
 
 #else
-int dummy; /* Prevent Norcroft barfing over an empty file */
+extern int dummy; /* Prevent Norcroft barfing over an empty file */
 #endif							/* HAVE_SNPRINTF */
