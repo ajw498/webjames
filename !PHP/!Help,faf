@@ -1,5 +1,5 @@
 
-                    PHP 4.0.2  RISC OS version 2.00
+                    PHP 4.0.2  RISC OS version 2.01
                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 What is it?
 ~~~~~~~~~~~
@@ -58,8 +58,14 @@ click on !PHP, then select the Stand alone icon, then click on Save.
 Enter your script in a text editor such as !StrongEd, !Zap or !Edit, and
 then save it. Set it's filetype to PHP. Double click on it, and it will
 be interpreted, and the output loaded into your browser.
+
 If you want PHP to multi-task when interpreting your scripts, then tick
 the Run in a task window icon.
+
+If you want the CSD (Currently selected directory) to be set to the
+directory containing the script being run, then set the Set CSD for
+scripts option. This allows filenames relative to the current script to
+be used. Thanks to Geoff Youngs for this.
 
 While quite a few scripts will work like this, ones that use GET and
 POST variables from forms, generate GIF images and so forth will only

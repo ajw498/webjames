@@ -1,3 +1,7 @@
+v2.01 12-Sep-00
+Added option to set CSD to directory containing the script
+Fixed minor bug that prevented it from working on pre RISC OS 4
+
 v2.00 7-Sep-00
 Updated to PHP 4.0.2
 Changed PHP filetype icon to RISC OS 4 style
