@@ -12,7 +12,7 @@
 #Libraries
 MEMCHECKLIB =
 STUBS =
-OSLIB = C:OSLib.o.OSLib
+OSLIB = OSLib:o.OSLib
 REGEX = C:regex.a.libregex
 
 #Compiler flags
@@ -21,7 +21,7 @@
 WARNINGS = -Wall -Wundef -Wpointer-arith -Wmissing-prototypes
 OPTIMISATION = -O2
 DEBUG = -mpoke-function-name
-INCLUDE = -IL:
+INCLUDE = -IL: -IOSLib
 
 #Linker flags
 LINKDEBUG =

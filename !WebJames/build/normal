@@ -12,7 +12,7 @@ SETTYPE = SetType $@ Obey
 #Libraries
 MEMCHECKLIB =
 STUBS = C:o.stubs
-OSLIB = C:OSLib.o.OSLib
+OSLIB = OSLib:o.OSLib
 REGEX = C:regex.a.libregex
 
 #Compiler flags
@@ -21,7 +21,7 @@ DEPEND = -depend !Depend
 WARNINGS = -strict -fah
 OPTIMISATION = -Otime
 DEBUG =
-INCLUDE = -IC:
+INCLUDE = -IC: -IOSLib:
 
 #Linker flags
 LINKDEBUG =
