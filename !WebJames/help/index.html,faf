@@ -44,7 +44,8 @@ Version 0.42
 <li><a href="history#history">History</a><br>
 <li><a href="ack#ack">Acknowledgements</a><br>
 <li><a href="compiling#compiling">Compiling WebJames</a><br>
-<li><a href="bugs">Problems and bug reporting</a><br>
+<li><a href="bugs#solved">Solved problems</a><br>
+<li><a href="bugs#reporting">Problems and bug reporting</a><br>
 </ul>
 
 

@@ -7,7 +7,18 @@
 <p>
 <h3>
 <table bgcolor="#cccccc" width="99%"><tr><td>
-<a name="attr">Problems and bug reporting</a>
+<a name="solved">Solved problems</a>
+</td></tr></table>
+</h3>
+Here are some problems that have been encountered that are not WebJames bugs.
+<p>
+<h4>CSS</h4>
+<p>
+Some browsers will only take notice of CSS files if they have the correct mimetype, therefore if you are using CSS files then ensure that there is an entry in your mimemap file to map the filetype of the CSS file to the mimetype <code>text/css</code>
+<p>
+<h3>
+<table bgcolor="#cccccc" width="99%"><tr><td>
+<a name="reporting">Problems and bug reporting</a>
 </td></tr></table>
 </h3>
 
