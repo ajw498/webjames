@@ -1,6 +1,6 @@
 # Makefile for WebJames the web server
 #
-# $Id: common,v 1.8 2002/02/23 21:54:18 ajw Exp $
+# $Id: common,v 1.9 2002/02/24 12:34:52 ajw Exp $
 #
 # Parts common to all builds
 
@@ -55,11 +55,12 @@ WJCONFIG =     $(WJDIR)config
 WJPHPMAIL =    $(WJDIR)PHPMail$(EXT_FF8)
 WJPHPHELP =    $(WJDIR)help$(DIRSEP)php$(EXT_FAF)
 
-PHPMAIL = $(PHPDIR)PHPMail$(EXT_FF8)
-PHPGUI =  $(PHPDIR)!RunImage$(EXT_FF8)
-PHPHELP = $(PHPDIR)!Help$(EXT_FAF)
+PHPMAIL =       $(PHPDIR)PHPMail$(EXT_FF8)
+PHPGUI =        $(PHPDIR)!RunImage$(EXT_FF8)
+PHPSETRUNTYPE = $(PHPDIR)SetRunType
+PHPHELP =       $(PHPDIR)!Help$(EXT_FAF)
 
-all: $(WJTARGET) $(WJRUN) $(WJATTRIBUTES) $(WJCONFIG) $(PHPGUI) $(WJPHPMAIL) $(WJPHPHELP)
+all: $(WJTARGET) $(WJRUN) $(WJATTRIBUTES) $(WJCONFIG) $(PHPGUI) $(WJPHPMAIL) $(WJPHPHELP) $(PHPSETRUNTYPE)
 
 
 $(WJTARGET): $(WJOBJECTS)
@@ -67,7 +68,7 @@ $(WJTARGET): $(WJOBJECTS)
 	$(SQUEEZE)
 
 .c.o:
-	$(MEMCHECK) $(CC) -c $(CFLAGS) $< -o $@
+	$(MEMCHECK) $(CC) -c $(CFLAGS) $(PHP_CFLAGS) $< -o $@
 
 $(WJRUN): run-default
 	sed -e "s/|wimpslot/WimpSlot -min $(WIMPSLOT) -max $(WIMPSLOT)/" -e "s/|stderr$(STDERR)//" -e "s/|typestderr$(TYPESTDERR)//" run-default > $@
@@ -79,6 +80,9 @@ $(WJATTRIBUTES): attributes-default
 
 $(WJCONFIG): config-default
 	sed -e "s/dummy/dummy/" -e "s/$(REMOVE_CONFIG)//" config-default > $@
+
+$(PHPSETRUNTYPE): setruntype-default
+	cp setruntype-default $@
 
 PHPMail.o: PHPMail.c
 	$(GCC) $(GCCINCLUDE) -c PHPMail.c -o PHPMail.o
