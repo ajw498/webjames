@@ -1,4 +1,5 @@
-
+#ifndef WEBJAMES_H
+#define WEBJAMES_H
 
 #define MAXCONNECTIONS    100
 #define HTTPBUFFERSIZE    4096
@@ -52,8 +53,22 @@ typedef struct serverinfo {
 	int socket;
 } serverinfo;
 
+enum serverparsed_status {
+	status_BODY, /*In the body, not a command*/
+	status_OPEN1, /*we have reached a "<"*/
+	status_OPEN2, /*we have reached "<!"*/
+	status_OPEN3, /*we have reached "<!-"*/
+	status_OPEN4, /*we have reached "<!--"*/
+	status_COMMAND, /*we have reached "<!--#"*/
+	status_ARGS, /*we have reached the command arguments*/
+	status_QUOTEDARGS,
+	status_CLOSE1, /*we have reached "-"*/
+	status_CLOSE2  /*we have reached "--"*/
+};
 
 typedef struct connection {
+
+	struct connection *parent; /*the parent connection structure if this was #included from an SSI doc*/
 
 	int socket, port;
 	int status;                 /* unused/header/body/write/dns */
@@ -76,6 +91,7 @@ typedef struct connection {
 		unsigned int stripextensions   : 1;  /* strip any filename extension when looking for the file */
 		unsigned int multiviews        : 1;  /* content negotiation */
 		unsigned int setcsd            : 1;  /* set the currently selected directory to the dir containing the cgi script */
+		unsigned int outputheaders     : 1;  /* output the http headers. set unless this file is nested within an SSI doc */
 	} flags;
 
 	/* various header-lines, all malloc()'ed */
@@ -152,7 +168,14 @@ typedef struct connection {
 		char *timefmt;
 		int output; /*whether normal body text of the page should be output (used by #if etc)*/
 		int conditionmet; /*whether any if the if/elif conditions have been met yet*/
+		char command[256], args[256];
+		int commandlength,argslength;
+		enum serverparsed_status status;
+		struct connection *child; /*set if we should wait for annother connection to finish first before continuing*/ 
+
 	} serverparsedinfo;
+
+	void (*close)(struct connection *conn, int force); /*function to call to close the connection*/
 
 } connection;
 
@@ -207,3 +230,5 @@ void rfc_to_time(char *rfc, struct tm *time);
 void utc_to_time(char *utc, struct tm *time);
 void utc_to_localtime(char *utc, struct tm *time);
 int compare_time(struct tm *time1, struct tm *time2);
+
+#endif

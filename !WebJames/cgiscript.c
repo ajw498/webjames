@@ -33,7 +33,7 @@ void cgiscript_setvars(struct connection *conn)
 	set_var_val("DOCUMENT_ROOT", configuration.site);
 
 	set_var_val("GATEWAY_INTERFACE", "CGI/1.1");
-	set_var_val("REQUEST_URI", conn->requesturi);
+	if (conn->requesturi) set_var_val("REQUEST_URI", conn->requesturi);
 
 	set_var_val("SCRIPT_NAME", conn->uri);
 	set_var_val("PATH_TRANSLATED", conn->filename);
@@ -95,25 +95,13 @@ void cgiscript_setvars(struct connection *conn)
 	else
 		set_var_val("HTTP_REFERER", "");
 
-	if (conn->accept)
-		set_var_val("HTTP_ACCEPT", conn->accept);
-	else
-		set_var_val("HTTP_ACCEPT", "");
+	if (conn->accept) set_var_val("HTTP_ACCEPT", conn->accept);
 
-	if (conn->acceptlanguage)
-		set_var_val("HTTP_ACCEPT_LANGUAGE", conn->acceptlanguage);
-	else
-		set_var_val("HTTP_ACCEPT_LANGUAGE", "");
+	if (conn->acceptlanguage) set_var_val("HTTP_ACCEPT_LANGUAGE", conn->acceptlanguage);
 
-	if (conn->acceptcharset)
-		set_var_val("HTTP_ACCEPT_CHARSET", conn->acceptcharset);
-	else
-		set_var_val("HTTP_ACCEPT_CHARSET", "");
+	if (conn->acceptcharset) set_var_val("HTTP_ACCEPT_CHARSET", conn->acceptcharset);
 
-	if (conn->acceptencoding)
-		set_var_val("HTTP_ENCODING", conn->acceptencoding);
-	else
-		set_var_val("HTTP_ENCODING", "");
+	if (conn->acceptencoding) set_var_val("HTTP_ENCODING", conn->acceptencoding);
 }
 
 void cgiscript_removevars(void)
@@ -170,7 +158,6 @@ void cgiscript_start(struct connection *conn)
 	/* set up the system variables */
 	cgiscript_setvars(conn);
 
-
 	input[0] = '\0';                      /* clear spool-input filename */
 
 	/* get unique, temporary file */
@@ -203,8 +190,13 @@ void cgiscript_start(struct connection *conn)
 		if (unix) strcat(cmdformat," < %s > %s"); else strcat(cmdformat," { < %s > %s }");
 		sprintf(cmd, cmdformat, conn->filename, input, tempfile);
 	} else {
-		if (unix) strcat(cmdformat," > %s"); else strcat(cmdformat," { > %s }");
-		sprintf(cmd, cmdformat, conn->filename, tempfile);
+		if (strchr(cmdformat,'%')) {
+			if (unix) strcat(cmdformat," > %s"); else strcat(cmdformat," { > %s }");
+			sprintf(cmd, cmdformat, conn->filename, tempfile);
+		} else {
+			if (unix) strcat(cmdformat," > %s"); else strcat(cmdformat," { > %s }");
+			sprintf(cmd, cmdformat, tempfile);
+		}
 		input[0] = '\0';                    /* no file with input for the cgi-script */
 	}
 
@@ -267,10 +259,13 @@ void cgiscript_start(struct connection *conn)
 	conn->fileused = 0;
 	conn->fileinfo.size = size;
 
-	writestring(conn->socket, "HTTP/1.0 200 OK\r\n");
-	if (conn->vary[0]) {
-		sprintf(temp, "Vary:%s\r\n", conn->vary);
-		writestring(conn->socket, temp);
+	if (conn->flags.outputheaders) {
+		writestring(conn->socket, "HTTP/1.0 200 OK\r\n");
+		if (conn->vary[0]) {
+			sprintf(temp, "Vary:%s\r\n", conn->vary);
+			writestring(conn->socket, temp);
+		}
+		/*also strip all headers output by the cgi*/
 	}
 }
 

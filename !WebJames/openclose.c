@@ -22,6 +22,7 @@ struct connection *create_conn(void) {
 
 	if (!conn) return NULL;
 
+	conn->parent = NULL;
 	conn->bodysize = conn->headersize = -1;
 	conn->used = conn->fileinfo.size = conn->fileused = 0;
 	conn->if_modified_since.tm_year = -1;
@@ -29,7 +30,7 @@ struct connection *create_conn(void) {
 	conn->uri = conn->body = conn->accept = conn->acceptcharset = conn->acceptencoding = conn->acceptlanguage = conn->header = NULL;
 	conn->requestline = conn->type = conn->authorization = NULL;
 	conn->useragent = conn->referer = conn->cookie = NULL;
-	conn->requesturi = NULL;
+	conn->requesturi = conn->header = conn->args = NULL;
 	/* other stuff */
 	conn->filebuffer = NULL;
 	conn->timeoflastactivity = clock();
@@ -53,6 +54,7 @@ struct connection *create_conn(void) {
 	conn->handler = NULL;
 
 	conn->flags.releasefilebuffer = 0;
+	conn->flags.outputheaders = 1;
 	conn->flags.deletefile = 0;
 	conn->flags.cacheable = 1;
 	conn->flags.is_cgi = 0;
@@ -61,6 +63,8 @@ struct connection *create_conn(void) {
 	conn->flags.multiviews = 0;
 	conn->statuscode = HTTP_OK;
 	conn->starttime = clock();
+
+	conn->close=close_real;
 
 	return conn;
 }
@@ -121,57 +125,58 @@ void open_connection(int socket, char *host, int port) {
 		conn->dnsstatus = DNS_FAILED;
 }
 
-
-void close(int cn, int force) {
+void close(struct connection *conn, int force, int real) {
 /* close a connection; if dns lookup still in progress then try again later */
 /* this funcion may be called twice, first when reading/writing is finished */
 /* and again later when dns is done */
 
 /* cn               connection entry */
 /* force            set to 1 to to full close (including dns) */
-	struct connection *conn;
+/* real             set if this is a real connection rather than just a connection struct*/
+	int cn=conn->index;
 	struct errordoc *errordocs;
 	int socket, i, clk;
 
-	conn = connections[cn];
 	clk = clock();
 
-	/* close socket and make sure it is no longer 'selected' */
-	socket = conn->socket;
-	if (conn->socket != -1) {
-		if (fd_is_set(select_read, socket)) {
-			fd_clear(select_read, socket);
-			readcount--;
+	if (real) {
+		/* close socket and make sure it is no longer 'selected' */
+		socket = conn->socket;
+		if (conn->socket != -1) {
+			if (fd_is_set(select_read, socket)) {
+				fd_clear(select_read, socket);
+				readcount--;
+			}
+			if (fd_is_set(select_write, socket)) {
+				fd_clear(select_write, socket);
+				writecount--;
+			}
+			ip_close(conn->socket);
+			conn->socket = -1;
 		}
-		if (fd_is_set(select_write, socket)) {
-			fd_clear(select_write, socket);
-			writecount--;
-		}
-		ip_close(conn->socket);
-		conn->socket = -1;
-	}
 
 #ifdef LOG
-	if (clk > conn->starttime) {
-		int bps;
-		char dummy[1], *ptr;
-		if (conn->uri)
-			ptr = conn->uri;
-		else {
-			dummy[0] = '\0';
-			ptr = dummy;
-		}
-		bps = 100*conn->fileinfo.size/(clk-conn->starttime);
-		if (bps <= 0)
-			sprintf(temp, "CLOSE %s", ptr);
-		else if (bps < 4000)
-			sprintf(temp, "CLOSE %s (%d bytes/sec)", ptr, bps);
-		else
-			sprintf(temp, "CLOSE %s (%d kb/sec)", ptr, bps>>10);
-	} else
-		sprintf(temp, "CLOSE %s", conn->uri);
-	writelog(LOGLEVEL_OPEN, temp);
+		if (clk > conn->starttime) {
+			int bps;
+			char dummy[1], *ptr;
+			if (conn->uri)
+				ptr = conn->uri;
+			else {
+				dummy[0] = '\0';
+				ptr = dummy;
+			}
+			bps = 100*conn->fileinfo.size/(clk-conn->starttime);
+			if (bps <= 0)
+				sprintf(temp, "CLOSE %s", ptr);
+			else if (bps < 4000)
+				sprintf(temp, "CLOSE %s (%d bytes/sec)", ptr, bps);
+			else
+				sprintf(temp, "CLOSE %s (%d kb/sec)", ptr, bps>>10);
+		} else
+			sprintf(temp, "CLOSE %s", conn->uri);
+		writelog(LOGLEVEL_OPEN, temp);
 #endif
+    }
 
 	/* close/release/reset everything that isn't needed for the clf-log */
 	if (conn->header)         free(conn->header);
@@ -186,9 +191,9 @@ void close(int cn, int force) {
 	if (conn->requesturi)     free(conn->requesturi);
 	if (conn->authorization)  free(conn->authorization);
 	if ((conn->filebuffer) && (conn->flags.releasefilebuffer)) free(conn->filebuffer);
-	conn->filebuffer = conn->body = conn->header = NULL;
-	conn->type = conn->accept =  conn->uri =  conn->requesturi = conn->cookie = NULL;
-	conn->authorization = NULL;
+	conn->filebuffer = conn->body = conn->header = conn->type = NULL;
+	conn->accept = conn->acceptlanguage = conn->acceptcharset = conn->acceptencoding = NULL;
+	conn->uri =  conn->requesturi = conn->cookie = conn->authorization = NULL;
 
 	/* free the linked list of custom error documents */
 	errordocs = conn->errordocs;
@@ -210,7 +215,7 @@ void close(int cn, int force) {
 		conn->cache = NULL;
 	}
 
-	if (conn->dnsstatus == DNS_TRYING) {
+	if (real && conn->dnsstatus == DNS_TRYING) {
 		/* if we're still trying to do reverse dns... */
 		if (force) {
 			/* abort reverse dns */
@@ -228,7 +233,7 @@ void close(int cn, int force) {
 	if (conn->flags.deletefile)  remove(conn->filename);
 
 	/* write clf-log */
-	if (!conn->flags.is_cgi)  clf_connection_closed(cn);
+	if (real && !conn->flags.is_cgi)  clf_connection_closed(cn);
 
 	/* close/release/reset everything that couldn't be released until */
 	/* after the clf-log had been written */
@@ -236,12 +241,20 @@ void close(int cn, int force) {
 	if (conn->useragent)    free(conn->useragent);
 	if (conn->referer)      free(conn->referer);
 
-	free((char *)conn);
+	free(conn);
 
-	activeconnections--;
-	/* make sure it's the bottom entries in the stack that are used */
-	connections[cn] = connections[activeconnections];
-	connections[activeconnections] = NULL;
+	if (real) {
+		activeconnections--;
+		/* make sure it's the bottom entries in the stack that are used */
+		connections[cn] = connections[activeconnections];
+		connections[activeconnections] = NULL;
 
-	for (i = 0; i < activeconnections; i++)  connections[i]->index = i;
+		for (i = 0; i < activeconnections; i++)  connections[i]->index = i;
+	}
 }
+
+void close_real(struct connection *conn, int force)
+{
+	close(conn,force,1);
+}
+

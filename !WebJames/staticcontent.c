@@ -49,7 +49,7 @@ void staticcontent_start(struct connection *conn)
 		}
 	}
 
-	if (conn->httpmajor >= 1) {
+	if (conn->flags.outputheaders && conn->httpmajor >= 1) {
 		int i;
 		/* write header */
 		writestring(conn->socket, "HTTP/1.0 200 OK\r\n");
@@ -127,7 +127,7 @@ int staticcontent_poll(struct connection *conn,int maxbytes) {
 #endif
 				break;
 			}
-			close(conn->index, 1);           /* close the connection, with force */
+			conn->close(conn, 1);           /* close the connection, with force */
 			return 0;
 		} else {
 			conn->fileused += bytes;
@@ -136,7 +136,7 @@ int staticcontent_poll(struct connection *conn,int maxbytes) {
 
 
 	/* if EOF reached, close */
-	if (conn->fileused >= conn->fileinfo.size)   close(conn->index, 0);
+	if (conn->fileused >= conn->fileinfo.size)   conn->close(conn, 0);
 
 	return bytes;
 }

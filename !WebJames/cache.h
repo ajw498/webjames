@@ -4,7 +4,6 @@
 
 
 typedef struct cache {
-	char filename[256];
 	char name[256];
 	int size;
 	int namelen, checksum;	/* namelen and checksum are used */

@@ -169,7 +169,7 @@ void webjames_command(char *cmd, int release) {
 	if (strcmp(cmd, "closeall") == 0) {                       /* CLOSEALL */
 		int i;
 		for (i = 0; i < activeconnections; i++)
-			if (connections[i]->socket >= 0)  close(i, 1);
+			if (connections[i]->socket >= 0)  connections[i]->close(connections[i], 1);
 #ifdef LOG
 		writelog(LOGLEVEL_CMD, "ALL CONNECTIONS CLOSED");
 #endif
@@ -225,7 +225,7 @@ void webjames_kill() {
 
 	/* close all open sockets */
 	for (i = 0; i < activeconnections; i++)
-		if (connections[i]->socket >= 0)  close(i, 1);
+		if (connections[i]->socket >= 0)  connections[i]->close(connections[i], 1);
 
 #ifdef LOG
 	closelog();
@@ -287,7 +287,7 @@ int webjames_poll() {
 						(connections[i]->status == WJ_STATUS_BODY)    ||
 						(connections[i]->status == WJ_STATUS_WRITING)) &&
 						(clk > connections[i]->timeoflastactivity + 100*configuration.timeout) )
-							close(i, 1);
+							connections[i]->close(connections[i], 1);
 		}
 	}
 
@@ -359,7 +359,7 @@ void abort_reverse_dns(struct connection *conn, int newstatus) {
 
 	conn->dnsstatus = newstatus;
 	dnscount--;
-	if (conn->status == WJ_STATUS_DNS)   close(conn->index, 1);
+	if (conn->status == WJ_STATUS_DNS)   conn->close(conn, 1);
 }
 
 

@@ -21,17 +21,6 @@
 #include "content.h"
 
 
-#define FILE_DOESNT_EXIST  -1
-#define FILE_LOCKED        -2
-#define FILE_ERROR         -3
-#define OBJECT_IS_DIRECTORY -4
-#define FILE_NO_MIMETYPE   0x1000
-
-#define ACCESS_FREE        0
-#define ACCESS_ALLOWED     1
-#define ACCESS_FAILED      2
-
-
 void pollwrite(int cn) {
 /* attempt to write a chunk of data from the file (bandwidth-limited) */
 /* close the connection if EOF is reached */

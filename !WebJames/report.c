@@ -246,7 +246,7 @@ static void report_quickanddirty(struct connection *conn, int report) {
 
 	char *name;
 
-	if (conn->httpmajor >= 1) {
+	if (conn->flags.outputheaders && conn->httpmajor >= 1) {
 		name = get_report_name(report);
 		sprintf(temp, "HTTP/1.0 %d %s\r\n", report, name);
 		writestring(conn->socket, temp);
@@ -431,7 +431,7 @@ void report(struct connection *conn, int code, int subno, int headerlines, char 
 		if (!report) {
 			/* if this failed, do it the primitive way */
 			report_quickanddirty(conn, code);
-			close(conn->index, 0);
+			conn->close(conn, 0);
 			return;
 		}
 
@@ -439,7 +439,7 @@ void report(struct connection *conn, int code, int subno, int headerlines, char 
 		buffer = report_substitute(report, subs, subno, &size);
 		if (!buffer) {
 			report_quickanddirty(conn, code);
-			close(conn->index, 0);
+			conn->close(conn, 0);
 			return;
 		}
 		/* send the generated file - the buffer is released afterwards */
@@ -451,7 +451,7 @@ void report(struct connection *conn, int code, int subno, int headerlines, char 
 		conn->flags.is_cgi = 0;
 	}
 
-	if (conn->httpmajor >= 1) {
+	if (conn->flags.outputheaders && conn->httpmajor >= 1) {
 		sprintf(temp, "HTTP/1.0 %d %s\r\n", code, reportname);
 		writestring(conn->socket, temp);
 		writestring(conn->socket, "Content-Type: text/html\r\n");
@@ -567,7 +567,7 @@ void report_notacceptable(struct connection *conn,struct varmap *map) {
 	list=malloc(len+1);
 	if (!list) {
 		report_quickanddirty(conn, HTTP_NOTACCEPTABLE);
-		close(conn->index, 0);
+		conn->close(conn, 0);
 		return;
 	}
 

@@ -39,7 +39,7 @@ struct cache *get_file_through_cache(struct connection *conn)
 	/* checksum are the same */
 	namelen = 0;
 	checksum = 0;
-	name = conn->uri;
+	name = conn->filename;
 	while (name[namelen]) {
 		checksum += (name[namelen])<<(namelen &15);
 		namelen++;
@@ -53,7 +53,6 @@ struct cache *get_file_through_cache(struct connection *conn)
 		if (!cachedfiles[i])  continue;
 		if ( (cachedfiles[i]->checksum != checksum) || (cachedfiles[i]->namelen != namelen) )  continue;
 		if (strcmp(name, cachedfiles[i]->name)) continue;
-		if (strcmp(conn->filename, cachedfiles[i]->filename)) continue;
 		if (compare_time(&cachedfiles[i]->date, &conn->fileinfo.date) < 0) {
 #ifdef LOG
 			sprintf(temp, "UN-CACHING %s", cachedfiles[i]->name);
@@ -132,7 +131,6 @@ struct cache *get_file_through_cache(struct connection *conn)
 	cachedfiles[use]->namelen = namelen;
 	cachedfiles[use]->checksum = checksum;
 	cachedfiles[use]->removewhenidle = 0;
-	strcpy(cachedfiles[use]->filename, conn->filename);
 	strcpy(cachedfiles[use]->name, name);
 
 #ifdef LOG

@@ -1,3 +1,5 @@
+/* serverparsed - support for Server Side Includes (SSI) */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -6,53 +8,43 @@
 
 #include "swis.h"
 
+#include "oslib/osfile.h"
+
 #include "regex/regex.h"
 
 #include "webjames.h"
 #include "ip.h"
 #include "openclose.h"
+#include "write.h"
 #include "stat.h"
 #include "attributes.h"
 #include "report.h"
 #include "cache.h"
+#include "handler.h"
+#include "staticcontent.h"
 #include "cgiscript.h"
 #include "serverparsed.h"
 
-#include "oslib/osfile.h"
-
-#ifdef MemCheck_MEMCHECK
-#include "MemCheck:MemCheck.h"
-#endif
-
-#define MAX_ARGS 10
+#define MAX_ARGS 4
+/*maximum number of arguments to a directive*/
 
 #define OUTPUT_BUFFERSIZE 256
+/*size of buffer for output - should be more efficient than outputting each byte separately to the socket*/
 
-enum status {
-	status_BODY, /*In the body, not a command*/
-	status_OPEN1, /*we have reached a "<"*/
-	status_OPEN2, /*we have reached "<!"*/
-	status_OPEN3, /*we have reached "<!-"*/
-	status_OPEN4, /*we have reached "<!--"*/
-	status_COMMAND, /*we have reached "<!--#"*/
-	status_ARGS, /*we have reached the command arguments*/
-	status_QUOTEDARGS,
-	status_CLOSE1, /*we have reached "-"*/
-	status_CLOSE2  /*we have reached "--"*/
-};
-
-static enum status status; /*Should be local to conn so it is reentrant*/
+/*There should be no globals in this file as the handler must be re-entrant to cope with SSI files #including other SSI files*/
 
 void serverparsed_start(struct connection *conn)
+/*start the handler*/
 {
 	char *leafname;
 	
-	status=status_BODY;
+	conn->serverparsedinfo.status=status_BODY;
 	conn->fileused = 0;
 	conn->serverparsedinfo.timefmt=conn->serverparsedinfo.errmsg=NULL;
 	conn->serverparsedinfo.abbrev=0;
 	conn->serverparsedinfo.output=1;
 	conn->serverparsedinfo.conditionmet=1;
+	conn->serverparsedinfo.child=NULL;
 	if (conn->cache) {
 		conn->filebuffer = conn->cache->buffer;
 		conn->fileinfo.size = conn->cache->size;
@@ -76,12 +68,11 @@ void serverparsed_start(struct connection *conn)
 		conn->file = handle;
 	}
 
-	if (conn->httpmajor >= 1) {
+	if (conn->flags.outputheaders && conn->httpmajor >= 1) {
 		int i;
 		/* write header */
 		writestring(conn->socket, "HTTP/1.0 200 OK\r\n");
-/*		sprintf(temp, "Content-Length: %d\r\n", conn->fileinfo.size);
-		writestring(conn->socket, temp); */
+		/* we can't give a content length as we don't know it until the entire doc has been parsed*/
 		sprintf(temp, "Content-Type: %s\r\n", conn->fileinfo.mimetype);
 		writestring(conn->socket, temp);
 		if (conn->vary[0]) {
@@ -96,6 +87,7 @@ void serverparsed_start(struct connection *conn)
 		writestring(conn->socket, temp);
 	}
 
+	/*environment vars are the same as for a CGI script, with a few additions*/
 	cgiscript_setvars(conn);
 	leafname=strrchr(conn->filename,'.');
 	if (leafname) {
@@ -108,6 +100,7 @@ void serverparsed_start(struct connection *conn)
 }
 
 static void serverparsed_writeerror(struct connection *conn,char *msg)
+/*write an error to the socket, using the configured error message if there is one*/
 {
 	if (conn->serverparsedinfo.errmsg) {
 		writestring(conn->socket,conn->serverparsedinfo.errmsg);
@@ -116,12 +109,11 @@ static void serverparsed_writeerror(struct connection *conn,char *msg)
 	}
 }
 
-/*don't forget to test files that are marked uncacheable*/
-
-static char *serverparsed_reltofilename(char *base,char *q)
+static char *serverparsed_reltofilename(char *base,char *rel)
+/*convert a unix style filename relative to base to a full RISC OS filename*/
 {
 	static char filename[256];
-	char *p;
+	char *p,*q=rel;
 
 	strcpy(filename,base);
 	p=strrchr(filename,'.');
@@ -133,8 +125,7 @@ static char *serverparsed_reltofilename(char *base,char *q)
 					q++;
 					break;
 				case '.':
-					/*q[-1] will always be valid, even if q points to the first char of vals[0] as then it will be the terminator to args[0]*/
-					if (q[-1]=='\0' || q[-1]=='/') {
+					if (q==rel || q[-1]=='/') {
 						if (q[1]=='.' && q[2]=='/') { /*support ../ and /../ */
 							*p++='^';
 							*p++='.';
@@ -154,12 +145,55 @@ static char *serverparsed_reltofilename(char *base,char *q)
 					*p++=*q++;
 			}
 		}
+		*p='\0';
 	}
-	*p='\0';
 	return filename;
 }
 
+static char *serverparsed_reltouri(char *base,char *rel)
+/*convert a uri relative to base to a complete uri*/
+{
+	static char uri[256];
+	char *p,*q=rel;
+
+	if (rel[0]=='/') {
+		strcpy(uri,rel);
+	} else {
+		strcpy(uri,base);
+		p=strrchr(uri,'/');
+		if (p++) {
+			while (*q) {
+				switch (*q) {
+					case '.':
+						if (q==rel || q[-1]=='/') {
+							if (q[1]=='.' && q[2]=='/') { /*support ../ and /../ */
+								p--;
+								while (p>uri && p[-1]!='/') p--;
+								if (p==uri) *p++='/';
+								q+=3;
+							} else if (q[1]=='/') { /*support ./ and /./ */
+								q+=2;
+							} else {
+								*p++='.';
+								q++;
+							}
+						} else {
+							*p++='.';
+							q++;
+						}
+						break;
+					default:
+						*p++=*q++;
+				}
+			}
+			*p='\0';
+		}
+	}
+	return uri;
+}
+
 static char *serverparsed_getvar(struct connection *conn,char *var)
+/*get an environment var, treat dates as special cases*/
 {
 	static char *result=NULL;
 
@@ -258,6 +292,7 @@ static char *serverparsed_getvar(struct connection *conn,char *var)
 }
 
 static char *serverparsed_expandvars(struct connection *conn,char *str)
+/*expand all variables in the given string*/
 {
 	static char *expanded=NULL;
 	static int valid=0;
@@ -290,7 +325,7 @@ static char *serverparsed_expandvars(struct connection *conn,char *str)
 					}
 					end=str;
 					/*find end of variable name*/
-					while (*end && (brackets ? *end!='}' : !isspace(*end))) end++;
+					while (*end && (brackets ? *end!='}' : (isalnum(*end) || *end=='_'))) end++;
 					varlen=end-str;
 					if (varlen>255) {
 						serverparsed_writeerror(conn,"Variable name too long");
@@ -301,7 +336,7 @@ static char *serverparsed_expandvars(struct connection *conn,char *str)
 					var[varlen]='\0';
 					str+=varlen;
 					expandedvar=serverparsed_getvar(conn,var);
-					if (expandedvar==NULL) expandedvar="(none)";
+					if (expandedvar==NULL) expandedvar="";
 					varlen=strlen(expandedvar);
 					INCREASE_SIZE(varlen);
 					memcpy(o,expandedvar,varlen);
@@ -324,6 +359,7 @@ static char *serverparsed_expandvars(struct connection *conn,char *str)
 }
 
 static int serverparsed_evaluateexpression(struct connection *conn,char *exp)
+/*recursively evaluate the given expression, returning if it is true or false*/
 {
 	int brackets;
 	size_t len;
@@ -332,7 +368,7 @@ static int serverparsed_evaluateexpression(struct connection *conn,char *exp)
 	int ret=0; /*return value (true/false)*/
 	char *lhs,*rhs;
 
-	/*remove leading and trailling spaces*/
+	/*remove leading and trailing spaces*/
 	while (*exp && isspace(*exp)) exp++;
 	len=strlen(exp);
 	while (len>0 && isspace(exp[len-1])) len--;
@@ -349,6 +385,7 @@ static int serverparsed_evaluateexpression(struct connection *conn,char *exp)
 
 	p=exp;
 	brackets=0;
+	/*find the first && or || operator that is not enclosed in brackets*/
 	while (*p) {
 		if (brackets==0) {
 			if (*p=='&' || *p=='|') break;
@@ -366,7 +403,7 @@ static int serverparsed_evaluateexpression(struct connection *conn,char *exp)
 	}
 
 	switch (*p) {
-		case '&':
+		case '&': /* && */
 			*p++='\0';
 			if (*p++!='&') {
 				serverparsed_writeerror(conn,"Unknown operator");
@@ -374,7 +411,7 @@ static int serverparsed_evaluateexpression(struct connection *conn,char *exp)
 			}
 			return serverparsed_evaluateexpression(conn,exp) && serverparsed_evaluateexpression(conn,p);
 			break;
-		case '|':
+		case '|': /* || */
 			*p++='\0';
 			if (*p++!='|') {
 				serverparsed_writeerror(conn,"Unknown operator");
@@ -383,7 +420,7 @@ static int serverparsed_evaluateexpression(struct connection *conn,char *exp)
 			return serverparsed_evaluateexpression(conn,exp) || serverparsed_evaluateexpression(conn,p);
 			break;
 		default:
-			/*expression contains no && or || operators*/
+			/*expression contains no && or || operators, so look for the first ! operator*/
 			p=exp;
 			brackets=0;
 			while (*p) {
@@ -411,6 +448,7 @@ static int serverparsed_evaluateexpression(struct connection *conn,char *exp)
 				return 0;
 			}
 
+			/*split the string into everything to the left of an =, <=, etc and everything to the right*/
 			lhs=malloc(len+1);
 			if (lhs==NULL) return 0;
 			rhs=malloc(len+1);
@@ -472,7 +510,7 @@ static int serverparsed_evaluateexpression(struct connection *conn,char *exp)
 					if (regcomp(&regex,rhs+1,REG_EXTENDED | REG_NOSUB)) {
 						serverparsed_writeerror(conn,"Syntax error in regex");
 					} else {
-						ret=regexec(&regex,lhs,0,NULL,0)==REG_OKAY;
+						ret=(regexec(&regex,lhs,0,NULL,0)==REG_OKAY);
 						regfree(&regex);
 					}
 				} else {
@@ -507,7 +545,233 @@ static int serverparsed_evaluateexpression(struct connection *conn,char *exp)
 	return 0;
 }
 
+static void serverparsed_close(struct connection *conn,int force)
+/*an aliased version of close() from openclose.c*/
+/*called when a child has finished, so return to parent rather than actually closing the connection*/
+{
+	struct connection *parent;
+
+	parent=conn->parent;
+	close(conn,force,0);
+	if (force) {
+		parent->close(parent,force);
+	} else {
+		parent->serverparsedinfo.child=NULL;
+		cgiscript_setvars(parent); /*some vars (eg PATH_TRANSLATED) need resetting to suitable values for the parent*/
+	}
+}
+
+#define COPY(member) newconn->member=conn->member
+#define STRCOPY(member) strcpy(newconn->member,conn->member)
+#define MEMCOPY(member) {\
+	if (conn->member==NULL) {\
+		newconn->member=NULL;\
+	} else {\
+		size_t len;\
+		len=strlen(conn->member)+1;\
+		newconn->member=malloc(len);\
+		if (newconn==NULL) {\
+			serverparsed_writeerror(conn,"Out of memory");\
+			return;\
+		}\
+		memcpy(newconn->member,conn->member,len);\
+	}\
+}
+
+static void serverparsed_includevirtual(struct connection *conn,char *reluri)
+/*create a child connection structure, fake the relevant fields then pretend it */
+/* is a new connection and invoke a suitable handler (which could be serverparsed again)*/
+{
+	char *uri;
+	struct connection *newconn;
+	size_t len;
+
+	uri=serverparsed_reltouri(conn->uri,reluri);
+	newconn=create_conn();
+	if (newconn==NULL) {
+		serverparsed_writeerror(conn,"Out of memory");
+		return;
+	}
+
+	len=strlen(uri)+1;
+	newconn->uri=malloc(len);
+	if (newconn->uri==NULL) {
+		serverparsed_writeerror(conn,"Out of memory");
+		return;
+	}
+	memcpy(newconn->uri,uri,len);
+
+	COPY(socket);
+	COPY(port);
+	COPY(index);
+	COPY(method);
+	COPY(httpminor);
+	COPY(httpmajor);
+	STRCOPY(host);
+	COPY(ipaddr[0]);
+	COPY(ipaddr[1]);
+	COPY(ipaddr[2]);
+	COPY(ipaddr[3]);
+	MEMCOPY(accept);
+	MEMCOPY(acceptlanguage);
+	MEMCOPY(acceptcharset);
+	MEMCOPY(acceptencoding);
+	MEMCOPY(referer);
+	MEMCOPY(useragent);
+	MEMCOPY(authorization);
+	MEMCOPY(requestline);
+	MEMCOPY(cookie);
+	MEMCOPY(requesturi);
+	COPY(bodysize);
+	MEMCOPY(body);
+	COPY(headersize);
+	COPY(headerallocated);
+	COPY(args);
+	if (conn->header==NULL) {
+		newconn->header=NULL;
+	} else {
+		newconn->header=malloc(newconn->headersize);
+		if (newconn==NULL) {
+			serverparsed_writeerror(conn,"Out of memory");
+			return;
+		}
+		memcpy(newconn->header,conn->header,newconn->headersize);
+	}
+
+	newconn->flags.cacheable=0;
+	newconn->flags.outputheaders=0;
+    newconn->close=serverparsed_close;
+	newconn->parent=conn;
+	conn->serverparsedinfo.child=newconn;
+    send_file(newconn);
+}
+
+static char *serverparsed_virtualtofilename(struct connection *conn,char *virt)
+/*convert a relative uri into a filename*/
+{
+	char *uri;
+	struct connection *newconn;
+	char *name,*ptr;
+	static char filename[256];
+
+	uri=serverparsed_reltouri(conn->uri,virt); /*convert to an absolute uri*/
+	newconn=create_conn();
+
+	get_attributes(uri,newconn);
+
+	/* build RISCOS filename */
+	name = newconn->filename;
+	strcpy(name, newconn->homedir);
+	name += strlen(name);
+	ptr = uri + newconn->homedirignore;
+	/* append URI, with . and / switched */
+	if (uri_to_filename(ptr,name,conn->flags.stripextensions)) {
+		serverparsed_writeerror(conn,"Filename includes illegal characters");
+		close(newconn,0,0);
+		return NULL;
+	}
+
+	strcpy(filename,newconn->filename);
+	close(newconn,0,0);
+	return filename;
+}
+
+static void serverparsed_fsize(struct connection *conn,char *filename)
+/*output the filesize of the given file, according to the configured sizefmt*/
+{
+	os_error *err;
+	fileswitch_object_type objtype;
+	int size;
+
+	err=xosfile_read_no_path(filename,&objtype,NULL,NULL,&size,NULL);
+	if (err) {
+		serverparsed_writeerror(conn,err->errmess);
+	} else if (objtype==fileswitch_NOT_FOUND) {
+		serverparsed_writeerror(conn,"File not found");
+	} else {
+		char buf[12];
+
+		if (conn->serverparsedinfo.abbrev) {
+			if (size<1024) sprintf(buf,"%d bytes",size);
+			else if (size<1024*10) sprintf(buf,"%.1f KB",(double)size/1024);
+			else if (size<1024*1024) sprintf(buf,"%d KB",size/1024);
+			else if (size<1024*1024*10) sprintf(buf,"%.1f MB",(double)size/(1024*1024));
+			else sprintf(buf,"%d MB",size/(1024*1024));
+		} else {
+			sprintf(buf,"%d",size);
+		}
+		writestring(conn->socket,buf);
+	}
+}
+
+static void serverparsed_flastmod(struct connection *conn,char *filename)
+/*output the date/time the given file was last modified*/
+{
+	os_error *err;
+	fileswitch_object_type objtype;
+	bits load,exec,filetype;
+
+	err=xosfile_read_stamped_no_path(filename,&objtype,&load,&exec,NULL,NULL,&filetype);
+	if (err) {
+		serverparsed_writeerror(conn,err->errmess);
+	} else if (objtype==fileswitch_NOT_FOUND) {
+		serverparsed_writeerror(conn,"File not found");
+	} else if (filetype==-1) {
+		serverparsed_writeerror(conn,"File does not have a datestamp");
+	} else {
+		struct tm time;
+		char utc[5];
+		char str[50]="";
+
+		utc[4] = load &255;
+		utc[3] = (exec>>24) &255;
+		utc[2] = (exec>>16) &255;
+		utc[1] = (exec>>8) &255;
+		utc[0] = exec &255;
+		utc_to_localtime(utc,&time);
+		if (conn->serverparsedinfo.timefmt==NULL) time_to_rfc(&time,str); else strftime(str,49,conn->serverparsedinfo.timefmt,&time);
+		writestring(conn->socket,str);
+	}
+}
+
+static void serverparsed_execcommand(struct connection *conn,char *cmd)
+/*execute a *command as if it were a CGI script*/
+{
+	struct connection *newconn;
+	static struct handler cmdhandler;
+
+	newconn=create_conn();
+	if (newconn==NULL) {
+		serverparsed_writeerror(conn,"Out of memory");
+		return;
+	}
+
+	strcpy(newconn->filename,conn->filename);
+	newconn->flags.setcsd=conn->flags.setcsd;
+	newconn->method=METHOD_GET;
+	MEMCOPY(uri);
+
+	newconn->socket=conn->socket;
+
+	cmdhandler.name="exec cmd";
+	cmdhandler.command=cmd;
+	cmdhandler.unix=0;
+	cmdhandler.cache=0;
+	cmdhandler.startfn=cgiscript_start;
+	cmdhandler.pollfn=staticcontent_poll;
+	cmdhandler.next=NULL;
+
+	newconn->handler = &cmdhandler;
+	newconn->flags.outputheaders=0;
+    newconn->close=serverparsed_close;
+	newconn->parent=conn;
+	conn->serverparsedinfo.child=newconn;
+
+	handler_start(newconn);
+}
+
 static void serverparsed_command(struct connection *conn,char *command,char *args)
+/*execute an SSI command*/
 {
 	char *attrs[MAX_ARGS];
 	char *vals[MAX_ARGS];
@@ -536,119 +800,7 @@ static void serverparsed_command(struct connection *conn,char *command,char *arg
 	} while (*args && i<MAX_ARGS);
 	if (i<MAX_ARGS) attrs[i]=vals[i]=NULL;
 
-	if (strcmp(command,"config")==0) {
-		for (i=0;i<MAX_ARGS && attrs[i];i++) {
-			vals[i]=serverparsed_expandvars(conn,vals[i]);
-			if (strcmp(attrs[i],"errmsg")==0) {
-				size_t len=strlen(vals[i]);
-				if (conn->serverparsedinfo.errmsg) free(conn->serverparsedinfo.errmsg);
-				conn->serverparsedinfo.errmsg=malloc(len+1);
-				if (conn->serverparsedinfo.errmsg) memcpy(conn->serverparsedinfo.errmsg,vals[i],len+1);
-			} else if (strcmp(attrs[i],"sizefmt")==0) {
-				lower_case(vals[i]);
-				if (strcmp(vals[i],"bytes")==0) {
-					conn->serverparsedinfo.abbrev=0;
-				} else if (strcmp(vals[i],"abbrev")==0) {
-					conn->serverparsedinfo.abbrev=1;
-				} else {
-					serverparsed_writeerror(conn,"Unknown value for sizefmt");
-				}
-			} else if (strcmp(attrs[i],"timefmt")==0) {
-				size_t len=strlen(vals[i]);
-				if (conn->serverparsedinfo.timefmt) free(conn->serverparsedinfo.timefmt);
-				conn->serverparsedinfo.timefmt=malloc(len+1);
-				if (conn->serverparsedinfo.timefmt) memcpy(conn->serverparsedinfo.timefmt,vals[i],len+1);
-			} else if (attrs[i][0]=='\0') {
-				/*ignore*/
-			} else {
-				serverparsed_writeerror(conn,"Unknown attribute to config command");
-			}
-		}
-	} else if (strcmp(command,"echo")==0) {
-		if (strcmp(attrs[0],"var")==0) {
-			char *var;
-
-			var=serverparsed_getvar(conn,vals[0]);
-			if (var==NULL) var="(none)";
-			writestring(conn->socket,var);
-		} else {
-			serverparsed_writeerror(conn,"Syntax error");
-		}
-	} else if (strcmp(command,"exec")==0) {
-		serverparsed_writeerror(conn,"exec command is not yet supported");
-	} else if (strcmp(command,"fsize")==0) {
-		vals[0]=serverparsed_expandvars(conn,vals[0]);
-		if (strcmp(attrs[0],"file")==0) {
-			char *filename;
-			os_error *err;
-			fileswitch_object_type objtype;
-			int size;
-
-			filename=serverparsed_reltofilename(conn->filename,vals[0]);
-			err=xosfile_read_no_path(filename,&objtype,NULL,NULL,&size,NULL);
-			if (err) {
-				serverparsed_writeerror(conn,err->errmess);
-			} else if (objtype==fileswitch_NOT_FOUND) {
-				serverparsed_writeerror(conn,"File not found");
-			} else {
-				char buf[12];
-
-				if (conn->serverparsedinfo.abbrev) {
-					if (size<1024) sprintf(buf,"%d bytes",size);
-					else if (size<1024*10) sprintf(buf,"%.1f KB",(double)size/1024);
-					else if (size<1024*1024) sprintf(buf,"%d KB",size/1024);
-					else if (size<1024*1024*10) sprintf(buf,"%.1f MB",(double)size/(1024*1024));
-					else sprintf(buf,"%d MB",size/(1024*1024));
-				} else {
-					sprintf(buf,"%d",size);
-				}
-				writestring(conn->socket,buf);
-			}
-		} else {
-			serverparsed_writeerror(conn,"Unknown attribute to fsize command");
-		}
-	} else if (strcmp(command,"flastmod")==0) {
-		vals[0]=serverparsed_expandvars(conn,vals[0]);
-		if (strcmp(attrs[0],"file")==0) {
-			char *filename;
-			os_error *err;
-			fileswitch_object_type objtype;
-			bits load,exec,filetype;
-
-			filename=serverparsed_reltofilename(conn->filename,vals[0]);
-			err=xosfile_read_stamped_no_path(filename,&objtype,&load,&exec,NULL,NULL,&filetype);
-			if (err) {
-				serverparsed_writeerror(conn,err->errmess);
-			} else if (objtype==fileswitch_NOT_FOUND) {
-				serverparsed_writeerror(conn,"File not found");
-			} else if (filetype==-1) {
-				serverparsed_writeerror(conn,"File does not have a datestamp");
-			} else {
-				struct tm time;
-				char utc[5];
-				char str[50]="";
-
-				utc[4] = load &255;
-				utc[3] = (exec>>24) &255;
-				utc[2] = (exec>>16) &255;
-				utc[1] = (exec>>8) &255;
-				utc[0] = exec &255;
-				utc_to_localtime(utc,&time);
-				if (conn->serverparsedinfo.timefmt==NULL) time_to_rfc(&time,str); else strftime(str,49,conn->serverparsedinfo.timefmt,&time);
-				writestring(conn->socket,str);
-			}
-		}
-	} else if (strcmp(command,"include")==0) {
-		/**/
-	} else if (strcmp(command,"set")==0) {
-		vals[0]=serverparsed_expandvars(conn,vals[0]);
-		vals[1]=serverparsed_expandvars(conn,vals[1]);
-		if (attrs[0]==NULL || attrs[1]==NULL || strcmp(attrs[0],"var")!=0 || strcmp(attrs[1],"value")!=0) {
-			serverparsed_writeerror(conn,"Syntax error");
-		} else {
-			set_var_val(vals[0],vals[1]);
-		}
-	} else if (strcmp(command,"if")==0) {
+	if (strcmp(command,"if")==0) {
 		vals[0]=serverparsed_expandvars(conn,vals[0]);
 		if (attrs[0]==NULL || strcmp(attrs[0],"expr")!=0) {
 			serverparsed_writeerror(conn,"Syntax error");
@@ -670,17 +822,161 @@ static void serverparsed_command(struct connection *conn,char *command,char *arg
 		if (conn->serverparsedinfo.conditionmet) conn->serverparsedinfo.output=0; else conn->serverparsedinfo.output=1;
 	} else if (strcmp(command,"endif")==0) {
 		conn->serverparsedinfo.output=1;
+	} else {
+		if (conn->serverparsedinfo.output) {
+			/*Don't execute any commands within an #if block unless the #if condition is true*/
+			if (strcmp(command,"config")==0) {
+				for (i=0;i<MAX_ARGS && attrs[i];i++) {
+					vals[i]=serverparsed_expandvars(conn,vals[i]);
+					if (strcmp(attrs[i],"errmsg")==0) {
+						size_t len=strlen(vals[i]);
+						if (conn->serverparsedinfo.errmsg) free(conn->serverparsedinfo.errmsg);
+						conn->serverparsedinfo.errmsg=malloc(len+1);
+						if (conn->serverparsedinfo.errmsg) memcpy(conn->serverparsedinfo.errmsg,vals[i],len+1);
+					} else if (strcmp(attrs[i],"sizefmt")==0) {
+						lower_case(vals[i]);
+						if (strcmp(vals[i],"bytes")==0) {
+							conn->serverparsedinfo.abbrev=0;
+						} else if (strcmp(vals[i],"abbrev")==0) {
+							conn->serverparsedinfo.abbrev=1;
+						} else {
+							serverparsed_writeerror(conn,"Unknown value for sizefmt");
+						}
+					} else if (strcmp(attrs[i],"timefmt")==0) {
+						size_t len=strlen(vals[i]);
+						if (conn->serverparsedinfo.timefmt) free(conn->serverparsedinfo.timefmt);
+						conn->serverparsedinfo.timefmt=malloc(len+1);
+						if (conn->serverparsedinfo.timefmt) memcpy(conn->serverparsedinfo.timefmt,vals[i],len+1);
+					} else if (attrs[i][0]=='\0') {
+						/*ignore*/
+					} else {
+						serverparsed_writeerror(conn,"Unknown attribute to config command");
+					}
+				}
+			} else if (strcmp(command,"echo")==0) {
+				if (strcmp(attrs[0],"var")==0) {
+					char *var;
+		
+					var=serverparsed_getvar(conn,vals[0]);
+					if (var==NULL) var="(none)";
+					writestring(conn->socket,var);
+				} else {
+					serverparsed_writeerror(conn,"Syntax error");
+				}
+			} else if (strcmp(command,"exec")==0) {
+				vals[0]=serverparsed_expandvars(conn,vals[0]);
+				if (strcmp(attrs[0],"cgi")==0) {
+					serverparsed_includevirtual(conn,vals[0]);
+				} else if (strcmp(attrs[0],"cmd")==0) {
+					serverparsed_execcommand(conn,vals[0]);
+				} else {
+					serverparsed_writeerror(conn,"Unknown attribute to exec command");
+				}
+			} else if (strcmp(command,"fsize")==0) {
+				vals[0]=serverparsed_expandvars(conn,vals[0]);
+				if (strcmp(attrs[0],"file")==0) {
+					char *filename;
+		
+					filename=serverparsed_reltofilename(conn->filename,vals[0]);
+					if (filename) serverparsed_fsize(conn,filename);
+				} else if (strcmp(attrs[0],"virtual")==0) {
+					char *filename;
+
+					filename=serverparsed_virtualtofilename(conn,vals[0]);
+					if (filename) serverparsed_fsize(conn,filename);
+				} else {
+					serverparsed_writeerror(conn,"Unknown attribute to fsize command");
+				}
+			} else if (strcmp(command,"flastmod")==0) {
+				vals[0]=serverparsed_expandvars(conn,vals[0]);
+				if (strcmp(attrs[0],"file")==0) {
+					char *filename;
+
+					filename=serverparsed_reltofilename(conn->filename,vals[0]);
+					serverparsed_flastmod(conn,filename);
+				} else if (strcmp(attrs[0],"virtual")==0) {
+					char *filename;
+
+					filename=serverparsed_virtualtofilename(conn,vals[0]);
+					if (filename) serverparsed_flastmod(conn,filename);
+				} else {
+					serverparsed_writeerror(conn,"Unknown attribute to flastmod command");
+				}
+			} else if (strcmp(command,"include")==0) {
+				vals[0]=serverparsed_expandvars(conn,vals[0]);
+				if (strcmp(attrs[0],"virtual")==0) {
+					serverparsed_includevirtual(conn,vals[0]);
+				} else if (strcmp(attrs[0],"file")==0) {
+					char *filename;
+					struct connection *newconn;
+
+					filename=serverparsed_reltofilename(conn->filename,vals[0]);
+					newconn=create_conn();
+					if (newconn==NULL) {
+						serverparsed_writeerror(conn,"Out of memory");
+						return;
+					}
+
+					strcpy(newconn->filename,filename);
+					newconn->method=METHOD_GET;
+					MEMCOPY(uri);
+
+					newconn->socket=conn->socket;
+
+					newconn->handler = get_handler("static-content");
+					newconn->flags.outputheaders=0;
+				    newconn->close=serverparsed_close;
+					newconn->parent=conn;
+					conn->serverparsedinfo.child=newconn;
+
+					/* check if object is cached */
+					newconn->cache = get_file_through_cache(newconn);
+					if (newconn->cache) {
+						newconn->fileinfo.size = newconn->cache->size;
+					} else {
+						get_file_info(newconn->filename, NULL, NULL, &newconn->fileinfo.size,1);
+						switch (newconn->fileinfo.filetype) {
+							case FILE_DOESNT_EXIST:
+							case OBJECT_IS_DIRECTORY:
+								report_notfound(newconn);
+								return;
+							case FILE_LOCKED:
+								report_forbidden(newconn);
+								return;
+							case FILE_ERROR:
+								report_badrequest(newconn, "error occured when reading file info");
+								return;
+							default:
+								break;
+						}
+					}
+					handler_start(newconn);
+				} else {
+					serverparsed_writeerror(conn,"Unknown attribute to include command");
+				}
+			} else if (strcmp(command,"printenv")==0) {
+				serverparsed_execcommand(conn,"show");
+			} else if (strcmp(command,"set")==0) {
+				vals[0]=serverparsed_expandvars(conn,vals[0]);
+				vals[1]=serverparsed_expandvars(conn,vals[1]);
+				if (attrs[0]==NULL || attrs[1]==NULL || strcmp(attrs[0],"var")!=0 || strcmp(attrs[1],"value")!=0) {
+					serverparsed_writeerror(conn,"Syntax error");
+				} else {
+					set_var_val(vals[0],vals[1]);
+				}
+			}
+		}
 	}
 }
 
 #define WRITEBUFFER {\
+/*write the contents of the output buffer to the socket*/\
 	int bytes=o-outputbuffer;\
 	int bytessent;\
 	if (!conn->serverparsedinfo.output) {\
 		o=outputbuffer;\
 	} else if (bytes>0) {\
 		bytessent = ip_write(conn->socket, outputbuffer, bytes);\
-/*		fwrite(outputbuffer,1,bytes,stderr);*/\
 		byteswritten+=bytessent;\
 		if (bytessent<0) return bytessent; /*does this return error if it would block?*/ \
 		if (bytessent==0) return byteswritten; /*would this ever happen? we would lose the contents of outputbuffer if it does*/ \
@@ -693,9 +989,9 @@ static void serverparsed_command(struct connection *conn,char *command,char *arg
 	}\
 }
 
-static char command[256], args[256];
-static int commandlength,argslength;
 static int serverparsed_parse(struct connection *conn, char *buffer, int bytesleft)
+/*parse some characters from the buffer*/
+/*implemented as a state machine, as there might only be part of a tag in the buffer*/
 {
 	char *p=buffer;
 	char outputbuffer[OUTPUT_BUFFERSIZE];
@@ -704,13 +1000,13 @@ static int serverparsed_parse(struct connection *conn, char *buffer, int bytesle
 	int byteswritten=0;
 	int bytestowrite=bytesleft;
 
-	while (bytesleft>0) {
-		switch (status) {
+	while (bytesleft>0 && conn->serverparsedinfo.child==NULL) {
+		switch (conn->serverparsedinfo.status) {
 			case status_BODY:
 				if (*p=='<') {
 					p++;
 					bytesleft--;
-					status=status_OPEN1;
+					conn->serverparsedinfo.status=status_OPEN1;
 				} else {
 					*o++=*p++;
 					bytesleft--;
@@ -721,10 +1017,10 @@ static int serverparsed_parse(struct connection *conn, char *buffer, int bytesle
 				if (*p=='!') {
 					p++;
 					bytesleft--;
-					status=status_OPEN2;
+					conn->serverparsedinfo.status=status_OPEN2;
 				} else {
 					*o++='<';
-					status=status_BODY;
+					conn->serverparsedinfo.status=status_BODY;
 					if (o>oend) WRITEBUFFER;
 				}
 				break;
@@ -732,12 +1028,12 @@ static int serverparsed_parse(struct connection *conn, char *buffer, int bytesle
 				if (*p=='-') {
 					p++;
 					bytesleft--;
-					status=status_OPEN3;
+					conn->serverparsedinfo.status=status_OPEN3;
 				} else {
 					*o++='<';
 					if (o>oend) WRITEBUFFER;
 					*o++='!';
-					status=status_BODY;
+					conn->serverparsedinfo.status=status_BODY;
 					if (o>oend) WRITEBUFFER;
 				}
 				break;
@@ -745,14 +1041,14 @@ static int serverparsed_parse(struct connection *conn, char *buffer, int bytesle
 				if (*p=='-') {
 					p++;
 					bytesleft--;
-					status=status_OPEN4;
+					conn->serverparsedinfo.status=status_OPEN4;
 				} else {
 					*o++='<';
 					if (o>oend) WRITEBUFFER;
 					*o++='!';
 					if (o>oend) WRITEBUFFER;
 					*o++='-';
-					status=status_BODY;
+					conn->serverparsedinfo.status=status_BODY;
 					if (o>oend) WRITEBUFFER;
 				}
 				break;
@@ -760,11 +1056,11 @@ static int serverparsed_parse(struct connection *conn, char *buffer, int bytesle
 				if (*p=='#') {
 					p++;
 					bytesleft--;
-					status=status_COMMAND;
-					commandlength=0;
-					argslength=0;
+					conn->serverparsedinfo.status=status_COMMAND;
+					conn->serverparsedinfo.commandlength=0;
+					conn->serverparsedinfo.argslength=0;
 				} else {
-					status=status_BODY;
+					conn->serverparsedinfo.status=status_BODY;
 					*o++='<';
 					if (o>oend) WRITEBUFFER;
 					*o++='!';
@@ -777,39 +1073,38 @@ static int serverparsed_parse(struct connection *conn, char *buffer, int bytesle
 				break;
 			case status_COMMAND:
 				if (isspace(*p)) {
-					command[commandlength]='\0';
-					status=status_ARGS;
+					conn->serverparsedinfo.command[conn->serverparsedinfo.commandlength]='\0';
+					conn->serverparsedinfo.status=status_ARGS;
 				} else {
-					command[commandlength++]=*p++;
+					conn->serverparsedinfo.command[conn->serverparsedinfo.commandlength++]=*p++;
 					/*check commandlength is within limits*/
 					bytesleft--;
 				}
 				break;
 			case status_ARGS:
-				/*fixme: cope with '-' or '>' in args*/
 				if (*p=='-') {
 					p++;
 					bytesleft--;
-					args[argslength]='\0';
-					status=status_CLOSE1;
+					conn->serverparsedinfo.args[conn->serverparsedinfo.argslength]='\0';
+					conn->serverparsedinfo.status=status_CLOSE1;
 				} else if (*p=='"') {
-					status=status_QUOTEDARGS;
-					args[argslength++]=*p++;
+					conn->serverparsedinfo.status=status_QUOTEDARGS;
+					conn->serverparsedinfo.args[conn->serverparsedinfo.argslength++]=*p++;
 					bytesleft--;
 				} else {
-					args[argslength++]=*p++;
-					/*check argslength*/
+					conn->serverparsedinfo.args[conn->serverparsedinfo.argslength++]=*p++;
+					if (conn->serverparsedinfo.argslength>255) conn->serverparsedinfo.argslength=255; /*ignore the end of any command that wont fit in the buffer*/
 					bytesleft--;
 				}
 				break;
 			case status_QUOTEDARGS:
 				if (*p=='"') {
-					status=status_ARGS;
-					args[argslength++]=*p++;
+					conn->serverparsedinfo.status=status_ARGS;
+					conn->serverparsedinfo.args[conn->serverparsedinfo.argslength++]=*p++;
 					bytesleft--;
 				} else {
-					args[argslength++]=*p++;
-					/*check argslength*/
+					conn->serverparsedinfo.args[conn->serverparsedinfo.argslength++]=*p++;
+					if (conn->serverparsedinfo.argslength>255) conn->serverparsedinfo.argslength=255; /*ignore any args that wont fit in the buffer*/
 					bytesleft--;
 				}
 				break;
@@ -817,32 +1112,31 @@ static int serverparsed_parse(struct connection *conn, char *buffer, int bytesle
 				if (*p=='-') {
 					p++;
 					bytesleft--;
-					status=status_CLOSE2;
+					conn->serverparsedinfo.status=status_CLOSE2;
 				} else {
-					*o++='-';
-					status=status_ARGS;
-					if (o>oend) WRITEBUFFER;
+					conn->serverparsedinfo.args[conn->serverparsedinfo.argslength++]='-';
+					if (conn->serverparsedinfo.argslength>255) conn->serverparsedinfo.argslength=255;
+					conn->serverparsedinfo.status=status_ARGS;
 				}
 				break;
 			case status_CLOSE2:
 				if (*p=='>') {
 					p++;
 					bytesleft--;
-					status=status_BODY;
-					WRITEBUFFER;
-					serverparsed_command(conn,command,args);
+					conn->serverparsedinfo.status=status_BODY;
+					WRITEBUFFER; /*ensure that the buffer is empty before executing the command, as the commands output directly to the socket*/
+					serverparsed_command(conn,conn->serverparsedinfo.command,conn->serverparsedinfo.args);
 				} else {
-					status=status_ARGS;
-					*o++='-';
-					if (o>oend) WRITEBUFFER;
-					*o++='-';
-					if (o>oend) WRITEBUFFER;
+					conn->serverparsedinfo.status=status_ARGS;
+					conn->serverparsedinfo.args[conn->serverparsedinfo.argslength++]='-';
+					if (conn->serverparsedinfo.argslength>254) conn->serverparsedinfo.argslength=254;
+					conn->serverparsedinfo.args[conn->serverparsedinfo.argslength++]='-';
 				}
 				break;
 		}
 	}
 	WRITEBUFFER;
-	return bytestowrite;
+	return bytestowrite-bytesleft;
 }
 
 static void serverparsed_tidyup(void)
@@ -858,6 +1152,8 @@ int serverparsed_poll(struct connection *conn,int maxbytes) {
 /* return the number of bytes written */
 	int bytes = 0;
 	char temp[HTTPBUFFERSIZE];
+
+	if (conn->serverparsedinfo.child) return handler_poll(conn->serverparsedinfo.child,maxbytes);
 
 	if (conn->fileused < conn->fileinfo.size) {
 		/* send a bit more of the file or buffered data */
@@ -877,27 +1173,21 @@ int serverparsed_poll(struct connection *conn,int maxbytes) {
 		/* read from buffer or from file */
 		if (conn->file) {   /* read from file (possibly through temp buffer) */
 			if (conn->filebuffer) {
-				/*  IDEA: if there's less than 512 bytes left in the buffer, */
-				/* move those to the start of the buffer, and refill; that may */
-				/* be faster than sending the 512 bytes on their own */
 				if (conn->leftinbuffer == 0) {
 					conn->leftinbuffer = fread(conn->filebuffer, 1,configuration.readaheadbuffer*1024, conn->file);
 					conn->positioninbuffer = 0;
 				}
 				if (bytes > conn->leftinbuffer)  bytes = conn->leftinbuffer;
 				bytes = serverparsed_parse(conn, conn->filebuffer + conn->positioninbuffer, bytes);
-/*				bytes = ip_write(conn->socket, conn->filebuffer + conn->positioninbuffer,bytes);*/
 				conn->positioninbuffer += bytes;
 				conn->leftinbuffer -= bytes;
 			} else {
 				fseek(conn->file, conn->fileused, SEEK_SET);
 				bytes = fread(temp, 1, bytes, conn->file);
 				bytes = serverparsed_parse(conn, temp, bytes);
-/*				bytes = ip_write(conn->socket, temp, bytes);*/
 			}
 		} else {            /* read from buffer */
 			bytes = serverparsed_parse(conn, conn->filebuffer+conn->fileused, bytes);
-/*			bytes = ip_write(conn->socket, conn->filebuffer+conn->fileused, bytes);*/
 		}
 
 		conn->timeoflastactivity = clock();
@@ -912,8 +1202,8 @@ int serverparsed_poll(struct connection *conn,int maxbytes) {
 #endif
 				break;
 			}
-			close(conn->index, 1);           /* close the connection, with force */
 			serverparsed_tidyup();
+			conn->close(conn, 1);           /* close the connection, with force */
 			return 0;
 		} else {
 			conn->fileused += bytes;
@@ -923,8 +1213,8 @@ int serverparsed_poll(struct connection *conn,int maxbytes) {
 
 	/* if EOF reached, close */
 	if (conn->fileused >= conn->fileinfo.size) {
-		close(conn->index, 0);
-		serverparsed_tidyup();
+		if (conn->parent==NULL) serverparsed_tidyup();
+		conn->close(conn, 0);
 	}
 
 	return bytes;

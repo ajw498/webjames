@@ -95,6 +95,6 @@ void webjamesscript_start(struct connection *conn)
 	}
 	conn->socket = -1;
 	conn->flags.is_cgi = 1;
-	close(conn->index, 0);
+	conn->close(conn, 0);
 }
 
