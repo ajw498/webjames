@@ -1,0 +1,213 @@
+<html>
+<head>
+  <title>WebJames - Other features</title>
+</head>
+
+<body bgcolor="#ffffff">
+
+
+<p>
+<h3>
+<table bgcolor="#cccccc" width="99%"><tr><td>
+<a name="putdelete">PUT and DELETE</a>
+</td></tr></table>
+</h3>
+
+  When WebJames receives a <code>PUT</code> or <code>DELETE</code> request,
+ it treats it as if it was a request for the file or cgi-script defined by
+ the <code>put-script</code> or <code>delete-script</code> field in the
+ <a href="config#config">config file</a>.
+
+ <p>
+  If the request is for a 'redirected' cgi-script, the script will be
+ started as usual, and can read the body of the request (if it was a
+ <code>PUT</code> request) from the standard input, and should output the
+ respons to the standard output - the name of the URI that is being
+ attempted to <code>PUT</code> or <code>DELETE</code> is stored in the
+ variable <code>ENTITY_PATH</code>.
+
+ <p>
+  <i>Please notice:</i> the default value of the
+ <code>methods</code>-attribute disallows <code>PUT</code> and
+ <code>DELETE</code> requests - you will have to manually enable these
+ methods in the <a href="attributes#attr">attributes-file</a>.
+
+ <p>
+  <strong>Supporting <code>PUT</code> and <code>DELETE</code> can be a 
+ security risk -  you should not enable it unless you have to, and you
+ should ALWAYS password-protect the scripts and only enable the
+ <code>PUT</code> and <code>DELETE</code> methods for those scripts.
+ </strong>
+
+
+<p>
+<h3>
+<table bgcolor="#cccccc" width="99%"><tr><td>
+<a name="bandwidth">Bandwidth</a>
+</td></tr></table>
+</h3>
+
+  If you're on a slow network (eg. modem) you may not want replies to
+ incoming requests to use more than a fraction of the bandwidth.
+
+ <p>
+  For a 33k6 modem, the maximum bandwidth is approx. 240000 bytes/min.<br>
+ To force WebJames to use max 1/3rd of this, set bandwidth to
+ 240000/3 = 80000 bytes/min in the <a href="config#config">config file</a>.
+
+ <p>
+  If the maximum bandwidth is set to 0, WebJames will use as much bandwidth
+ as possible.
+
+ <p>
+  WebJames calculates the bandwidth-usage as a mean of the number of bytes
+ written to the network over the last 1-2 minutes.
+ <p>
+  You can also use this option to simulate a slow link, so when you are testing
+  your site locally you can see how long it would take to download over a modem. 
+
+
+<p>
+<h3>
+<table bgcolor="#cccccc" width="99%"><tr><td>
+<a name="cache">Cache</a>
+</td></tr></table>
+</h3>
+
+  The cache is configured in the <a href="config#config">config file</a>.<br>
+  The following configuration options control the cache:
+
+ <table>
+ <col span="1" width="150">
+
+ <tr>
+ <td valign="top"><code>cacherefreshdelay</code></td>
+ <td>this set maximum time (in minutes) that a file is cached; after
+     the time has passed, the file is removed from the cache (the file
+     may be cache again the next time it is requested).</td>
+ </tr>
+
+ <tr>
+ <td valign="top"><code>cachesize</code></td>
+ <td>this sets the cachesize in kbytes; the cache is kept in a dynamic
+     area (if the OS supports this) or in the wimp-slot.</td>
+ </tr>
+
+ <tr>
+ <td valign="top"><code>maxcachefilesize</code></td>
+ <td>files larger than this value will never be cached.</td>
+ </tr>
+
+ </table>
+
+
+
+<p>
+<h3>
+<table bgcolor="#cccccc" width="99%"><tr><td>
+<a name="reports">Reports</a>
+</td></tr></table>
+</h3>
+
+  When an http-request fails (eg. the requested object cannot be found),
+ WebJames checks if the file <code>&lt;WebJames$Dir&gt;.Reports.XXX</code>
+ exists. (<code>XXX</code> is replaced with the status-code for the
+ failure, eg. 404 for <code>object not found</code>).
+
+ <p>
+  If the report-file doesn't exist, a standard report is returned to the
+ client.
+ <p>
+  These reports can be overridden on a per-directory basis using the
+ <code>errordocument</code> attribute if required.
+
+ <p>
+  If the report-file exist, it will be returned to the client, after the
+ keywords have been replaced by their values. The supported keywords are
+ listed below; the value of the <code>%EMAIL%</code> keyword is set by
+ the <code>webmaster</code>-entry in the <a href="config#config">config file</a>.
+
+ <p>
+ <table width="90%" border="1">
+ <colgroup span="1" width="50" align="center">
+ <colgroup span="1" width="160">
+ <colgroup span="1">
+ <tr>
+   <th valign="top">status code</th>
+   <th valign="top"><b>meaning</b></th>
+   <th valign="top"><b>keywords</b></th>
+ </tr> 
+ <tr>
+   <td>204</td>
+   <td>no content</td>
+   <td>%EMAIL% %URL%</td>
+ </tr> 
+ <tr>
+   <td>301</td>
+   <td>moved</td>
+   <td>%EMAIL% %URL% %NEWURL%</td>
+ </tr> 
+ <tr>
+   <td>302</td>
+   <td>moved temporarily</td>
+   <td>%EMAIL% %URL% %NEWURL%</td>
+ </tr> 
+ <tr>
+   <td>304</td>
+   <td>not modified</td>
+   <td>%EMAIL% %URL%</td>
+ </tr> 
+ <tr>
+   <td>400</td>
+   <td>bad request</td>
+   <td>%EMAIL% %URL%</td>
+ </tr> 
+ <tr>
+   <td>401</td>
+   <td>unauthorized access</td>
+   <td>%EMAIL% %URL%</td>
+ </tr> 
+ <tr>
+   <td>403</td>
+   <td>forbidden</td>
+   <td>%EMAIL% %URL%</td>
+ </tr> 
+ <tr>
+   <td>404</td>
+   <td>not found</td>
+   <td>%EMAIL% %URL%</td>
+ </tr> 
+ <tr>
+   <td>406</td>
+   <td>no acceptable content</td>
+   <td>%EMAIL% %URL% %LIST%</td>
+ </tr> 
+ <tr>
+   <td>500</td>
+   <td>unexpected server error</td>
+   <td>%EMAIL%</td>
+ </tr> 
+ <tr>
+   <td>501</td>
+   <td>not implemented</td>
+   <td>%EMAIL% %URL% %METHOD%</td>
+ </tr> 
+ <tr>
+   <td>503</td>
+   <td>busy</td>
+   <td>%EMAIL% %URL% %WHY%</td>
+ </tr> 
+ </table>
+
+ <p>
+ See the examples in <code>!WebJames.Reports</code>.
+
+
+
+<p>
+<a href="index.html">Back to contents</a>
+<p>
+
+
+</body>
+</html>

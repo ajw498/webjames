@@ -1,0 +1,63 @@
+<html>
+<head>
+  <title>WebJames - Logging</title>
+</head>
+
+<body bgcolor="#ffffff">
+
+<p>
+<h3>
+<table bgcolor="#cccccc" width="99%"><tr><td>
+<a name="log">Logging/statistics</a>
+</td></tr></table>
+</h3>
+
+  Logging is enabled by specifying a log file in the <a href="config#config">
+ config file</a>.
+
+ <p>
+  CGI-scripts (and other applications) may write to the log by use of the
+ command <code>log</code>.<br>
+  When compiling WebJames, the following options control the log:
+
+ <p>
+ <dl>
+ <dt><code>LOG</code>
+ <dd>must be defined to allow logging
+ </dl>
+
+
+ <p>
+  The <code>CLF</code> (<code>Common Logfile Format</code>) logfile
+ contains info about all received requests. The <code>CLF</code> format
+ is used by many web-servers, including <i>Apache</i>.
+
+ <p>
+  The name of the <code>CLF</code> logfile is set in the <a href="config#config">
+ config file</a>.
+
+ <p>
+  For efficiency, the log data is buffered, so may not be written to the
+ logfile immediately. The delay before writing the buffer, and the size of
+ the buffer, are defined in the config file. Buffering can also be disabled
+ by setting the buffer size to zero.
+
+ <p>
+  Both log files may be rotated when they become too old or too big; this
+ is controlled in the <a href="config#config">config file</a>. Rotation is
+ performed by executing a command which is also defined in the config file.
+ Instead of simply renaming the logfile, you may use a command like
+ <code>Squash</code> or <code>ZipCompress</code> to compress the file -
+ log files usually compress to 25% or less of their original size.
+
+ <p>
+  Alternatively, if the syslog option in the <a href="config#config">
+ config file</a> is set to 1, then both the main log and the clf log
+ will be sent to Doggysoft's SysLog module rather than the files specified.
+
+<p>
+<a href="index.html">Back to contents</a>
+<p>
+
+</body>
+</html>

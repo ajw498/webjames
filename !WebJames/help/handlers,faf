@@ -1,0 +1,575 @@
+<html>
+<head>
+  <title>WebJames - Handlers</title>
+</head>
+
+<body bgcolor="#ffffff">
+<p>
+<h3>
+<table bgcolor="#cccccc" width="99%"><tr><td>
+<a name="handlers">Handlers</a>
+</td></tr></table>
+</h3>
+
+  When WebJames receives a request for a file, it decides what to do with the file
+ (send it as it is, run it as a cgi script, etc.) according to any handlers set up
+ in the attributes file.
+ There are six handlers currently defined by WebJames (static-content, send-as-is, server-parsed, php-script,
+ cgi-script and webjames-script), and more can be added with the <a href="#action">action</a>
+ attribute.
+ <p>
+  You can use the <code>addhandler</code> attribute to assign a handler to files with
+  a particular leafname extension, or <code>addfiletypehandler</code> to assign a handler
+  to files with a particular filetype.
+ <pre>
+ # treat all leafnames ending in .cgi as cgi scripts
+ AddHandler cgi-script .cgi
+
+ # treat all files with a leafname of index as being normal files
+ AddHandler static-content index
+
+ # treat all files with a filetype of &amp;FFB (BASIC) as
+ # webjames style cgi scripts
+ AddFiletypeHandler webjames-script FFB
+
+ # treat all files with a filetype of Perl as cgi scripts
+ AddFiletypeHandler cgi-script Perl
+
+ # treat any files that are not matched by another handler
+ # as cgi scripts
+ AddFiletypeHandler cgi-script
+
+ # treat all files as webjames scripts. the ALL must be in capitals
+ AddFiletypeHandler webjames-script ALL
+ </pre>
+
+  <code>Addhandler</code> or <code>addfiletypehandler</code> can be used outside of all the attributes sections, in
+ which case they will apply to all files, or inside an <code>&lt;location&gt;</code>,
+ <code>&lt;directory&gt;</code> or <code>&lt;files&gt;</code> section, in which case they
+ will only apply to files matched by that section.
+
+ <h6>static-content</h6>
+
+  This is the default handler, it simply sends the contents of the file
+ requested.
+ <p>
+
+ <h6>send-as-is</h6>
+
+  This is similar to static-content, but WebJames does not add any headers beforehand.
+ This means that all headers (including the HTTP status line) must be at the beginning
+ of the file. See the file moved/asis in the site directory as an example. Note that the
+ header lines should be terminated with a CRLF not just an LF. There should be a blank line
+ between the headers and the rest of the file. 
+ <p>
+
+ <h6><a name="cgiscript">cgi-script</a></h6>
+
+  When a cgi-script of this type is executed, all output from the script
+ is redirected to a temporary file; when the script exits, WebJames reads
+ the file and returns it to the host requesting the file.
+
+ <p>
+  When the request is a <code>POST</code>-request, the cgi-script can read
+ the request-body from the standard input.
+
+ <p>
+  Scripts may not multitask, or use the BASIC/C cgi-lib included with
+ WebJames, but languages such as Perl or PHP have their own libraries
+ that provide this (and more) functionality. Information about the request
+ can be found in the following system variables:
+
+ <table>
+ <col span="1" width="150">
+
+ <tr>
+ <td valign="top"><code>PATH_TRANSLATED</code></td>
+ <td>name of the cgi-script, eg. <code>&lt;WebJames$Dir&gt;.site.cgi-bin2.test</code></td>
+ </tr>
+
+ <tr>
+ <td valign="top"><code>SCRIPT_NAME</code></td>
+ <td>uri of the script without the hostname, eg. <code>/cgi-bin2/test.php</code></td>
+ </tr>
+
+ <tr>
+ <td valign="top"><code>CONTENT_LENGTH</code></td>
+ <td>size of the request-body - only valid for <code>POST</code> and
+     <code>PUT</code> requests</td>
+ </tr>
+
+ <tr>
+ <td valign="top"><code>CONTENT_TYPE</code></td>
+ <td>request-body MIME-type - only valid for <code>POST</code> and
+     <code>PUT</code> requests</td>
+ </tr>
+
+ <tr>
+ <td valign="top"><code>REQUEST_METHOD</code></td>
+ <td>either <code>GET</code>, <code>HEAD</code>, <code>POST</code>,
+     <code>PUT</code> or <code>DELETE</code></td>
+ </tr>
+
+ <tr>
+ <td valign="top"><code>REQUEST_URI</code></td>
+ <td>the request-URI, including any arguments, eg.
+     <code>/cgi-bin2/find?whereis=Waldo</code></td>
+ </tr>
+
+ <tr>
+ <td valign="top"><code>QUERY_STRING</code></td>
+ <td>the arguments-part of the request-URI; if the URI is
+     <code>/cgi-bin2/find?whereis=Waldo</code>, <code>QUERY_STRING</code>
+     will contain <code>whereis=Waldo</code></td>
+ </tr>
+
+ <tr>
+ <td valign="top"><code>REMOTE_ADDR</code></td>
+ <td>the IP-address of the host requesting the file, eg.
+     <code>192.168.1.80</code></td>
+ </tr>
+
+ <tr>
+ <td valign="top"><code>DOCUMENT_ROOT</code></td>
+ <td>the directory set by the homedir field in the <a href="#config">config</a> file</td>
+ </tr>
+
+
+ <tr>
+ <td valign="top"><code>AUTH_TYPE</code></td>
+ <td>set to the authentication method used, if the cgi-script is password
+     protected</td>
+ </tr>
+
+ <tr>
+ <td valign="top"><code>REMOTE_USER</code></td>
+ <td>name of remote user - only set if authentication was used</code>
+     protected.</td>
+ </tr>
+
+
+ <tr>
+ <td valign="top"><code>HTTP_USER_AGENT</code></td>
+ <td>contents of the <code>User-Agent:</code> field in the request</td>
+ </tr>
+
+ <tr>
+ <td valign="top"><code>HTTP_REFERER</code></td>
+ <td>contents of the <code>Referer:</code> field in the request</td>
+ </tr>
+
+ <tr>
+ <td valign="top"><code>HTTP_COOKIE</code></td>
+ <td>contents of the <code>Cookie:</code> field in the request</td>
+ </tr>
+
+ <tr>
+ <td valign="top"><code>HTTP_ACCEPT</code></td>
+ <td>contents of the <code>Accept:</code> field in the request</td>
+ </tr>
+
+ <tr>
+ <td valign="top"><code>HTTP_ACCEPT_LANGUAGE</code></td>
+ <td>contents of the <code>Accept-Language:</code> field in the request</td>
+ </tr>
+
+ <tr>
+ <td valign="top"><code>HTTP_ACCEPT_CHARSET</code></td>
+ <td>contents of the <code>Accept-Charset:</code> field in the request</td>
+ </tr>
+
+ <tr>
+ <td valign="top"><code>HTTP_ENCODING</code></td>
+ <td>contents of the <code>Accept-Encoding:</code> field in the request</td>
+ </tr>
+
+ <tr>
+ <td valign="top"><code>SERVER_SOFTWARE</code></td>
+ <td>the name/versionnumber set by the <code>server</code>-field in the
+     <a href="#config">config file</a>, eg <code>Webjames/0.15</code></td>
+ </tr>
+
+ <tr>
+ <td valign="top"><code>SERVER_PORT</code></td>
+ <td>the port number set by the <code>port</code>-field in the
+     <a href="#config">config file</a></td>
+ </tr>
+
+ <tr>
+ <td valign="top"><code>SERVER_PROTOCOL</code></td>
+ <td>usually <code>HTTP/1.0</code></td>
+ </tr>
+
+ <tr>
+ <td valign="top"><code>SERVER_ADMIN</code></td>
+ <td>email-address of the server-administrator - set by the
+     <code>webmaster</code>-field in the <a href="config#config">config
+     file</a></td>
+ </tr>
+
+ <tr>
+ <td valign="top"><code>SERVER_NAME</code></td>
+ <td>the ip-address or fully qualified domain anme of the server - as set
+     by the <code>serverip</code>-field in the <a href="config#config">config
+     file</a></td>
+ </tr>
+
+
+ <tr>
+ <td valign="top"><code>ENTITY_PATH</code></td>
+ <td>the name of entity/URI that is being put or deleted - only valid for
+     <code>PUT</code> and <code>DELETE</code> requests; example: if the
+     request-line is
+           <br><code>PUT /upload/pam.jpg HTTP/1.0</code><br>
+     the value of <code>ENTITY_PATH</code> will be
+     <code>/upload/pam.jpg</code>
+ </td>
+ </tr>
+
+
+ </table>
+
+
+ <h6><a name=webjamesscript>webjames-script</a></h6>
+
+  The script is run with the following arguments:
+
+ <dl>
+ <dt><code>-socket N</code>
+ <dd>socket to output data on
+ <dt><code>-port N</code>
+ <dd>portnumber used by the server
+
+ <dt><code>-http version</code>
+ <dd>http version * 10 (eg. 11 for HTTP/1.1)
+
+ <dt><code>-head</code>
+ <dd>if the request was a <code>HEAD</code> request
+ <dt><code>-post</code>
+ <dd>if the request was a <code>POST</code> request
+ <dt><code>-put</code>
+ <dd>if the request was a <code>PUT</code> request
+ <dt><code>-delete</code>
+ <dd>if the request was a <code>DELETE</code> request
+
+ <dt><code>-rma address</code>
+ <dd>address in RMA of a block of memory holding the entire request
+     (header and all); the content of the block is not necessarily 100% 
+     identical to the request; lines may have been added, removed,
+     joined or altered; also lines are terminated by a single
+     <code>LF</code>
+ <dt><code>-file filename</code>
+ <dd>instead of storing the header in shared memory, WebJames may choose
+     to save it to disc
+ <dt><code>-dynamic no</code>
+ <dd>instead of storing the header in a file or in the RMA, WebJames may
+     choose to store it in a dynamic area, and simply inform the
+     CGI-script of the number of the dynamic area
+
+ <dt><code>-size bytes</code>
+ <dd>size of the -rma block or -dynamic area
+ <dt><code>-remove</code>
+ <dd>if included, the CGI-script should delete the -file file or release
+     the -rma block or remove the -dynamic area
+
+ <dt><code>-bps N</code>
+ <dd>maximum bandwidth (in bytes/second) to use; if 0, there's no limit
+     [<i>optional</i>]
+ <dt><code>-host a.b.c.d</code>
+ <dd>the IP-address of the client [<i>optional</i>]
+ <dt><code>-host hostname</code>
+ <dd>the hostname of the client [<i>optional</i>]
+
+ <dt><code>-user username</code>
+ <dd>if the cgi-script is password-protected, this indicates the username
+     used to get access to the cgi-script
+ </dl>
+
+ Please notice:
+ <ul>
+ <li>if neither <code>-head</code>, <code>-post</code>, <code>-put</code>
+     nor <code>-delete</code> is included, it is a <code>GET</code> request
+ <li>only one of <code>-rma</code>, <code>-file</code> and
+     <code>-dynamic</code> can be present
+ </ul>
+
+ <p>
+  CGI-scripts should only store the actual CGI-script-code (or an obey-file
+ that calls the actual CGI-script-code) in the cgi-bin directory. All other
+ files (database files, graphics etc.) should be stored outside the site-
+ directory.
+  This is because any file in the cgi-bin directory may be run by a
+ suitable request.
+
+ <p>
+  <code>&lt;WebJames$Dir&gt;.cgi-lib</code> is a BASIC library which
+ hopefully makes it much, much easier for BASIC programmers to write
+ CGI-scripts. It provides routines to send files, handle very long
+ strings, parsing arguments, multitasking etc.
+
+ <p>
+  There is a relatively large overhead involved in starting a cgi-script,
+ especially cgi-scripts that load large databases or open many files. It
+ may be beneficially to write such scripts so that they are multitasking
+ application that lie dormant until a smaller script invokes them, eg. by
+ broadcasting a Wimp-message.
+
+ <h6><a name="php">php-script</a></h6>
+  This handler provides support for running PHP4 scripts. As it is very large,
+ then it is only compiled in some builds of WebJames. For more information on PHP,
+ read the <a href="php">PHP help file</a> (Note: This link will only work if the php-script
+ handler is compiled in). If it is not, then you can still run PHP scripts, as
+ if they were normal CGIs, if you download <code>!PHP</code> from
+ <a href="http://www.php.alexwaugh.com/">http://www.php.alexwaugh.com/</a>
+
+ <p>
+ <h6><a name="ssi">server-parsed</a></h6>
+  This handler provides support for Server Side Includes (SSI). These are
+ normal HTML pages, but with commands embedded as comments. For example, the
+ following code will output the size of the file
+ <pre>
+ ... the size of the file is &lt;!--#fsize file="foo.bar" --&gt;.
+ </pre>
+ <p>
+  There should no spaces between the <code>&lt;!--#</code> and the command, but
+  there should be at least one space between the last attribute and the
+  <code>--&gt;</code>
+ <p>
+  If there are any spaces in the value of an attibute (foo.bar in the above
+ example) then the value should be enclosed in quotes; if there are no spaces
+ then the quotes are optional.
+ <p>
+  By default, all files with an extension of .shtml are treated as SSI files;
+ this can be altered by editing the attributes file.
+ <p>
+  The commands available are:
+
+ <table border="1" width="99%">
+
+ <tr>
+ <th>Command</th>
+ <th>Purpose</th>
+ <th>Attributes</th>
+ <th>Values</th>
+ </tr>
+ 
+ <tr>
+ <td rowspan="3"><code>config</code></td>
+ <td rowspan="3">sets various options</td>
+ <td><code>timefmt</code></td><td> specifies the format to use when printing
+ dates/times, syntax is the same as for the standard C function
+ <code>strftime</code></td>
+ </tr>
+
+ <tr>
+ <td><code>sizefmt</code></td><td> specifies the format to use when printing file
+ sizes. valid values are <code>bytes</code> or <code>abbrev</code> for using
+ KB or MB as appropriate</td>
+ </tr>
+
+ <tr>
+ <td><code>errmsg</code></td><td> specifies a message to use if a command fails.
+ you will get more helpfull error messages if you don't use this attribute</td>
+ </tr>
+
+ <tr>
+ <td><code>echo</code></td>
+ <td>prints the value of a system variable</td>
+ <td><code>var</code></td><td> specifies the name of the variable to print. if the
+ variable is unset then it is printed as <code>(none)</code></td>
+ </tr>
+
+ <tr>
+ <td rowspan="2"><code>exec</code></td>
+ <td rowspan="2">executes a CGI script or *command</td>
+ <td><code>cgi</code></td><td> specifies a URL. <code>include virtual</code> should be
+ used in preference to this; they are identical in operation.</td>
+ </tr>
+ <tr>
+ <td><code>cmd</code></td><td> specifies a *command to execute. this should only be used
+ for debugging scripts.</td>
+ </tr>
+
+ <tr>
+ <td rowspan="2"><code>fsize</code></td>
+ <td rowspan="2">prints the size of a file</td>
+ <td><code>file</code></td><td> unix format filename, relative to the current
+ document</td>
+ </tr>
+ <tr>
+ <td><code>virtual</code></td><td> URL relative to the current document</td>
+ </tr>
+
+ <tr>
+ <td rowspan="2"><code>flastmod</code></td>
+ <td rowspan="2">prints the date the file was last modified</td>
+ <td><code>file</code></td><td> unix format filename, relative to the current
+ document</td>
+ </tr>
+ <tr>
+ <td><code>virtual</code></td><td> URL relative to the current document</td>
+ </tr>
+
+ <tr>
+ <td rowspan="2"><code>include</code></td>
+ <td rowspan="2">includes the contents of another file into the current
+ document</td>
+ <td><code>file</code></td><td> unix format filename, relative to the current
+ document. the file will be included as if it were plain text; if it is a CGI
+ script the the script source will be included, rather then the script output.
+ The <code>virtual</code> attribute should be used in preference to this one
+ </td>
+ </tr>
+ <tr>
+ <td><code>virtual</code></td><td> URL relative to the current document. The included
+ text will be whatever you would get if you requested the file normally; if it
+ is a CGI script then you get the output of the script. it can even be another
+ SSI script, although it cannot be a webjames style cgi script</td>
+ </tr>
+
+ <tr>
+ <td><code>printenv</code></td>
+ <td>equivalent to <code>&lt;!--#exec cmd="show" --&gt;</code></td>
+ <td colspan="2">none</td>
+ </tr>
+
+ <tr>
+ <td rowspan="2"><code>set</code></td>
+ <td rowspan="2">sets a system variable</td>
+ <td><code>var</code></td><td> the name of the variable</td>
+ </tr>
+ <tr>
+ <td><code>value</code></td><td> the value to give to the variable</td>
+ </tr>
+
+ <tr>
+ <td><code>if</code></td>
+ <td>start of a conditional block</td>
+ <td><code>expr</code></td><td> the condition to test</td>
+ </tr>
+
+ <tr>
+ <td><code>elif</code></td>
+ <td>optional part of a conditional block</td>
+ <td><code>expr</code></td><td> the condition to test</td>
+ </tr>
+
+ <tr>
+ <td><code>else</code></td>
+ <td>optional part of a conditional block</td>
+ <td colspan="2">none</td>
+ </tr>
+
+ <tr>
+ <td><code>endif</code></td>
+ <td>end of a conditional block</td>
+ <td colspan="2">none</td>
+ </tr>
+
+ </table>
+
+ <p>
+  If any of the values to attributes contain a $, then the following word is
+ treated as a variable name, and is replaced by the value of the variable.
+ The name of the variable can also be enclosed in braces to reduce ambiguity.
+ This variable subsitution is most useful in <code>if</code> commands, but
+ can be used in any of the other commands, for example:
+ <pre>&lt;!--#fsize virtual="${DOCUMENT_URI}" --&gt;</pre>
+ <p>
+ The variables that are availiable are all system variables, all the variables
+ that are set for CGI scripts, and the following:
+
+ <table>
+
+ <tr>
+ <td valign="top"><code>DATE_GMT</code></td>
+ <td>The current date/time in Greewich Mean Time</td>
+ </tr>
+
+ <tr>
+ <td valign="top"><code>DATE_LOCAL</code></td>
+ <td>The current date/time in the local time zone</td>
+ </tr>
+
+ <tr>
+ <td valign="top"><code>LAST_MODIFIED</code></td>
+ <td>The date/time that the current document was last modified</td>
+ </tr>
+
+ <tr>
+ <td valign="top"><code>DOCUMENT_NAME</code></td>
+ <td>The leafname of the current document (in unix format, eg. index.html)</td>
+ </tr>
+
+ <tr>
+ <td valign="top"><code>DOCUMENT_URI</code></td>
+ <td>The URL that caused this page to be requested</td>
+ </tr>
+
+ </table>
+
+ <p>
+  Conditional blocks allow you to include or not include a portion of the page,
+ depending on a condition. For example:
+ <pre>
+ &lt;!--#if expr="$DOCUMENT_NAME=index.shtml" --&gt;
+ we are in the index document
+ &lt;!--#elif expr="$DOCUMENT_NAME=fred.shtml" --&gt;
+ we are in fred.shtml
+ &lt;!--#else --&gt;
+ we are in an unknown document
+ &lt;!--#endif --&gt;
+ </pre>
+ The elif condition is only evaluated if the if condition was false. The else
+ section is only included in the output if none of the if/elif conditions
+ matched. All comparisons are case sensitive.
+ <p>
+  The expressions can contain <code>=</code> equals, <code>!=</code> not
+  equals, <code>&lt;</code> less than, <code>&lt;=</code> less than or equal,
+  <code>&gt;</code> greater than, <code>&gt;=</code> greater than or equal.
+  Several equalities can be combined, using <code>&amp;&amp;</code> logical
+  AND, <code>||</code> logical OR, <code>!</code> logical NOT. Parentheses
+  can be used to indicate precedence.<br>
+  For example: <code>expr="$a=$b || !($d&lt;=$e && $f!=$g)"</code>
+  <p>
+  If the string on the right side of an equality operator starts and ends with
+  a <code>/</code> then it is treated as a regular expression. 
+
+
+ <p>
+  <h6><a name="action">Action</a></h6>
+
+  This attribute defines an alternative star command to use to start a
+ redirect cgi-script. For example
+ <pre>
+ Action perl-script perl -w %f
+ </pre>
+  This will create a new handler called perl-script that will act the same
+ as a redirect cgi-script, but use the star command <code>perl -w %f</code>
+ where %f is replaced by the filename of the script requested.
+ <p>
+  This allows, for example, the normal runtype for a perl script when you
+ double click on it to run the script in a taskwindow, but when run from
+ WebJames as a cgi script it is single tasking.
+ <p>
+  There can also be a %u at the end of the command
+ <pre>
+ Action perl-script perl -w %f %u
+ </pre>
+  This will use Unix style redirection (eg. <code>perl -w filename &lt; input &gt; output</code>)
+ rather than RISC OS style redirection (eg. <code>perl -w filename { &lt; input &gt; output }</code>).
+ Unix style is recommended, as it causes less problems, but it cannot be used for BASIC or Obey
+ scripts.
+ <p>
+  If you define an action with the same name as one of the built in handlers, then the action will
+ override the built in handler. Actions can be defined outside of all sections in the attributes file,
+ or inside a section, but the effect is the same.
+ <p>
+  You must define an action before you can use it in an AddHandler statement.
+
+<p>
+<a href="index.html">Back to contents</a>
+<p>
+
+</body>
+</html>

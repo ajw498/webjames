@@ -98,6 +98,11 @@ hidden
 #hidden
 #</filesmatch>
 
+# set /help/ to point to the help files within !WebJames
+<location /help/>
+homedir=<WebJames$Dir>.help
+</location>
+
 # password-protect the query-cgi-script
 <location /cgi-bin/query>
 userandpwd=webjames:wibble

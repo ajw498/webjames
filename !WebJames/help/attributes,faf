@@ -1,0 +1,512 @@
+<html>
+<head>
+  <title>WebJames - Attributes</title>
+</head>
+
+<body bgcolor="#ffffff">
+<p>
+<h3>
+<table bgcolor="#cccccc" width="99%"><tr><td>
+<a name="attr">Attributes</a>
+</td></tr></table>
+</h3>
+
+  The path to the 'attributes' database file is set in the 
+ <a href="config#config">config file</a>; it is usually
+ <code>&lt;WebJames$Dir&gt;.attributes</code>.
+
+ <p>
+  The 'attributes' database defines attributes for any number of
+ URIs/files/directories. Attributes are things like <i>cacheability</i>,
+ <i>redirection</i>, <i>password-protection</i>, <i>cgi-script API</i> and
+ more. <i>Realms</i> are also defined in the 'attributes' file.
+
+ <p>
+  It is considered an attribute of a file that it may be executed as a
+ cgi-script; therefore, the name of the directory (or directories) that
+ hold cgi-scripts is defined in the 'attributes' file rather than in the
+ <a href="config#config">config file</a>.
+
+ <p>
+  Attributes defined for a directory (eg. <code>/cgi-bin/</code>) apply to
+ all files inside the directory; however, you may also define attributes
+ for a single file or redefine attributes for files/URIs that have
+ attributes defined elsewhere in the attributes file.
+
+ <p>
+  An attributes file consists of a number of sections, each section defines
+ attributes for a file or directory.
+ A section starts with eg. <code>&lt;location /uri/&gt;</code> and finished with
+ <code>&lt;/location&gt;</code>.
+
+ <p>
+  If the URI ends in a <code>/</code>, it refers to a directory and all the
+ files inside the directory; otherwise it refers to a file. The URI <b>must</b>
+ start with a <code>/</code>.
+
+ <p>
+  The following fragment of an attributes file password-protects the
+ <code>/private/</code> directory and all of its contents except the file
+ <code>/private/busy.html</code>, and redirects the URI
+ <code>/linux.html</code> to <code>http://www.linuxberg.com/</code> and
+ also causes all request for URIs starting with <code>/~xyz/</code> to
+ access a directory in the RAM disc and ensures that files in that
+ directory will never be cached.<br>
+
+ <pre>
+
+ # password-protect (almost) everything in /private/
+ &lt;location /private/&gt;
+ userandpwd=myname:mypassword
+ realm=privateparts
+ &lt;/location&gt;
+ # don't password-protect /private/busy.html, so just
+ # set the password to &lt;empty&gt;
+ &lt;location /private/busy.html&gt;
+ userandpwd=
+ &lt;/location&gt;
+
+ # redirect /linux.html requests to www.linuxberg.com
+ &lt;location /linux.html&gt;
+ moved=http://www.linuxberg.com/
+ &lt;/location&gt;
+
+ # move /~xyz/ requests to the RAM disc, and don't
+ # cache the contents of the RAM disc...
+ &lt;location /~xyz/&gt;
+ homedir=RAM:$.WebSite
+ notcacheable
+ &lt;/location&gt;
+
+ # enable PUT-requests for the cgi-script that handles
+ # PUT-requests
+ #&lt;location /cgi-bin/PUT&gt;
+ #methods="PUT"
+ #&lt;/location&gt;
+
+ # make private directory for 192.168.1.100
+ &lt;location /private/johndoe/&gt;
+ allowed-hosts=192.168.1.100
+ &lt;/location&gt;
+ </pre>
+
+ <p>
+  Please notice - you can only set a home-directory for
+ <em>directories</em> - NOT for files (eg. for <code>/~xyz/</code> but
+ not for <code>/~xyz/pic.gif</code>).
+
+ <p>
+  You can also create sections for specific directories using
+ <code>&lt;directory ADFS::4.$.Dir&gt;</code> and <code>&lt;/directory&gt;</code>
+ The attributes within such a section will apply to anything fetched from
+ that directory, whatever the URI was.
+ <p>
+  Attributes in a <code>&lt;directory&gt;</code> section take precedence over
+ those in a <code>&lt;location&gt;</code> section.
+ <p>
+  It is preferable to use <a href="#htaccess">.htaccess</a> files rather than <code>&lt;directory&gt;</code>
+  sections, as then if you move your website to a different directory on your hard disc, you
+  don't have to alter all the <code>&lt;directory&gt;</code> sections.
+
+ <p>
+  There can also be <code>&lt;files&gt;</code> section, which apply the attributes
+ to only files that have a leafname that matches. eg.
+ <pre>
+ # hide all files with a leafname of pic.gif
+ &lt;files pic.gif&gt;
+ hidden
+ &lt;/files&gt;
+ </pre>
+ <p>
+  <code>&lt;files&gt;</code> sections can be nested within a <code>&lt;directory&gt;</code> section, and then they
+ will only apply to files within that directory.
+ <p>
+  Old style [/uri/] sections still work (they are treated as <code>&lt;location&gt;</code> sections), but their use is deprecated.
+
+ <p>
+ <h5>Regular expressions</h5>
+ 
+ <p>
+  In addition to the types of section described above, there are <code>&lt;locationmatch&gt;</code>,
+ <code>&lt;directorymatch&gt;</code> and <code>&lt;filesmatch&gt;</code> sections. These take an
+ extended regular expression, and apply it to the URI, directory or leafname respectively. If it
+ matches then the attributes in the section are applied.
+ <p>
+  The regular expression matching is done by Henry Spencer's regex library.
+ <p>
+ Regular expressions are potentially complex, so I am not going to describe their syntax here.
+ <pre>
+ # this matches all leafnames that have between
+ # 1 and 3 digits followed by .gif or .jpg
+ &lt;filesmatch "^[0-9]{1,3}\.((gif)|(jpg))$"&gt;
+ notcacheable
+ &lt;/filesmatch&gt;
+ </pre>
+  The quotes around the regular expression are optional.
+ 
+ <p>
+
+ <h5>The order of section matching</h5>
+ <p>
+  The order in which a request is processed is as follows:
+ <ul>
+  <li>The URI is compared with all <code>&lt;location&gt;</code> sections.
+  <li>The URI is compared with all <code>&lt;locationmatch&gt;</code> sections.
+  <li>The URI is converted to a filename.
+  <li>The filename is compared with all <code>&lt;directory&gt;</code> sections.
+  <li>The filename is compared with all <code>&lt;directorymatch&gt;</code> sections.
+  <li>If the request was for a directory, the relevant <code>defaultfile</code> list is
+      searched until a file is found.
+  <li>The leafname is compared with all <code>&lt;files&gt;</code> sections, with ones
+      nested within other applicable sections taking priority over those not nested.
+  <li>The leafname is compared with all <code>&lt;filesmatch&gt;</code> sections, with ones
+      nested within other applicable sections taking priority over those not nested.
+  <li>The leafname and filetype will be compared to any <code>AddHandler</code> or
+      <code>AddFiletypeHandler</code>.
+  <li>The relevant handler will be called to deal with the file.
+ </ul>
+ <p>
+  Therefore if you define an attribute for a whole directory, and the opposite
+ attribute for a specific file within that directory, then the directory attribute
+ will be applied first, but the file attribute will then be applied later, thus
+ overriding the directory attribute.
+ <p>
+
+ <h5>The full list of attributes</h5>
+
+ <p>
+  Below is the full list of attributes currently supported.
+
+ <p>
+
+ <table border="1" width="99%">
+ <col span="1" width="150">
+
+ <tr>
+ <td><code>notcacheable</code></td>
+ <td>makes a file (or the contents of a directory) non-cacheable</td>
+ </tr>
+
+ <tr>
+ <td><code>cacheable</code></td>
+ <td>makes a file/directory cacheable (default) </td>
+ </tr>
+
+ <tr>
+ <td><code>homedir</code></td>
+ <td>sets the path to the directory where part of the website is stored;
+     default is the value of <code>homedir</code> in the <a href="config#config">
+     config file</a><br>
+     example: <code>homedir=RAM:$.oftenused</code></td>
+ </tr>
+
+ <tr>
+ <td><code>userandpwd</code></td>
+ <td>sets the username and password for a file or directory - the format
+     is <code>username:password</code><br>
+     example: <code>userandpwd=henrik:mypassword</code></td>
+ </tr>
+
+ <tr>
+ <td><code>accessfile</code></td>
+ <td>the file holds a list of username:password pairs<br>
+     example: <code>accessfile=&lt;WebJames$Dir&gt;.cgi-res.access0</code>
+     </td>
+ </tr>
+
+ <tr>
+ <td><code>realm</code></td>
+ <td>sets the name of the realm to which a password-protected
+     file/directory belongs<br>
+     example: <code>realm='search engine'</code></td>
+ </tr>
+
+ <tr>
+ <td><code>moved</code></td>
+ <td>requests for the URI will result in a respons which redirects the
+     requesting browser to the new URI<br>
+     example: <code>moved=http://www.xyz.com/</code></td>
+ </tr>
+
+ <tr>
+ <td><code>tempmoved</code></td>
+ <td>requests for the URI will result in a respons which redirects the
+     requesting browser to the new URI - should be used if the file has
+     only been moved temporarily<br>
+     example: <code>moved=http://www.xyz.com/</code></td>
+ </tr>
+
+ <tr>
+ <td><code>methods</code></td>
+ <td>this attribute tells WebJames which request-methods are allowed for
+     the URI - the value is a comma-seperated list of the allowed methods,
+     default is 
+     <code>&quot;GET&quot;,&quot;HEAD&quot;,&quot;POST&quot;</code>,
+     ie. <code>PUT</code> and <code>DELETE</code> are disabled<br>
+     example: <code>methods=&quot;POST&quot;,&quot;HEAD&quot;</code>
+     </td>
+ </tr>
+
+ <tr>
+ <td><code>port</code></td>
+ <td>this attribute tells WebJames which portnumber requests for the
+     URI may be accepted on; if WebJames is configured to listen on
+     multiple ports, this attribute can be used to hide the URI from
+     incoming requests on all ports except one<br>
+     example: <code>port=80</code></td>
+ </tr>
+
+ <tr>
+ <td><code>allowed-hosts</code></td>
+ <td>this attribute lists the ip-addresses of all the hosts that are
+     allowed to access the URI; the value is a comma-seperated list of
+     ip-addresses - you may have multiple <code>allowed-hosts</code>-lines
+     for an URI; default is everybody<br>
+     example: <code>allowed-hosts=192.168.1.100,192.168.1.101</code></td>
+ </tr>
+
+ <tr>
+ <td><code>forbidden-hosts</code></td>
+ <td>this attribute lists the ip-addresses of all the hosts that aren't
+     allowed to access the URI; default is nobody</td>
+ </tr>
+
+ <tr>
+ <td><code>priority</code></td>
+ <td>this attribute controls how fast the respons will be returned to the
+     requesting browser; the first value is the priority level - from 0
+     (lowest priority) to 100 (highst priority), the second value is
+     optional - if present it sets the max no. of bytes per second to
+     transmit when replying, 0 means no limit; default values are 100 and
+     0; the <code>priority</code>-attribute may be ignored by WebJames<br>
+     example: <code>priority=25,10000</code></td>
+ </tr>
+
+ <tr>
+ <td><code>ram-faster</code></td>
+ <td>when this attribute is set for a cgi-script, WebJames is <i>allowed</i>
+     to move the cgi-script to/from a faster filing-system (eg. RAM disc)
+     whenever it is considered beneficial</td>
+ </tr>
+
+ <tr>
+ <td><code>more-attributes</code></td>
+ <td>this attribute specifies the name of a file containing additional
+     attributes; if the <code>more-attributes</code> appears inside an
+     URI-section, the URIs in the file are considered relative to the
+     URI for the section in parent-file<br>
+     example: <code>more-attributes=&lt;WebJames$Dir&gt;.Site-Info.Attr1</code>
+     </td>
+ </tr>
+
+ <tr>
+ <td><code>defaultfile</code></td>
+ <td>this attribute lists the names of the files to look for if the remote
+     host requests a directory, eg. <code>GET / HTTP/1.0</code>; the list is
+     searched from left to right, and the first matching file found is returned;
+     this attribute can only be set for directories, not files!!<br>
+     example: <code>defaultfile=index.php,index.html</code>
+     </td>
+ </tr>
+
+ <tr>
+ <td><code>hidden</code></td>
+ <td>when set, the file (or the contents of the directory) cannot be
+     accessed</td>
+ </tr>
+
+ <tr>
+ <td><code>nothidden</code></td>
+ <td>when set, the file (or the contents of the directory) <em>can</em>
+     be accessed; this attribute is mainly useful for enabling access to
+     files that are stored in a directory which has the <code>hidden</code>
+     attribute set</td>
+ </tr>
+
+ <tr>
+ <td><code>errordocument</code></td>
+ <td>this attribute allows error messages to be customised for individual directories.
+     the first parameter is the http status code that the error message refers to. the second
+     parameter is either a <code>&quot;</code> character followed by the text to send, or
+     a URI to redirect to.
+     you may have multiple <code>errordocument</code> lines for an URI, provided
+     their status codes are different<br>
+     example: <code>errordocument 404 &quot;&lt;HTML&gt;&lt;BODY&gt;Sorry, this file was not found&lt;/BODY&gt;&lt;HTML&gt;</code><br>
+     example: <code>errordocument 403 /forbidden.html</code><br>
+     example: <code>errordocument 500 http://www.somewhere.com/</code><br>
+
+     </td>
+ </tr>
+
+ <tr>
+ <td><code>stripextensions</code></td>
+ <td>this attribute strips the filename extensions from URIs before looking for the file.
+     this includes the default files if a directory is requested, and any errordocument files as well.<br>
+     example: a request of <code>/wibble.html</code> would return the file <code>wibble</code>
+     </td>
+ </tr>
+
+ <tr>
+ <td><code>multiviews</code></td>
+ <td>this attribute enables <a href="content#multiviews">MultiViews</a>. It can be considered as the
+     opposite of <code>stripextensions</code>, and thus both should not be enabled within the
+     same directory.
+     </td>
+ </tr>
+
+ <tr>
+ <td><code>setcsd</code></td>
+ <td>when set, the currently selected directory (CSD) will be set to the directory containing
+     the CGI script before running the script
+     </td>
+ </tr>
+
+ <tr>
+ <td><code>action</code></td>
+ <td>see the section on <a href="handlers#handlers">handlers</a> for more details
+     </td>
+ </tr>
+
+ <tr>
+ <td><code>addfiletypehandler</code></td>
+ <td>see the section on <a href="handlers#handlers">handlers</a> for more details
+     </td>
+ </tr>
+
+ <tr>
+ <td><code>addhandler</code></td>
+ <td>see the section on <a href="handlers#handlers">handlers</a> for more details
+     </td>
+ </tr>
+
+ </table>
+
+ The following attributes are included for backwards compatibility.
+ <a href="handlers#handlers">Handlers</a> should be used instead.
+
+ <table border="1" width="99%">
+ <col span="1" width="150">
+
+ <tr>
+ <td><code>cgi-api</code></td>
+ <td>this attribute tells WebJames how to start the cgi-script; allowed
+     values are <code>redirect</code> and <code>webjames</code>; default
+     is <code>webjames</code><br>
+     example: <code>cgi-api=redirect</code></td>
+ </tr>
+
+ <tr>
+ <td><code>is-cgi</code></td>
+ <td>allows the file (or all files in the directory) to be executed
+     as a cgi-script(s)</td>
+ </tr>
+
+ <tr>
+ <td><code>isnt-cgi</code></td>
+ <td>when included, the file (or the contents of the directory) may
+     not be executed as a cgi-script - this is obviously the default</td>
+ </tr>
+
+ <tr>
+ <td><code>allowed-filetypes</code></td>
+ <td>this attribute lists the filetypes that may be treated as cgi-scripts;
+     the value is a comma-seperated list of filetypes in hexadecimal
+     - you may have multiple <code>allowed-filetypes</code>-lines
+     for an URI; default is all filetypes; a blank list means all filetypes<br>
+     note: this only affects files that have the <code>is-cgi</code> attribute set; files
+     that have the <code>isnt-cgi</code> attribute will never be treated as cgi-scripts
+     regardless of their filetype<br>
+     example: <code>allowed-filetypes=18A,102,FFB</code></td>
+ </tr>
+
+ <tr>
+ <td><code>forbidden-filetypes</code></td>
+ <td>this attribute lists the filetypes that may not be treated as cgi-scripts;
+     the value is a comma-seperated list of filetypes in hexadecimal
+     - you may have multiple <code>forbidden-filetypes</code>-lines
+     for an URI; default is no filetypes are forbidden; a blank list means no filetypes; if a filetype is listed
+     in both the <code>allowed-filetypes</code> list and the <code>forbidden-filetypes</code>
+     list then the forbidden list takes priority<br>
+     example: <code>forbidden-filetypes=FAF,FFF,695,C85</code></td>
+ </tr>
+
+ </table>
+
+ <p>
+
+ <h5>Nested attribute-files</h5>
+
+  The <code>more-attributes</code> attribute allows you to have nested
+ attribute-files; eg. if multiple sites are served by the server, the
+ attributes for each site may have its attributes defined in a seperate
+ file.
+
+ <p>
+  Example: assuming the users <code>joe</code> and <code>bob</code> both
+ have their web-site on your server; the main attributes-file could then
+ look like this:
+
+ <pre>
+ # main attributes file
+ &lt;location /~joe/&gt;
+ more-attributes=&lt;WebJames$Dir&gt;.sites.joe.~attributs
+ &lt;/location&gt
+
+ &lt;location /~bob/&gt;
+ more-attributes=&lt;WebJames$Dir&gt;.sites.bob.~attributs
+ &lt;/location&gt
+ </pre>
+
+ The attributes-file (<code>&lt;WebJames$Dir&gt;.sites.joe.~attributs</code>)
+ could then look something like this:
+
+ <pre>
+ # attributes file for joe
+ # all URIs in &lt;location&gt; are relative to /~joe/
+
+ # set the base-directory for joe's site
+ &lt;location /&gt;
+ homedir=&lt;WebJames$Dir&gt;.sites.joe
+ &lt;/location&gt
+
+ # hide the attributes file for joe's site
+ &lt;location /~attributs&gt;
+ hidden
+ &lt;/location&gt
+ </pre>
+
+  All requests for URIs starting with <code>/~joe/</code> would then access
+ files in the <code>&lt;WebJames$Dir&gt;.sites.joe</code> directory; notice
+ that the attribute-file for joe's site itself is stored inside joe's
+ site-directory; this would be a security risk, if the file hadn't been
+ marked inaccessible (by the <code>hidden</code> attribute).
+
+ <p>
+ Notice - you should not nest attribute-files in more than 3 levels.
+
+ <a name="htaccess"><h5>htaccess files</h5></a>
+
+  You can also specify attributes for a directory by putting them in an
+ <code>htaccess</code> file within the directory. The name of the <code>htaccess</code>
+ file is specified in the <a href="config#config">config file</a>, and is by default
+ <code>/htaccess</code>
+
+ <p>
+  The <code>htaccess</code> files are in the same format as the attributes file,
+ but act as if the whole file was surrounded by a <code>&lt;directory dirname&gt;</code>
+ section, where dirname is the directory the <code>htaccess</code> file is in.
+ It can contain <code>&lt;files&gt;</code> and <code>&lt;filesmatch&gt;</code> sections,
+ but not <code>&lt;location&gt;</code> or <code>&lt;directory&gt;</code> sections.
+ <p>
+  Please note that the <code>htaccess</code> files are cached, so if you alter one,
+ then it may not take effect until you restart WebJames. Also, it you specify a
+ <code>&lt;directory&gt;</code> section for a directory, then any <code>htaccess</code>
+ file in that directory will be ignored.
+
+<p>
+<a href="index.html">Back to contents</a>
+<p>
+
+
+</body>
+</html>

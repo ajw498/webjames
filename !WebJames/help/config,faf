@@ -1,0 +1,42 @@
+<html>
+<head>
+  <title>WebJames - Configuration</title>
+</head>
+
+<body bgcolor="#ffffff">
+<p>
+<h3>
+<table bgcolor="#cccccc" width="99%"><tr><td>
+<a name="config">Configuration</a>
+</td></tr></table>
+</h3>
+
+  The name of the config file is passed to WebJames as the first argument
+ when WebJames is started. Usually the config file is
+ <code>&lt;WebJames$Dir&gt;.config</code>.
+
+ <p>
+  The config file holds information about the location (on your harddisc)
+ of your website, the location of various database files, the maximum
+ network-bandwidth WebJames may use, port number (usually 80), log-files
+ etc. See the configuration file for details of the various options.
+
+ <p>
+  There are rather a lot of options in the config file, but usually you
+ will only need to edit the first field - the webmaster-email-address.
+
+ <p>
+ <h5>Case sensitivity</h5>
+  The case sensitive option allows you check that all your links between files
+ are in the correct case. It works on standard filecore filling systems such as
+ ADFS that are not normally case sensitive, but it is not quite as efficient
+ as the default case insensivity.
+
+
+<p>
+<a href="index.html">Back to contents</a>
+<p>
+
+
+</body>
+</html>
