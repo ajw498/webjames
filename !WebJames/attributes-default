@@ -43,6 +43,7 @@
 # errordocument statuscode "message
 # errordocument statuscode urltoredirectto
 # stripextensions
+# multiviews
 #
 #  if a file/directory is password-protected, a realm MUST
 # be defined for that file/directory, otherwise it cannot
@@ -70,6 +71,9 @@ AddFiletypeHandler perl-script Perl
 # the file should contain appropriate headers
 AddHandler send-as-is .asis
 
+# define files with a .var extension to hold a type-map for content negotiation
+AddHandler type-map .var
+
 # define which directory holds 'webjames-style' cgi-scripts
 # Using AddHandler or AddFiletypeHandler with no filetype or extension means apply it to all files
 <location /cgi-bin/>
@@ -79,10 +83,6 @@ AddFiletypeHandler webjames-script ALL
 # define which directory holds cgi-scripts using redirection
 <location /cgi-bin2/>
 AddFiletypeHandler cgi-script
-</location>
-
-<location /config/>
-homedir=<WebJames$Dir>.conf
 </location>
 
 # protect .htaccess files

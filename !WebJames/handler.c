@@ -38,6 +38,14 @@ static struct handlerentry handlers[] = {
 		NULL
 	},
 	{
+		"type-map",
+		0,
+		NULL,
+		content_starthandler,
+		NULL,
+		NULL
+	},
+	{
 		"static-content",
 		1,
 		NULL,

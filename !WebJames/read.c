@@ -314,6 +314,16 @@ void pollread_header(struct connection *conn, int bytes) {
 			conn->acceptlanguage = malloc(strlen(line+17)+1);
 			strcpy(conn->acceptlanguage, line+17);
 
+		} else if (strncmp(upper, "ACCEPT-ENCODING: ", 17) == 0) {
+			if (conn->acceptencoding)  free(conn->acceptencoding);
+			conn->acceptencoding = malloc(strlen(line+17)+1);
+			strcpy(conn->acceptencoding, line+17);
+
+		} else if (strncmp(upper, "ACCEPT-CHARSET: ", 17) == 0) {
+			if (conn->acceptcharset)  free(conn->acceptcharset);
+			conn->acceptcharset = malloc(strlen(line+17)+1);
+			strcpy(conn->acceptcharset, line+17);
+
 		} else if (strncmp(upper, "CONTENT-LENGTH: ", 16) == 0) {
 			conn->bodysize = (int)strtol(upper+16,NULL,10);  /* was atoi()*/
 			if (conn->bodysize < 0) {

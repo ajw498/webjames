@@ -74,6 +74,7 @@ typedef struct connection {
 		unsigned int cacheable         : 1;
 		unsigned int is_cgi            : 1;
 		unsigned int stripextensions   : 1;  /* strip any filename extension when looking for the file */
+		unsigned int multiviews        : 1;  /* content negotiation */
 		unsigned int setcsd            : 1;  /* set the currently selected directory to the dir containing the cgi script */
 	} flags;
 
@@ -109,6 +110,7 @@ typedef struct connection {
 
 	int headersize, headerallocated;
 	char *header;               /* malloc()'ed */
+	char vary[60];
 
 	FILE *file;                 /* if file != NULL, data will be read */
 								/* directly from the file */

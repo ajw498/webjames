@@ -13,7 +13,7 @@ WebJames - the web server
 </td></tr>
 <tr>
 <td><center><h5>
-Version 0.28
+Version 0.30
 </h5></center>
 </td>
 </tr></table>
@@ -27,6 +27,7 @@ Version 0.28
 <li><a href="#attr">Attributes</a><br>
 <li><a href="#handlers">Handlers and CGI scripts</a><br>
 <li><a href="#putdelete">PUT and DELETE methods</a><br>
+<li><a href="#contentneg">Content negotiation</a><br>
 <li><a href="#log">Logging/statistics</a><br>
 <li><a href="#bandwidth">Bandwidth</a><br>
 <li><a href="#commands">Commands</a><br>
@@ -585,6 +586,14 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  </tr>
 
  <tr>
+ <td><code>multiviews</code></td>
+ <td>this attribute enables <a href="#multiviews">MultiViews</a>. It can be considered as the
+     opposite of <code>stripextensions</code>, and thus both should not be enabled within the
+     same directory.
+     </td>
+ </tr>
+
+ <tr>
  <td><code>setcsd</code></td>
  <td>when set, the currently selected directory (CSD) will be set to the directory containing
      the CGI script before running the script
@@ -812,6 +821,40 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  <col span="1" width="150">
 
  <tr>
+ <td valign="top"><code>PATH_TRANSLATED</code></td>
+ <td>name of the cgi-script, eg. <code>&lt;WebJames$Dir&gt;.site.cgi-bin2.test</code></td>
+ </tr>
+
+ <tr>
+ <td valign="top"><code>SCRIPT_NAME</code></td>
+ <td>uri of the script without the hostname, eg. <code>/cgi-bin2/test.php</code></td>
+ </tr>
+
+ <tr>
+ <td valign="top"><code>CONTENT_LENGTH</code></td>
+ <td>size of the request-body - only valid for <code>POST</code> and
+     <code>PUT</code> requests</td>
+ </tr>
+
+ <tr>
+ <td valign="top"><code>CONTENT_TYPE</code></td>
+ <td>request-body MIME-type - only valid for <code>POST</code> and
+     <code>PUT</code> requests</td>
+ </tr>
+
+ <tr>
+ <td valign="top"><code>REQUEST_METHOD</code></td>
+ <td>either <code>GET</code>, <code>HEAD</code>, <code>POST</code>,
+     <code>PUT</code> or <code>DELETE</code></td>
+ </tr>
+
+ <tr>
+ <td valign="top"><code>REQUEST_URI</code></td>
+ <td>the request-URI, including any arguments, eg.
+     <code>/cgi-bin2/find?whereis=Waldo</code></td>
+ </tr>
+
+ <tr>
  <td valign="top"><code>QUERY_STRING</code></td>
  <td>the arguments-part of the request-URI; if the URI is
      <code>/cgi-bin2/find?whereis=Waldo</code>, <code>QUERY_STRING</code>
@@ -819,37 +862,14 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  </tr>
 
  <tr>
- <td><code>PATH_TRANSLATED</code></td>
- <td>name of the cgi-script, eg. <code>&lt;WebJames$Dir&gt;.site.cgi-bin2.test</code></td>
- </tr>
-
- <tr>
- <td><code>SCRIPT_NAME</code></td>
- <td>uri of the script without the hostname, eg. <code>/cgi-bin2/test.php</code></td>
- </tr>
-
- <tr>
- <td><code>CONTENT_LENGTH</code></td>
- <td>size of the request-body - only valid for <code>POST</code> and
-     <code>PUT</code> requests</td>
- </tr>
-
- <tr>
- <td><code>CONTENT_TYPE</code></td>
- <td>request-body MIME-type - only valid for <code>POST</code> and
-     <code>PUT</code> requests</td>
- </tr>
-
- <tr>
- <td><code>REQUEST_METHOD</code></td>
- <td>either <code>GET</code>, <code>HEAD</code>, <code>POST</code>,
-     <code>PUT</code> or <code>DELETE</code></td>
- </tr>
-
- <tr>
  <td valign="top"><code>REMOTE_ADDR</code></td>
  <td>the IP-address of the host requesting the file, eg.
      <code>192.168.1.80</code></td>
+ </tr>
+
+ <tr>
+ <td valign="top"><code>DOCUMENT_ROOT</code></td>
+ <td>the directory set by the homedir field in the <a href="#config">config</a> file</td>
  </tr>
 
 
@@ -881,6 +901,25 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  <td>contents of the <code>Cookie:</code> field in the request</td>
  </tr>
 
+ <tr>
+ <td valign="top"><code>HTTP_ACCEPT</code></td>
+ <td>contents of the <code>Accept:</code> field in the request</td>
+ </tr>
+
+ <tr>
+ <td valign="top"><code>HTTP_ACCEPT_LANGUAGE</code></td>
+ <td>contents of the <code>Accept-Language:</code> field in the request</td>
+ </tr>
+
+ <tr>
+ <td valign="top"><code>HTTP_ACCEPT_CHARSET</code></td>
+ <td>contents of the <code>Accept-Charset:</code> field in the request</td>
+ </tr>
+
+ <tr>
+ <td valign="top"><code>HTTP_ENCODING</code></td>
+ <td>contents of the <code>Accept-Encoding:</code> field in the request</td>
+ </tr>
 
  <tr>
  <td valign="top"><code>SERVER_SOFTWARE</code></td>
@@ -1077,6 +1116,64 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  <code>PUT</code> and <code>DELETE</code> methods for those scripts.
  </strong>
 
+<p>
+<h3>
+<table bgcolor="#cccccc" width="99%"><tr><td>
+<a name="contentneg">Content negotiation</a>
+</td></tr></table>
+</h3>
+
+  It is possible to have a resource (HTML page, image, etc.) in several
+ different formats. A browser can supply information on what formats or
+ languages are preferable, and WebJames will return the file that best
+ matches the browsers preference.
+<p>
+  The filename requested by the browser should <b>not</b> have an extension
+ (ie. <code>page</code>, not <code>page.html</code>). WebJames will then look
+ for a type-map file, which has a filename of, for example, <code>page.var</code>.
+ The extension that is added can be altered by changing the line <br>
+ <code>AddHandler type-map .var</code><br>
+ in the attributes file.
+ <p>
+  The type map is in the same format as <i>Apache</i> uses, and consists of a
+ section for each variant of a resource. Each section starts with a line
+ <code>URI: page.en.html</code> where page.en.html is the URI of the resource
+ relative to the type-map file.
+ This is followed by one or more of the following lines
+ <ul>
+ <li>Content-type: the mime type of the file. Can also include a source quality
+ factor and the charset that the resource uses. A quality factor is a number
+ between 0 and 1 that indicates the relative 'quality' of the variant. A variant
+ with a source quality of 0 will never be returned. If a source quality is not
+ specified then it defaults to 1. Examples:<br>
+ <code>Content-type: image/jpeg</code><br>
+ <code>Content-type: image/png; qs=0.6</code><br>
+ <code>Content-type: text/html; charset=iso-8859-2; qs=0.4</code>
+ <li>Content-Language: the language the file is written in. Examples:<br>
+ <code>Content-language: de</code><br>
+ <code>Content-language: en-us</code>
+ <li>Content-Encoding: the encoding applied to the file. Encodings are not yet fully
+ supported by WebJames. Example:<br>
+ <code>Content-encoding: gzip</code>
+ <li>Description: a human readable description of the variant. If WebJames cannot find
+ a variant that satifies the browser's preferences then it will return a list of all
+ possible variants, and will include this description in the list. Example:<br>
+ <code>Description: The complete works of Shakespere in Swahilli</code>
+
+</ul>
+
+ There is an example of content negotiation supplied in the <code>Site/content</code>
+ directory.
+ <a name="multiviews"><h5>MultiViews</h5></a>
+
+  It is possible to use content negotiation without having to create a type map file
+ for each page. If you give a page or directory the multiviews attribute, then whenever
+ a page is requested that does not have a filename extension, WebJames will scan the
+ directory for other files with the same name but with an extension. It will
+ effectively create a type-map on-the-fly based on the directory contents, and the proceed
+ as with standard content negotiation. Files should be named <code>name.ext</code> or
+ <code>name.lang.ext</code>. The ext will be converted to a mime type, and the lang,
+ if present, will be used as the language.
 
 <p>
 <h3>
@@ -1462,6 +1559,11 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
    <td>%EMAIL% %URL%</td>
  </tr> 
  <tr>
+   <td>406</td>
+   <td>no acceptable content</td>
+   <td>%EMAIL% %URL% %LIST%</td>
+ </tr> 
+ <tr>
    <td>500</td>
    <td>unexpected server error</td>
    <td>%EMAIL%</td>
@@ -1513,6 +1615,16 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 <a name="history">History</a>
 </td></tr></table>
 </h3>
+
+<i>0.30 (10/7/2001)</i>
+
+<ul>
+  <li>no longer converts %7E type escape characters that are in the query string.
+  <li>sets more environment variables for CGI scripts: <code>REQUEST_URI, DOCUMENT_ROOT,
+  HTTP_ACCEPT, HTTP_ACCEPT_LANGUAGE, HTTP_ACCEPT_CHARSET, HTTP_ENCODING</code>.
+  <li>added support for content negotiation and multiviews.
+
+</ul>
 
 <i>0.29 (30/3/2001)</i>
 

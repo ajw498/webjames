@@ -9,6 +9,7 @@
 #include "attributes.h"
 #include "stat.h"
 #include "handler.h"
+#include "content.h"
 
 #include "oslib/osfscontrol.h"
 
@@ -249,7 +250,7 @@ static struct attributes *create_attribute_structure(char *uri) {
 	if (!attr)  return NULL;
 
 	/* reset the structure to default state */
-	attr->cacheable = attr->hidden = attr->ignore = attr->stripextensions = 0;
+	attr->cacheable = attr->hidden = attr->ignore = attr->stripextensions = attr->multiviews = 0;
 	attr->realm = attr->accessfile = attr->userandpwd = NULL;
 	attr->homedir = attr->moved = attr->tempmoved = NULL;
 	attr->regex = NULL;
@@ -271,8 +272,8 @@ static struct attributes *create_attribute_structure(char *uri) {
 		attr->defined.moved = attr->defined.tempmoved = attr->defined.cacheable =
 		attr->defined.homedir = attr->defined.is_cgi = attr->defined.cgi_api =
 		attr->defined.methods = attr->defined.port = attr->defined.hidden =
-		attr->defined.defaultfile = attr->defined.allowedfiletypes =
-		attr->defined.forbiddenfiletypes = attr->defined.stripextensions = attr->defined.setcsd = 0;
+		attr->defined.defaultfile = attr->defined.allowedfiletypes = attr->defined.forbiddenfiletypes =
+		attr->defined.stripextensions = attr->defined.multiviews = attr->defined.setcsd = 0;
 
 	attr->urilen = strlen(uri);
 	attr->uri = malloc(attr->urilen+1);
@@ -623,6 +624,9 @@ static struct attributes *read_attributes_file(char *filename, char *base) {
 				/* change handler name to lowercase */
 				lower_case(value);
 
+				/*check for type-map - need to record extension for content negotiation*/
+				if (strcmp(value,"type-map")==0) content_recordextension(filetypetext);
+
 				if (filetypehandler) {
 					if (filetypetext[0] == '\0') {
 						filetype = filetype_NONE;
@@ -739,6 +743,12 @@ static struct attributes *read_attributes_file(char *filename, char *base) {
 					/* Strip filename extensions */
 					attr->defined.stripextensions = 1;
 					attr->stripextensions = 1;
+					if (value) free(value);
+
+				} else if (strcmp(attribute, "multiviews") == 0) {
+					/* Content negotiation */
+					attr->defined.multiviews = 1;
+					attr->multiviews = 1;
 					if (value) free(value);
 
 				} else if (strcmp(attribute, "setcsd") == 0) {
@@ -894,6 +904,7 @@ static void merge_attributes3(struct connection *conn, struct attributes *attr) 
 	if (attr->defined.cgi_api)         conn->cgi_api               = attr->cgi_api;
 	if (attr->defined.is_cgi)          conn->flags.is_cgi          = attr->is_cgi;
 	if (attr->defined.stripextensions) conn->flags.stripextensions = attr->stripextensions;
+	if (attr->defined.multiviews)      conn->flags.multiviews       = attr->multiviews;
 	for (i=0; i<attr->errordocscount; i++) {
 		/* add to top of linked list */
 		struct errordoc *error;

@@ -35,6 +35,7 @@ struct connection *create_conn(void) {
 	conn->timeoflastactivity = clock();
 	conn->cache = NULL;
 	conn->file = NULL;
+	conn->vary[0]='\0';
 	/* attributes */
 	conn->homedir = configuration.site;
 	conn->accessfile = conn->userandpwd = conn->realm = NULL;
@@ -57,6 +58,7 @@ struct connection *create_conn(void) {
 	conn->flags.is_cgi = 0;
 	conn->flags.setcsd = 0;
 	conn->flags.stripextensions = 0;
+	conn->flags.multiviews = 0;
 	conn->statuscode = HTTP_OK;
 	conn->starttime = clock();
 

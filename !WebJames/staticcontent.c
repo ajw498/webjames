@@ -57,6 +57,10 @@ void staticcontent_start(struct connection *conn)
 		writestring(conn->socket, temp);
 		sprintf(temp, "Content-Type: %s\r\n", conn->fileinfo.mimetype);
 		writestring(conn->socket, temp);
+		if (conn->vary[0]) {
+			sprintf(temp, "Vary:%s\r\n", conn->vary);
+			writestring(conn->socket, temp);
+		}
 		for (i = 0; i < configuration.xheaders; i++) {
 			writestring(conn->socket, configuration.xheader[i]);
 			writestring(conn->socket, "\r\n");

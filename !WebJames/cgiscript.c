@@ -115,6 +115,26 @@ void cgiscript_start(struct connection *conn)
 	else
 		set_var_val("HTTP_REFERER", "");
 
+	if (conn->accept)
+		set_var_val("HTTP_ACCEPT", conn->accept);
+	else
+		set_var_val("HTTP_ACCEPT", "");
+
+	if (conn->acceptlanguage)
+		set_var_val("HTTP_ACCEPT_LANGUAGE", conn->acceptlanguage);
+	else
+		set_var_val("HTTP_ACCEPT_LANGUAGE", "");
+
+	if (conn->acceptcharset)
+		set_var_val("HTTP_ACCEPT_CHARSET", conn->acceptcharset);
+	else
+		set_var_val("HTTP_ACCEPT_CHARSET", "");
+
+	if (conn->acceptencoding)
+		set_var_val("HTTP_ENCODING", conn->acceptencoding);
+	else
+		set_var_val("HTTP_ENCODING", "");
+
 
 	input[0] = '\0';                      /* clear spool-input filename */
 
@@ -192,6 +212,10 @@ void cgiscript_start(struct connection *conn)
 	remove_var("HTTP_COOKIE");
 	remove_var("HTTP_USER_AGENT");
 	remove_var("HTTP_REFERER");
+	remove_var("HTTP_ACCEPT");
+	remove_var("HTTP_ACCEPT_LANGUAGE");
+	remove_var("HTTP_ACCEPT_CHARSET");
+	remove_var("HTTP_ENCODING");
 
 	/* Set the CSD back to what it was if we changed it */
 	if (conn->flags.setcsd) xosfscontrol_back();
@@ -235,6 +259,10 @@ void cgiscript_start(struct connection *conn)
 	conn->fileinfo.size = size;
 
 	writestring(conn->socket, "HTTP/1.0 200 OK\r\n");
+	if (conn->vary[0]) {
+		sprintf(temp, "Vary:%s\r\n", conn->vary);
+		writestring(conn->socket, temp);
+	}
 }
 
 
