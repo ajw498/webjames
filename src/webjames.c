@@ -48,6 +48,9 @@ char temp[HTTPBUFFERSIZE];
 os_error *webjames_last_error;
 void *webjames_last_malloc;
 
+/* Default value for filename translations */
+int __riscosify_control = 0;
+
 /* ------------------------------------------------ */
 /* init, kill, poll */
 
