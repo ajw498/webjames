@@ -1,6 +1,6 @@
 # Makefile for WebJames the web server
 #
-# $Id: cross,v 1.7 2002/05/02 00:33:22 ajw Exp $
+# $Id: cross,v 1.8 2002/10/05 16:18:47 ajw Exp $
 #
 # Settings for the gcc/unixlib build using the gccsdk cross compiler
 
@@ -30,7 +30,7 @@ INCLUDE = -I$(LIBDIR)
 GCCINCLUDE = $(INCLUDE)
 
 #Linker flags
-LINKDEBUG =
+LINKDEBUG = -L$(LIBDIR)/lib
 
 #File Extensions
 EXT_FEB = ,feb
