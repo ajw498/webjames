@@ -437,7 +437,7 @@ int *cgi_writetosocket(char *buffer, int bytes, int *written) {
 
   error = (int *)xsocket_write(_cgi_socket, (byte *)buffer, bytes, written);
   if (error) {
-    if (error[0] != 36 && error[0] != 35)  return error;
+    if ((error[0] & 0xFF != 36) && (error[0] & 0xFF != 35))  return error;
   }
 
   return NULL;
