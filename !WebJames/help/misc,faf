@@ -62,9 +62,6 @@
  <p>
   WebJames calculates the bandwidth-usage as a mean of the number of bytes
  written to the network over the last 1-2 minutes.
- <p>
-  You can also use this option to simulate a slow link, so when you are testing
-  your site locally you can see how long it would take to download over a modem. 
 
 
 <p>

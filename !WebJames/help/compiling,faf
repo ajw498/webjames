@@ -1,232 +1,43 @@
 <html>
 <head>
-  <title>WebJames - Commands and Compiling</title>
+  <title>WebJames - Compiling</title>
 </head>
 
 <body bgcolor="#ffffff">
 <p>
 <h3>
 <table bgcolor="#cccccc" width="99%"><tr><td>
-<a name="commands">Commands</a>
+<a name="Compiling">Recompiling WebJames</a>
 </td></tr></table>
 </h3>
 
-  Other applications may give commands to WebJames, eg. to force WebJames to
- flush the cache.
-
+ WebJames can be compiled with Norcroft cc and linked with the shared C library,
+ or compiled with gcc and linked with UnixLib, either natively or cross compiled
+ with the <a href="http://www.hard-mofo.dsvr.net/gcc/index.html">gccsdk</a>.
  <p>
-  Commands are sent using wimp-message <code>&4f988</code>
-   (<code>MESSAGE_WEBJAMES_CMD</code>):
-
+ To choose how to build WebJames, edit the Makefile, changing the BUILD= line as
+ described in the makefile. If you are cross compiling you will also need to change
+ DIRSEP to a slash rather than a dot.
  <p>
- <table width="99%" border="1">
- <colgroup span="1" width="60" align="center">
- <colgroup span="1" width="80">
- <colgroup span="1">
- <tr>
-   <th>Offset</th>
-   <th>Contents</th>
-   <th>Meaning</th>
- </tr>
- <tr>
-   <td>0</td>
-   <td>N</td>
-   <td>message size in bytes</td>
- </tr>
- <tr>
-   <td>16</td>
-   <td>&4f988</td>
-   <td>message number, always &4f988</td>
- </tr>
- <tr valign="top">
-   <td>20</td>
-   <td>flags</td>
-   <td>
-     <table>
-     <colgroup span="1" width="40">
-     <colgroup span="1" width="20">
-     <colgroup span="1">
-     <tr valign="top">
-       <td>bit 0</td>
-       <td>0</td>
-       <td>command/message to WebJames</td>
-     </tr>
-     <tr valign="top">
-       <td></td>
-       <td>1</td>
-       <td>reply/message from WebJames</td>
-     </tr>
-     <tr valign="top">
-       <td>bit 1</td>
-       <td>0</td>
-       <td>normal message</td>
-     </tr>
-     <tr valign="top">
-       <td></td>
-       <td>1</td>
-       <td>long message, word at offset 24 points to
-           the actual message in shared memory</td>
-     </tr>
-     <tr valign="top">
-       <td>bit 2</td>
-       <td>0</td>
-       <td>-</td>
-     </tr>
-     <tr valign="top">
-       <td></td>
-       <td>1</td>
-       <td>message block is in the RMA and should be released
-           by the receiver (long messages only)</td>
-     </tr>
-     </table>
-   </td>
- </tr>
- <tr>
-   <td>24</td>
-   <td>command</td>
-   <td>command-string or pointer to the command-string</td>
- </tr>
- </table>
-
+ If you are cross compiling then <code>make setup</code> will move all the .c and .h files
+ out of their directories and add the appropriate extension.
  <p>
-  Supported commands are:
+ There are several flags that can be defined to control which handlers get included:
+ <ul>
+ <li><code>SSI</code> include the server side includes handler
+ <li><code>CGISCRIPT</code> include the CGI script handler
+ <li><code>WEBJAMESSCRIPT</code> include the WebJames style CGI script handler
+ <li><code>SENDASIS</code> include the send-as-is handler
+ <li><code>CONTENT</code> enable content negotiation
+ <li><code>LOG</code> enable logging
+ </ul>
 
+ The pre-compiled version of WebJames is usually compiled with all flags defined.
  <p>
- <table width="99%" border="1">
- <colgroup span="1" width="100">
- <colgroup span="1">
- <tr>
-   <td valign="top">Command</td>
-   <td valign="top"><b>log</b></td>
- </tr> 
- <tr>
-   <td valign="top">Syntax</td>
-   <td valign="top">log &lt;string&gt;</td>
- </tr> 
- <tr>
-   <td valign="top">Example</td>
-   <td valign="top"><code>log CGI webcam cgi-script failed</code></td>
- </tr> 
- <tr>
-   <td valign="top">Purpose</td>
-   <td valign="top">write a string to the log file; the string should
-       start with a short keyword indicating the type of log-entry;
-       cgi-scripts using this command should always use the format
-       <code>&quot;CGI&quot; &lt;cgi-script-title&gt; &lt;report&gt;</code>
-       </td>
- </tr> 
- </table>
-
- <p>
- <table width="99%" border="1">
- <colgroup span="1" width="100">
- <colgroup span="1">
- <tr>
-   <td valign="top">Command</td>
-   <td valign="top"><b>closeall</b></td>
- </tr> 
- <tr>
-   <td valign="top">Syntax</td>
-   <td valign="top">closeall</td>
- </tr> 
- <tr>
-   <td valign="top">Purpose</td>
-   <td valign="top">close all open connections</td>
- </tr> 
- </table>
- <p>
-
- <table width="99%" border="1">
- <colgroup span="1" width="100">
- <colgroup span="1">
- <tr>
-   <td valign="top">Command</td>
-   <td valign="top"><b>flushcache</b></td>
- </tr> 
- <tr>
-   <td valign="top">Syntax</td>
-   <td valign="top">flushcache</td>
- </tr> 
- <tr>
-   <td valign="top">Purpose</td>
-   <td valign="top">flush the file- and report-caches</td>
- </tr> 
- </table>
- <p>
-
- <table width="99%" border="1">
- <colgroup span="1" width="100">
- <colgroup span="1">
- <tr>
-   <td valign="top">Command</td>
-   <td valign="top"><b>quitwhenidle</b></td>
- </tr> 
- <tr>
-   <td valign="top">Syntax</td>
-   <td valign="top">quitwhenidle</td>
- </tr> 
- <tr>
-   <td valign="top">Purpose</td>
-   <td valign="top">wait until there's no more active connections,
-       then quit; used by <code>&lt;WebJames$Dir&gt;.Restart</code></td>
- </tr> 
- </table>
- <p>
-
- <table width="99%" border="1">
- <colgroup span="1" width="100">
- <colgroup span="1">
- <tr>
-   <td valign="top">Command</td>
-   <td valign="top"><b>clf</b></td>
- </tr> 
- <tr>
-   <td valign="top">Syntax</td>
-   <td valign="top">clf &lt;code&gt; &lt;bytes&gt; &lt;host&gt; % &lt;requestline&gt;</td>
- </tr> 
- <tr>
-   <td valign="top">Example</td>
-   <td valign="top"><code>clf 200 1234 elvis.graceland.com % GET /music.html HTTP/1.0</code></td>
- </tr> 
- <tr>
-   <td valign="top">Purpose</td>
-   <td valign="top">write a line to the <code>CLF</code> log file; the
-       % is simply there to make parsing the command easier</td>
- </tr>
- <tr>
-   <td valign="top">Comments</td>
-   <td valign="top">Not supported in version 0.09</td>
- </tr>
- </table>
-
-
-<p>
-<h3>
-<table bgcolor="#cccccc" width="99%"><tr><td>
-<a name="Notes">Notes</a>
-</td></tr></table>
-</h3>
-
-<h5>PHP</h5>
-
-  WebJames works well with the <a href="http://www.ecs.soton.ac.uk/~ajw498/internet/php/">RISC OS port of PHP</a><br>
-  With the default configuration you can put PHP scripts anywhere where you would put normal HTML.
-
-<p>
-
-<h5>Apache</h5>
-
-  Although some of the features in WebJames are compatible with, or inspired by, Apache,
- non of the code has been taken from Apache. 
-<p>
-<h5>Recompiling WebJames</h5>
-
-  The pre-compiled version of WebJames is usually compiled with the
- <code>LOG</code> switch <i>on</i>.
-
- <p>
-  The <code>LOG</code> switch enables logging.
-
+ To prevent the possibility of security holes due to buffer overflows, string
+ functions such as strcpy and sprintf that do not have length checking of the output buffer
+ are not used in WebJames. To prevent any of these functions slipping in unnoticed,
+ webjames.h #defines them to non-existant functions. 
 
 <p>
 <a href="index.html">Back to contents</a>

@@ -36,11 +36,12 @@ Version 0.31
 <li><a href="content#contentneg">Content negotiation</a><br>
 <li><a href="logging#log">Logging/statistics</a><br>
 <li><a href="misc#bandwidth">Bandwidth</a><br>
-<li><a href="compiling#commands">Commands</a><br>
+<li><a href="commands#commands">Commands</a><br>
 <li><a href="misc#cache">Cache</a><br>
 <li><a href="misc#reports">Reports</a><br>
 <li><a href="history#todo">Things that need to be improved</a><br>
 <li><a href="history#history">History</a><br>
+<li><a href="ack#ack">Acknowledgements</a><br>
 <li><a href="compiling#compiling">Compiling</a><br>
 </ul>
 
