@@ -41,7 +41,7 @@ void staticcontent_start(struct connection *conn)
 			}
 			/* attempt to get a read-ahead buffer for the file */
 			/* notice: things will still work if malloc fails */
-			conn->filebuffer = malloc(readaheadbuffer*1024);
+			conn->filebuffer = malloc(configuration.readaheadbuffer*1024);
 			conn->flags.releasefilebuffer = 1;
 			conn->leftinbuffer = 0;
 			/* set the fields in the structure, and that's it! */
@@ -80,7 +80,7 @@ int staticcontent_poll(struct connection *conn,int maxbytes) {
 		bytes = conn->fileinfo.size - conn->fileused;
 		if (conn->file) {
 			if (conn->filebuffer) {
-				if (bytes > readaheadbuffer*1024)  bytes = readaheadbuffer*1024;
+				if (bytes > configuration.readaheadbuffer*1024)  bytes = configuration.readaheadbuffer*1024;
 			} else {
 				if (bytes > HTTPBUFFERSIZE)  bytes = HTTPBUFFERSIZE;
 			}
@@ -95,7 +95,7 @@ int staticcontent_poll(struct connection *conn,int maxbytes) {
 				/* move those to the start of the buffer, and refill; that may */
 				/* be faster than sending the 512 bytes on their own */
 				if (conn->leftinbuffer == 0) {
-					conn->leftinbuffer = fread(conn->filebuffer, 1,readaheadbuffer*1024, conn->file);
+					conn->leftinbuffer = fread(conn->filebuffer, 1,configuration.readaheadbuffer*1024, conn->file);
 					conn->positioninbuffer = 0;
 				}
 				if (bytes > conn->leftinbuffer)  bytes = conn->leftinbuffer;

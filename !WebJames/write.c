@@ -20,8 +20,6 @@
 #include "handler.h"
 
 
-int readaheadbuffer;
-
 #define FILE_DOESNT_EXIST  -1
 #define FILE_LOCKED        -2
 #define FILE_ERROR         -3

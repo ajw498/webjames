@@ -29,7 +29,7 @@ struct config configuration;
 /* connection */
 struct serverinfo servers[8];
 int readcount, writecount, dnscount, slowdown;
-int activeconnections, maxrequestsize;
+int activeconnections;
 static quitwhenidle;
 struct connection *connections[MAXCONNECTIONS];
 char select_read[32], select_write[32], select_except[32];
@@ -58,10 +58,16 @@ int webjames_init(char *config) {
 	configuration.bandwidth = 0;
 	configuration.reversedns = -1;
 	configuration.casesensitive=0;
-	*clflog = *weblog = *configuration.webmaster = *configuration.site = *configuration.serverip = *configuration.cgi_in = *configuration.cgi_out = '\0';
+	*configuration.clflog = *configuration.weblog = *configuration.webmaster = *configuration.site = *configuration.serverip = *configuration.cgi_in = *configuration.cgi_out = '\0';
 	*configuration.put_script = *configuration.delete_script = *configuration.htaccessfile = '\0';
-	maxrequestsize = 100000;
+	configuration.loglevel = 5;
+	configuration.log_close_delay = 10; /* seconds */
+	configuration.log_max_copies = 0;
+	configuration.logbuffersize = 4096;
+
+	configuration.maxrequestsize = 100000;
 	configuration.xheaders = 0;
+	configuration.logheaders = 0;
 	strcpy(configuration.server, "WebJames");
 	read_config(config);
 	if ((*configuration.site == '\0') || (serverscount == 0) || (configuration.timeout < 0))
@@ -424,21 +430,24 @@ void read_config(char *config) {
 				configuration.timeout = atoi(val);
 
 			else if (strcmp(cmd, "cachesize") == 0)
-				cachesize = atoi(val);
+				configuration.cachesize = atoi(val);
 
 			else if (strcmp(cmd, "maxcachefilesize") == 0)
-				maxcachefilesize = atoi(val);
+				configuration.maxcachefilesize = atoi(val);
 
 			else if (strcmp(cmd, "keep-log-open") == 0)
-				log_close_delay = atoi(val);
+				configuration.log_close_delay = atoi(val);
+
+			else if (strcmp(cmd, "logbuffersize") == 0)
+				configuration.logbuffersize = atoi(val);
 
 			else if (strcmp(cmd, "log-rotate") == 0) {
 				int age, size, copies;
 				if (sscanf(val, "%d %d %d", &age, &size, &copies)  == 3) {
 					if ((age > 0) && (age < 24*365) && (size >= 0) && (copies >= 0)) {
-						log_max_age = age;
-						log_max_size = size;
-						log_max_copies = copies;
+						configuration.log_max_age = age;
+						configuration.log_max_size = size;
+						configuration.log_max_copies = copies;
 					}
 				}
 
@@ -446,39 +455,39 @@ void read_config(char *config) {
 				int age, size, copies;
 				if (sscanf(val, "%d %d %d", &age, &size, &copies)  == 3) {
 					if ((age > 0) && (age < 24*365) && (size >= 0) && (copies >= 0)) {
-						clf_max_age = age;
-						clf_max_size = size;
-						clf_max_copies = copies;
+						configuration.clf_max_age = age;
+						configuration.clf_max_size = size;
+						configuration.clf_max_copies = copies;
 					}
 				}
 
 			} else if (strcmp(cmd, "readaheadbuffer") == 0) {
-				readaheadbuffer = atoi(val);
-				if (readaheadbuffer < 8)   readaheadbuffer = 8;
-				if (readaheadbuffer > 64)  readaheadbuffer = 64;
+				configuration.readaheadbuffer = atoi(val);
+				if (configuration.readaheadbuffer < 8)   configuration.readaheadbuffer = 8;
+				if (configuration.readaheadbuffer > 64)  configuration.readaheadbuffer = 64;
 
 			} else if (strcmp(cmd, "maxrequestsize") == 0) {
-				maxrequestsize = atoi(val);
-				if (maxrequestsize < 16)    maxrequestsize = 16;
-				if (maxrequestsize > 2000)  maxrequestsize = 2000;
+				configuration.maxrequestsize = atoi(val);
+				if (configuration.maxrequestsize < 16)    configuration.maxrequestsize = 16;
+				if (configuration.maxrequestsize > 2000)  configuration.maxrequestsize = 2000;
 
 			} else if (strcmp(cmd, "server") == 0)
 				strcpy(configuration.server, val);
 
 			else if (strcmp(cmd, "clf") == 0)
-				strcpy(clflog, val);
+				strcpy(configuration.clflog, val);
 
 			else if (strcmp(cmd, "log") == 0)
-				strcpy(weblog, val);
+				strcpy(configuration.weblog, val);
 
 			else if (strcmp(cmd, "attributes") == 0)
 				strcpy(configuration.attributesfile, val);
 
 			else if (strcmp(cmd, "loglevel") == 0)
-				loglevel = atoi(val);
+				configuration.loglevel = atoi(val);
 
 			else if (strcmp(cmd, "rename-cmd") == 0)
-				strcpy(rename_cmd, val);
+				strcpy(configuration.rename_cmd, val);
 
 			else if (strcmp(cmd, "homedir") == 0) {
 				/* canonicalise the path, so <WebJames$Dir> etc are expanded, otherwise they can cause problems */
@@ -519,6 +528,16 @@ void read_config(char *config) {
 			else if ((strcmp(cmd, "x-header") == 0) && (configuration.xheaders < 16)) {
 				configuration.xheader[configuration.xheaders] = malloc(strlen(val)+1);
 				if (configuration.xheader[configuration.xheaders])  strcpy(configuration.xheader[configuration.xheaders++], val);
+			}
+
+			else if ((strcmp(cmd, "log-header") == 0) && (configuration.logheaders < 16)) {
+				configuration.logheader[configuration.logheaders] = malloc(strlen(val)+1);
+				if (configuration.logheader[configuration.logheaders]) {
+					char *src=val,*dest=configuration.logheader[configuration.logheaders++];
+					do {
+						*dest=toupper(*(src++));
+					} while (*(dest++) != '\0');
+				}
 			}
 		}
 	} while (!feof(file));

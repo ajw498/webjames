@@ -111,7 +111,6 @@ void pollread_header(struct connection *conn, int bytes) {
 
 	/* read some bytes from the socket */
 	bytes = ip_read(conn->socket, conn->buffer+conn->used, bytes);
-/*fwrite(conn->buffer+conn->used,bytes,1,stderr);*/
 	conn->used += bytes;
 
 	do {
@@ -127,7 +126,7 @@ void pollread_header(struct connection *conn, int bytes) {
 		/* if we need to keep the header (for a cgi-script) */
 		if ((conn->header) && (*line)) {
 			int i;
-			if (conn->headersize > 1024*maxrequestsize) {
+			if (conn->headersize > 1024*configuration.maxrequestsize) {
 				read_report(conn);
 				report_badrequest(conn, "Request is too big for this server");
 				return;
@@ -312,7 +311,7 @@ void pollread_header(struct connection *conn, int bytes) {
 				report_badrequest(conn, "negative request-body size");
 				return;
 			}
-			if (conn->bodysize > 1024*maxrequestsize) {
+			if (conn->bodysize > 1024*configuration.maxrequestsize) {
 				read_report(conn);
 				report_badrequest(conn, "Request is too big for this server");
 				return;
@@ -391,10 +390,9 @@ void pollread_header(struct connection *conn, int bytes) {
 				}
 				if (conn->used > conn->bodysize) {
 					/* HELP! We've already read more than we should! */
-				conn->used = conn->bodysize;
-/*					read_report(conn);
-					report_badrequest(conn, "request body overflow");
-					return;*/
+					/* But Oregano and some others send an extra CRLF at the end of the body*/
+					/* So pretend that the body size matches the Content-Length: header */
+					conn->used = conn->bodysize;
 				}
 				conn->status = WJ_STATUS_BODY;
 				if (conn->used) {
@@ -421,6 +419,13 @@ void pollread_header(struct connection *conn, int bytes) {
 		} else {
 			/* ignore unrecognised header field */
 		}
+#ifdef LOG
+		for (i=0;i<configuration.logheaders;i++) {
+			if (strncmp(upper, configuration.logheader[i], strlen(configuration.logheader[i])) == 0) {
+				writelog(LOGLEVEL_HEADER, line);
+			}
+		}
+#endif
 
 	} while (conn->used > 0);
 }

@@ -261,13 +261,14 @@ static void report_quickanddirty(struct connection *conn, int report) {
 
 
 
-void report(struct connection *conn, int code, int subno, int headerlines) {
+void report(struct connection *conn, int code, int subno, int headerlines, char *comment) {
 /* generates and writes a report */
 
 /* conn             connection structure */
 /* code             http status code (eg. HTTP_NOTMOVED) */
 /* subno            size of subs[] */
 /* headerlines      size of header[] */
+/* comment          extra info to write to the log */
 
 /* on exit, the connection is closed (reverse dns may still be going on) */
 
@@ -282,9 +283,9 @@ void report(struct connection *conn, int code, int subno, int headerlines) {
 	reportname = get_report_name(code);
 #ifdef LOG
 	if (conn->uri)
-		sprintf(temp, "REPORT %d %s (%s)", code, reportname, conn->uri);
+		sprintf(temp, "REPORT %d %s (%s) %s", code, reportname, conn->uri, comment);
 	else
-		sprintf(temp, "REPORT %d %s", code, reportname);
+		sprintf(temp, "REPORT %d %s %s", code, reportname, comment);
 	writelog(LOGLEVEL_REPORT, temp);
 #endif
 
@@ -366,7 +367,7 @@ void report(struct connection *conn, int code, int subno, int headerlines) {
 							if (handle) {
 								/* attempt to get a read-ahead buffer for the file */
 								/* notice: things will still work if malloc fails */
-								conn->filebuffer = malloc(readaheadbuffer*1024);
+								conn->filebuffer = malloc(configuration.readaheadbuffer*1024);
 								conn->flags.releasefilebuffer = 1;
 								conn->flags.is_cgi = 0;
 								conn->leftinbuffer = 0;
@@ -492,7 +493,7 @@ void report_moved(struct connection *conn, char *newurl) {
 	subs[1].name = "%URL%";
 	subs[1].value = conn->uri;
 
-	report(conn, HTTP_MOVED, 2, 1);
+	report(conn, HTTP_MOVED, 2, 1, "");
 }
 
 
@@ -514,7 +515,7 @@ void report_movedtemporarily(struct connection *conn, char *newurl) {
 	subs[1].name = "%URL%";
 	subs[1].value = conn->uri;
 
-	report(conn, HTTP_TEMPMOVED, 2, 1);
+	report(conn, HTTP_TEMPMOVED, 2, 1, "");
 }
 
 
@@ -528,7 +529,7 @@ void report_notimplemented(struct connection *conn, char *request) {
 	header[0] = malloc(strlen(supported)+1);
 	if (header[0])  strcpy(header[0], supported);
 
-	report(conn, HTTP_NOTIMPLEMENTED, 1, 1);
+	report(conn, HTTP_NOTIMPLEMENTED, 1, 1, request);
 }
 
 
@@ -537,7 +538,7 @@ void report_notmodified(struct connection *conn) {
 	subs[0].name = "%URL%";
 	subs[0].value = conn->uri;
 
-	report(conn, HTTP_NOTMODIFIED, 1, 0);
+	report(conn, HTTP_NOTMODIFIED, 1, 0, "");
 }
 
 
@@ -546,18 +547,16 @@ void report_nocontent(struct connection *conn) {
 	subs[0].name = "%URL%";
 	subs[0].value = conn->uri;
 
-	report(conn, HTTP_NOCONTENT, 1, 0);
+	report(conn, HTTP_NOCONTENT, 1, 0, "");
 }
 
 
 void report_badrequest(struct connection *conn, char *info) {
 
-	info = info;
-
 	subs[0].name = "%URL%";
 	subs[0].value = conn->uri;
 
-	report(conn, HTTP_BADREQUEST, 1, 0);
+	report(conn, HTTP_BADREQUEST, 1, 0, info);
 
 }
 
@@ -571,7 +570,7 @@ void report_unauthorized(struct connection *conn, char *realm) {
 	if (header[0])
 		sprintf(header[0], "WWW-Authenticate: basic realm=\"%s\"", realm);
 
-	report(conn, HTTP_UNAUTHORIZED, 1, 1);
+	report(conn, HTTP_UNAUTHORIZED, 1, 1, realm);
 }
 
 
@@ -580,7 +579,7 @@ void report_forbidden(struct connection *conn) {
 	subs[0].name = "%URL%";
 	subs[0].value = conn->uri;
 
-	report(conn, HTTP_FORBIDDEN, 1, 0);
+	report(conn, HTTP_FORBIDDEN, 1, 0, "");
 }
 
 
@@ -589,7 +588,7 @@ void report_notfound(struct connection *conn) {
 	subs[0].name = "%URL%";
 	subs[0].value = conn->uri;
 
-	report(conn, HTTP_NOTFOUND, 1, 0);
+	report(conn, HTTP_NOTFOUND, 1, 0, "");
 }
 
 
@@ -598,11 +597,11 @@ void report_busy(struct connection *conn, char *text) {
 	subs[0].name = "%WHY%";
 	subs[0].value = text;
 
-	report(conn, HTTP_BUSY, 1, 0);
+	report(conn, HTTP_BUSY, 1, 0, text);
 }
 
 
 void report_servererr(struct connection *conn) {
 
-	report(conn, HTTP_SERVERERR, 0, 0);
+	report(conn, HTTP_SERVERERR, 0, 0, "");
 }

@@ -115,7 +115,7 @@ log=<webjames$dir>.log
 # loglevel - controls how much log data is output
 # values from 0 (least logging) or 10 (most logging) are allowed; default
 # is 5
-loglevel=7
+loglevel=8
 
 # clf - common logfile format - as used by Apache
 clf=<webjames$dir>.clf
@@ -127,10 +127,16 @@ clf=<webjames$dir>.clf
 # sent currently, reverse dns requires the ANT/Acorn resolver module
 reversedns=10
 
-# keep-log-open - keep the log/clflog open for this many seconds after a
-# write; this removes the overhead involved in opening/closing the log files
-# repeatedly
-keep-log-open=90
+# logbuffersize - buffer the logfile output, only write to file when the
+# buffer is full. set to zero to disable buffering.
+logbuffersize=4096
+
+# keep-log-open - if logbuffersize is zero - keep the log/clflog open for
+# this many seconds after a write; this removes the overhead involved in
+# opening/closing the log files repeatedly
+# if logbuffersize is nonzero  - write any data still in the buffer out
+# to disc after this many seconds 
+keep-log-open=10
 
 # log-rotate - prevents the logfiles from getting too big
 # first number is the maximum age (in hours)
@@ -152,6 +158,14 @@ clf-rotate=168 500 4
 # notice that if you don't use %0 and %1 for the source/destination
 # filenames, WebJames may not be able to rotate subsequent logfiles
 rename-cmd=rename %0 %1
+
+# log-header - extra header-lines that are written to the logfile if
+# present in the request;
+# multiple log-header fields may be included, but only the first 16 are used;
+# eg. log-header=Accept:
+# to log all headers (some may be duplicated), use
+# log-header=
+
 
 
 # PUT and DELETE

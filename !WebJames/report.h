@@ -25,7 +25,7 @@ typedef struct substitute {
 
 extern struct reportcache reports[REPORTCACHECOUNT];
 
-void report(struct connection *conn, int code, int subno, int headerlines);
+void report(struct connection *conn, int code, int subno, int headerlines, char *comment);
 struct reportcache *report_getfile(int report);
 void report_moved(struct connection *conn, char *newurl);
 void report_movedtemporarily(struct connection *conn, char *newurl);

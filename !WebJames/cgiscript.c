@@ -212,7 +212,7 @@ void cgiscript_start(struct connection *conn)
 
 	/* attempt to get a read-ahead buffer for the file */
 	/* notice: things will still work if malloc fails */
-	conn->filebuffer = malloc(readaheadbuffer*1024);
+	conn->filebuffer = malloc(configuration.readaheadbuffer*1024);
 	conn->flags.releasefilebuffer = 1;    /* ignored if filebuffer == NULL */
 	conn->leftinbuffer = 0;
 

@@ -15,6 +15,7 @@
 #define LOGLEVEL_FROM         5
 #define LOGLEVEL_REFERER      7
 #define LOGLEVEL_USERAGENT    7
+#define LOGLEVEL_HEADER       8
 
 
 typedef struct stats {
@@ -25,21 +26,12 @@ typedef struct stats {
 } stats;
 
 extern struct stats statistics;
-extern char weblog[256], clflog[256], rename_cmd[256];
-extern int clfupdatetime;
-extern FILE *clffile;
-extern int loglevel, log_close_delay;
-
-extern int log_max_age, log_max_copies, log_max_size;
-extern int clf_max_age, clf_max_copies, clf_max_size;
 
 void init_statistics(void);
-void write_statistics(void);
 void update_statistics(void);
 
 void writelog(int level, char *string);
 void closelog(void);
-void rotate_log(char *logfile, int copies);
 
 void clf_connection_closed(int cn);
 void clf_cgi_finished(int code, int bytes, char *host, char *request);

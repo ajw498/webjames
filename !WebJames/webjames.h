@@ -143,7 +143,6 @@ typedef struct connection {
 	int pwd; /* if if the file is password-protected */
 	char *args; /* arguments passed to script */
 
-
 } connection;
 
 
@@ -152,13 +151,24 @@ extern struct connection *connections[MAXCONNECTIONS];
 /* configuration */
 typedef struct config {
 	int timeout, bandwidth;
-	char server[128], panic[504], *xheader[17], webmaster[256];
+	char server[128], panic[504], *xheader[17], *logheader[17], webmaster[256];
 	char delete_script[256], put_script[256], site[256];
 	char attributesfile[256], serverip[256], cgi_in[256], cgi_out[256];
 	char htaccessfile[256];
 	int xheaders;
+	int logheaders;
 	int casesensitive;
 	int reversedns;
+
+	int cachesize, maxcachefilesize;
+	int readaheadbuffer, maxrequestsize;
+
+	char weblog[256], clflog[256], rename_cmd[256];
+	int clfupdatetime;
+	int loglevel, log_close_delay;
+	int log_max_age, log_max_copies, log_max_size;
+	int clf_max_age, clf_max_copies, clf_max_size;
+	int logbuffersize;
 } config;
 
 extern struct config configuration;
@@ -168,8 +178,6 @@ extern struct serverinfo servers[8];
 extern int readcount, writecount, dnscount, slowdown;
 extern int activeconnections;
 extern char select_read[32], select_write[32], select_except[32];
-extern int cachesize, maxcachefilesize;
-extern int readaheadbuffer, maxrequestsize;
 
 extern char line[HTTPBUFFERSIZE], temp[HTTPBUFFERSIZE];
 

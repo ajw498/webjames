@@ -21,7 +21,6 @@
 #include "mimemap.h"
 
 
-int cachesize, maxcachefilesize;
 static os_dynamic_area_no cachedynamicarea = -1;
 static byte *cachestart;
 static struct cache *cachedfiles[MAXCACHEFILES];
@@ -46,7 +45,7 @@ struct cache *get_file_through_cache(struct connection *conn)
 		namelen++;
 	}
 
-	if (conn->fileinfo.size > maxcachefilesize)  return NULL;  /* too big */
+	if (conn->fileinfo.size > configuration.maxcachefilesize)  return NULL;  /* too big */
 	if (conn->fileinfo.filetype == -1)  return NULL;     /* cache only files with filetypes/datestamps */
 
 	/* scan the cache */
@@ -180,27 +179,27 @@ void init_cache(char *list) {
 	list = list;
 
 	cachestart = NULL;
-	if (cachesize < 10)  return;
+	if (configuration.cachesize < 10)  return;
 
-	cachesize *= 1024;
-	maxcachefilesize *= 1024;
-	if (maxcachefilesize > cachesize/2)  maxcachefilesize = cachesize/2;
+	configuration.cachesize *= 1024;
+	configuration.maxcachefilesize *= 1024;
+	if (configuration.maxcachefilesize > configuration.cachesize/2)  configuration.maxcachefilesize = configuration.cachesize/2;
 	for (i = 0; i < MAXCACHEFILES; i++)  cachedfiles[i] = NULL;
 
-	if (xosdynamicarea_create((os_dynamic_area_no)-1, cachesize, (byte *)-1, 128, cachesize, 0, 0, "WebJames cache", &cachedynamicarea, &cachestart, &limit)) {
+	if (xosdynamicarea_create((os_dynamic_area_no)-1, configuration.cachesize, (byte *)-1, 128, configuration.cachesize, 0, 0, "WebJames cache", &cachedynamicarea, &cachestart, &limit)) {
 		if (xwimp_slot_size(-1, -1, &curr, &next, &freeslot))  return;
-		curr += cachesize;
+		curr += configuration.cachesize;
 		if (xwimp_slot_size(curr, -1, &curr, &next, &freeslot))  return;
-		cachestart = malloc(cachesize);
+		cachestart = malloc(configuration.cachesize);
 	} else {
 #ifdef MemCheck_MEMCHECK
-		MemCheck_RegisterMiscBlock(cachestart,cachesize);
+		MemCheck_RegisterMiscBlock(cachestart,configuration.cachesize);
 #endif
 	}
 	if (!cachestart)  return;
 
-	memset(cachestart, 0, cachesize);
-	heap_initialise(cachestart, cachesize);
+	memset(cachestart, 0, configuration.cachesize);
+	heap_initialise(cachestart, configuration.cachesize);
 
 /*
 	if (list) {

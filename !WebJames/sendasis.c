@@ -36,7 +36,7 @@ void sendasis_start(struct connection *conn)
 			}
 			/* attempt to get a read-ahead buffer for the file */
 			/* notice: things will still work if malloc fails */
-			conn->filebuffer = malloc(readaheadbuffer*1024);
+			conn->filebuffer = malloc(configuration.readaheadbuffer*1024);
 			conn->flags.releasefilebuffer = 1;
 			conn->leftinbuffer = 0;
 			/* set the fields in the structure, and that's it! */

@@ -17,25 +17,24 @@
 
 
 struct stats statistics;
-char weblog[256], clflog[256], rename_cmd[256];
-int loglevel = 5;
-int log_close_delay = 90;               /* seconds */
-int log_max_age, log_max_size;
-int log_max_copies = 0;
 
 
 #ifndef SYSLOG
 static char logclock[32];
+static int logclocklen;
 static int logupdatetime, logrotatetime;       /* clock()/100 values */
 static FILE *logfile = NULL;
+static int logbufferused=0;
+static char *logbuffer=NULL;
 #endif
 
-int clfupdatetime;
+static int clfupdatetime;
 static int clfrotatetime;       /* clock()/100 values */
-FILE *clffile = NULL;
-int clf_max_age, clf_max_size;
-int clf_max_copies = 0;
-
+static FILE *clffile = NULL;
+/*int clf_max_age, clf_max_size;
+int clf_max_copies = 0;*/
+static int clfbufferused = 0;
+static char *clfbuffer = NULL;
 
 
 void init_statistics() {
@@ -53,107 +52,39 @@ void init_statistics() {
 	statistics.access2 = 0;
 
 	clfupdatetime = -1;           /* clock() at last update */
-	clf_max_age *= 3600;          /* max age in secs */
-	if (clf_max_size <= 0)
-		clf_max_size = 0x7f000000;  /* no limit to the size */
+	configuration.clf_max_age *= 3600;          /* max age in secs */
+	if (configuration.clf_max_size <= 0)
+		configuration.clf_max_size = 0x7f000000;  /* no limit to the size */
 	else
-		clf_max_size *= 1024;
+		configuration.clf_max_size *= 1024;
 
-	clfrotatetime = clock()/100 + clf_max_age;        /* clock()/100 value */
+	clfrotatetime = clock()/100 + configuration.clf_max_age;        /* clock()/100 value */
 
 #ifndef SYSLOG
 	logupdatetime = -1;           /* clock()/100 at last update */
-	log_max_age *= 3600;          /* max age in secs */
-	if (log_max_size <= 0)
-		log_max_size = 0x7f000000;  /* no limit to the size */
+	configuration.log_max_age *= 3600;          /* max age in secs */
+	if (configuration.log_max_size <= 0)
+		configuration.log_max_size = 0x7f000000;  /* no limit to the size */
 	else
-		log_max_size *= 1024;
+		configuration.log_max_size *= 1024;
 
-	logrotatetime = clock()/100 + log_max_age;        /* clock()/100 value */
+	logrotatetime = clock()/100 + configuration.log_max_age;        /* clock()/100 value */
+
+	if (configuration.logbuffersize > 0) logbuffer = malloc(configuration.logbuffersize); /* if malloc fails then don't use a buffer */
+	logbufferused = 0;
 #endif
 
-	if ((loglevel < 0) || (loglevel > 10))
-		loglevel = 5;
-	if ((log_close_delay < 1) || (log_close_delay > 3600))
-		log_close_delay = 90;
+	if (configuration.logbuffersize > 0) clfbuffer = malloc(configuration.logbuffersize); /* if malloc fails then don't use a buffer */
+	clfbufferused = 0;
+
+	if ((configuration.loglevel < 0) || (configuration.loglevel > 10))
+		configuration.loglevel = 5;
+	if ((configuration.log_close_delay < 1) || (configuration.log_close_delay > 3600))
+		configuration.log_close_delay = 90;
 
 }
 
-
-
-void update_statistics() {
-
-	int clk;
-
-	clk = clock()/100;
-
-	if ((clk > clfupdatetime + log_close_delay) && (clffile)) {
-		fclose(clffile);
-		clffile = NULL;
-	}
-#ifndef SYSLOG
-	if ((clk > logupdatetime + log_close_delay) && (logfile)) {
-		fclose(logfile);
-		logfile = NULL;
-	}
-#endif
-
-	statistics.written2 =  statistics.written;
-	statistics.access2 =  statistics.access;
-	statistics.written = statistics.access = 0;
-}
-
-
-
-void writelog(int level, char *string) {
-
-#define SysLog_LogMessage 0x4c880
-
-#ifdef SYSLOG
-	if (level > loglevel)  return;
-	level = (level<<8)/LOGLEVEL_NEVER;
-	if (level > 255)  level = 255;
-
-	_swix(SysLog_LogMessage, _IN(0)|_IN(1)|_IN(2), "WebJames", string, level);
-
-#else
-	int newclock;
-
-	if ((level > loglevel) || (*weblog == '\0'))   return;
-
-	newclock = clock()/100;
-	if (newclock != logupdatetime) {
-		/* only remake the clock-string if it has changed */
-		time_t clk;
-		time(&clk);
-		strftime(logclock, 31, "%d/%m/%Y %H:%M:%S", localtime(&clk));
-		logupdatetime = newclock;
-	}
-
-	if (!logfile)  logfile = fopen(weblog, "a+");
-	if (!logfile)  logfile = fopen(weblog, "w");
-	if (logfile) {
-		fprintf(logfile, "%s : %s\n", logclock, string);
-
-		if (log_max_copies > 0) {
-			if ( (logupdatetime > logrotatetime) || ((int)ftell(logfile) > log_max_size) ) {
-				fclose(logfile);
-				logfile = NULL;
-				logrotatetime = logupdatetime + log_max_age;
-				rotate_log(weblog, log_max_copies);
-			}
-		}
-
-	} else
-		*weblog = '\0';           /* disable logging */
-
-
-#endif
-}
-
-
-
-void rotate_log(char *logfile, int copies) {
+static void rotate_log(char *logfile, int copies) {
 
 	int f;
 	char oldname[256], newname[256], cmd[256], *ptr;
@@ -169,25 +100,25 @@ void rotate_log(char *logfile, int copies) {
 			rename(oldname, newname);
 		}
 		/* rename the newest */
-		if (*rename_cmd) {
+		if (*configuration.rename_cmd) {
 			int read, write, len;
-			len = strlen(rename_cmd);
+			len = strlen(configuration.rename_cmd);
 			write = 0;
 			for (read = 0; read < len; read++) {
-				cmd[write] = rename_cmd[read];
-				if (rename_cmd[read] == '%') {
-					if (rename_cmd[read+1] == '%') {
+				cmd[write] = configuration.rename_cmd[read];
+				if (configuration.rename_cmd[read] == '%') {
+					if (configuration.rename_cmd[read+1] == '%') {
 						cmd[++write] = '%';
 						read++;
-					} else if (rename_cmd[read+1] == '0') {
+					} else if (configuration.rename_cmd[read+1] == '0') {
 						strcpy(cmd+write, logfile);
 						write += strlen(logfile)-1;
 						read++;
-					} else if (rename_cmd[read+1] == '1') {
+					} else if (configuration.rename_cmd[read+1] == '1') {
 						sprintf(cmd+write, "%s_1", logfile);
 						write = strlen(cmd)-1;
 						read++;
-					} else if (rename_cmd[read+1] == '2') {
+					} else if (configuration.rename_cmd[read+1] == '2') {
 						ptr = logfile;
 						while (strchr(ptr, '.'))  ptr = strchr(ptr, '.') + 1;
 						while (strchr(ptr, ':'))  ptr = strchr(ptr, ':') + 1;
@@ -209,24 +140,151 @@ void rotate_log(char *logfile, int copies) {
 	remove(logfile);
 }
 
+static void write_buffer(void)
+{
+	if (logfile == NULL) logfile = fopen(configuration.weblog, "a+");
+	if (logfile == NULL) logfile = fopen(configuration.weblog, "w");
+	if (logfile) fwrite(logbuffer,1,logbufferused,logfile);
+	logbufferused = 0;
+}
+
+static void write_clfbuffer(void)
+{
+	if (clffile == NULL) clffile = fopen(configuration.clflog, "a+");
+	if (clffile == NULL) clffile = fopen(configuration.clflog, "w");
+	if (clffile) fwrite(clfbuffer,1,clfbufferused,clffile);
+	clfbufferused = 0;
+}
+
+void update_statistics() {
+
+	int clk;
+
+	clk = clock()/100;
+
+	if (clk > clfupdatetime + configuration.log_close_delay) {
+		if (clfbufferused) write_clfbuffer();
+		if (clffile) {
+			fclose(clffile);
+			clffile = NULL;
+		}
+	}
+#ifndef SYSLOG
+	if (clk > logupdatetime + configuration.log_close_delay) {
+		if (logbufferused) write_buffer();
+		if (logfile) {
+			fclose(logfile);
+			logfile = NULL;
+		}
+	}
+#endif
+
+	statistics.written2 =  statistics.written;
+	statistics.access2 =  statistics.access;
+	statistics.written = statistics.access = 0;
+}
+
+static void check_for_rotate(void)
+/* Should only be called when logfile is already open */
+{
+	if (configuration.log_max_copies > 0) {
+		if ( (logupdatetime > logrotatetime) || ((int)ftell(logfile) > configuration.log_max_size) ) {
+			fclose(logfile);
+			logfile = NULL;
+			logrotatetime = logupdatetime + configuration.log_max_age;
+			rotate_log(configuration.weblog, configuration.log_max_copies);
+		}
+	}
+}
+
+static void check_for_clfrotate(void)
+/* Should only be called when logfile is already open */
+{
+	if (configuration.clf_max_copies > 0) {
+		if ( (clfupdatetime > clfrotatetime) || ((int)ftell(clffile) > configuration.clf_max_size) ) {
+			fclose(clffile);
+			clffile = NULL;
+			clfrotatetime = clfupdatetime + configuration.clf_max_age;
+			rotate_log(configuration.clflog, configuration.clf_max_copies);
+		}
+	}
+}
+
+void writelog(int level, char *string) {
+
+#define SysLog_LogMessage 0x4c880
+
+#ifdef SYSLOG
+	if (level > loglevel)  return;
+	level = (level<<8)/LOGLEVEL_NEVER;
+	if (level > 255)  level = 255;
+
+	_swix(SysLog_LogMessage, _IN(0)|_IN(1)|_IN(2), "WebJames", string, level);
+
+#else
+	int newclock;
+
+
+	if ((level > configuration.loglevel) || (*configuration.weblog == '\0'))   return;
+
+	newclock = clock()/100;
+	if (newclock != logupdatetime) {
+		/* only remake the clock-string if it has changed */
+		time_t clk;
+		time(&clk);
+		logclocklen=strftime(logclock, 31, "%d/%m/%Y %H:%M:%S", localtime(&clk));
+		logupdatetime = newclock;
+	}
+
+	if (logbuffer) {
+		int len = logclocklen + strlen(string) + 4 ;
+		if (len > configuration.logbuffersize - logbufferused) {
+			/* Not enough room in buffer */
+			write_buffer();
+			if (logfile) {
+				fprintf(logfile, "%s : %s\n", logclock, string);
+				check_for_rotate();
+				fclose(logfile);
+				logfile = NULL;
+			}
+		} else {
+			sprintf(logbuffer + logbufferused, "%s : %s\n", logclock, string);
+			logbufferused += len;
+		}
+	} else {
+		if (!logfile)  logfile = fopen(configuration.weblog, "a+");
+		if (!logfile)  logfile = fopen(configuration.weblog, "w");
+		if (logfile) {
+			fprintf(logfile, "%s : %s\n", logclock, string);
+
+			check_for_rotate();
+		} else {
+			*configuration.weblog = '\0'; /* disable logging */
+		}
+	}
+
+#endif
+}
 
 
 void closelog() {
 
 #ifndef SYSLOG
+	write_buffer();
 	if (logfile)  fclose(logfile);
 	logfile = NULL;
-	if ((log_max_copies > 0) && (clock()/100 > logrotatetime)) {
-		logrotatetime = clock()/100 + log_max_age;
-		rotate_log(weblog, log_max_copies);
+	if ((configuration.log_max_copies > 0) && (clock()/100 > logrotatetime)) {
+		logrotatetime = clock()/100 + configuration.log_max_age;
+		rotate_log(configuration.weblog, configuration.log_max_copies);
 	}
 #endif
 
+	write_clfbuffer();
 	if (clffile)  fclose(clffile);
 	clffile = NULL;
-	if ((clf_max_copies > 0) && (clock()/100 > clfrotatetime)) {
-		clfrotatetime = clock()/100 + clf_max_age;
-		rotate_log(clflog, clf_max_copies);
+	if ((configuration.clf_max_copies > 0) && (clock()/100 > clfrotatetime)) {
+		clfrotatetime = clock()/100 + configuration.clf_max_age;
+		rotate_log(configuration.clflog, configuration.clf_max_copies);
 	}
 }
 
@@ -268,34 +326,42 @@ void clf_connection_closed(int cn) {
 	writeclf(temp);
 }
 
-
-
 void writeclf(char *string) {
 
 	/* if clg-log enabled? */
-	if (*clflog == '\0')  return;
+	if (*configuration.clflog == '\0')  return;
 
-	/* if the clf-log file is closed, open it */
-	if (!clffile) {
-		clffile = fopen(clflog, "a+");
-		if (!clffile)  clffile = fopen(clflog, "w");
-	}
+	clfupdatetime = clock()/100;
 
-	/* if the clf-log file is open, write the log data */
-	if (clffile) {
-		clfupdatetime = clock()/100;
-		fprintf(clffile, "%s\n", string);
-
-		if (clf_max_copies > 0) {
-			if ( (clfupdatetime > clfrotatetime) || ((int)ftell(clffile) > clf_max_size) ) {
+	if (clfbuffer) {
+		int len = strlen(string) + 1;
+		if (len >= configuration.logbuffersize - clfbufferused) {
+			/* Not enough room in buffer */
+			write_clfbuffer();
+			if (clffile) {
+				fprintf(clffile, "%s\n", string);
+				check_for_clfrotate();
 				fclose(clffile);
 				clffile = NULL;
-				clfrotatetime = clfupdatetime + clf_max_age;
-				rotate_log(clflog, clf_max_copies);
 			}
+		} else {
+			sprintf(clfbuffer + clfbufferused, "%s\n", string);
+			clfbufferused += len;
 		}
+	} else {
+		/* No buffering */
+		/* if the clf-log file is closed, open it */
+		if (!clffile) clffile = fopen(configuration.clflog, "a+");
+		if (!clffile)  clffile = fopen(configuration.clflog, "w");
 
-	} else
-	/* disable clf-log */
-		*clflog = '\0';
+		/* if the clf-log file is open, write the log data */
+		if (clffile) {
+			fprintf(clffile, "%s\n", string);
+
+			check_for_clfrotate();
+		} else {
+			/* disable clf-log */
+			*configuration.clflog = '\0';
+		}
+	}
 }
