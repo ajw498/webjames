@@ -14,6 +14,15 @@
 </td></tr></table>
 </h3>
 
+<i>0.34 (??/1/2002)</i>
+
+<ul>
+  <li>now outputs <code>Content-Location:</code> and <code>Content-Language:</code> headers when appropriate.
+  <li>fix for UnixLib bug that prevented filenames with top bit set characters from working.
+  <li>workaround for bug that prevents report files from being found after the PHP handler had been invoked.
+
+</ul>
+
 <i>0.33 (20/12/2001)</i>
 
 <ul>
@@ -28,7 +37,7 @@
   <li>fixed bug in BASIC and C cgi-libs that prevented more than 32K of data being sent at once.
   <li>fixed bug in filer CGI script that allowed access to directories other than $.Public.
   <li>filer CGI script can now cope with long filenames (up to 256 chars).
-  <li>addition to C cgi-lib to support POST data. Thanks to <a href="mailto:mdc@ihug.co.nz"> Michael Curtis</a> for this.
+  <li>addition to C cgi-lib to support POST data. Thanks to <a href="mailto:mdc@ihug.co.nz">Michael Curtis</a> for this.
 
 </ul>
 
