@@ -30,6 +30,7 @@ RISC OS version 2.08 ported by <a href="mailto:alex@alexwaugh.com">Alex Waugh</a
 <li><a href="#memory">Memory</a><br>
 <li><a href="#config">Configuration</a><br>
 <li><a href="#stronged">StrongEd mode</a><br>
+<li><a href="#mail">mail()</a><br>
 <li><a href="#extensions">Extension modules</a><br>
 <li><a href="#problems">Known problems</a><br>
 </ul>
@@ -93,10 +94,10 @@ information about PHP you should look at the PHP manual, or
 <a href="http://www.php.net/">http://www.php.net/</a>
 <p>
 There is a simple introduction and links to other tutorials at
-<a href="http://www.php.net/tut.php3">http://www.php.net/tut.php3</a>
+<a href="http://www.php.net/tut.php">http://www.php.net/tut.php</a>
 <p>
 The PHP manual is available is several formats from
-<a href="http://www.php.net/manual/">http://www.php.net/manual/</a>,
+<a href="http://www.php.net/download-docs.php">http://www.php.net/download-docs.php</a>,
 and also in StrongHelp format from
 <a href="http://www.php.alexwaugh.com/">http://www.php.alexwaugh.com/</a>
 (Please note that the formatting of the StrongHelp manual is not particularly
@@ -245,6 +246,23 @@ I have included a basic PHP modefile for StrongEd, which you may find useful.
 <p>
 <h3>
 <table bgcolor="#cccccc" width="99%"><tr><td>
+<a name="mail">mail()</a>
+</td></tr></table>
+</h3>
+
+If you have Justin Fletcher's <a href="http://www.movspclr.co.uk/software/internet.html#gmail">GMail</a>
+program (and if it is correctly setup) then you can use the mail()
+function in PHP to send emails.
+<P>
+If you are having problems, you can define the system variable <code>PHP$MailOut</code>
+to a filename, and any messages from gmail will be directed to this file.
+<br>Eg. <code>*Set PHP$MailOut ADFS::4.$.gmailoutput</code>
+<p>
+The mail function will not work when running under the ANT server suite or unregistered versions of Netplex. 
+
+<p>
+<h3>
+<table bgcolor="#cccccc" width="99%"><tr><td>
 <a name="extensions">Extension modules</a>
 </td></tr></table>
 </h3>
@@ -283,8 +301,10 @@ that match any of your filenames (either the part before the extension,
 or the extension itself).  If you get the error "Primary script not found"
 then this may well be the problem.
 <p>
-popen, system, exec, passthru and other functions that run external programs do work, but <b>only</b> if the child program being run was compiled with a recent version of UnixLib (September 2001 or later). The version of UnixLib supplied with GCC pre-release 3 is too old.
-Additionally, they will only work when running under WebJames or (probably) Netplex 1.62 or later.
+popen, system, exec, passthru and other functions that run external programs do work, but <b>only</b>
+if the child program being run was compiled with a recent version of UnixLib (September 2001 or later).
+The version of UnixLib supplied with GCC pre-release 3 is too old.
+Additionally, they will not work when running under the ANT server suite or unregistered versions of Netplex.
 <p>
 Any updates to the RISC OS port should be available from
 <a href="http://www.php.alexwaugh.com/">http://www.php.alexwaugh.com/</a>

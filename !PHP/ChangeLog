@@ -1,3 +1,11 @@
+v2.08 ??-Sep-01
+Updated to PHP 4.0.7
+Added SAPI module for WebJames
+Updated GD library to 1.8.4, so it is now possible to create JPEGs and PNGs (but not GIFs anymore)
+popen, system, passthru, etc now work (but see known problems in the manual)
+syslog functions now work
+mail function now works if you have gmail
+
 v2.07 26-Jun-01
 Added support for $DOCUMENT_ROOT, $REQUEST_URI, $GATEWAY_INTERFACE
 

@@ -21,7 +21,7 @@ CC = cc -c $(CCFLAGS)
 all: $(TARGET) PHPMail
 
 PHPMail: c.PHPMail
-	gcc -mthrowback -O2 -IOSLib: -o PHPMail c.PHPMail -lOSLib:OSLib.o.OSLib
+	gcc -mthrowback -O2 -IOSLib: -o PHPMail c.PHPMail -lOSLib:o.OSLib
 
 .c.o:
 	$(CC) $< -o $@
@@ -34,10 +34,4 @@ $(TARGET):	$(OBJECTS)
 
 
 # Dynamic dependencies:
-o.Main:	c.Main
-o.Main:	C:tboxlibs.h.wimp
-o.Main:	C:tboxlibs.h.toolbox
-o.Main:	C:h.kernel
-o.Main:	C:tboxlibs.h.event
-o.Main:	C:tboxlibs.h.wimplib
-o.Main:	C:tboxlibs.h.gadgets
+o.Main: c.Main C:tboxlibs.h.wimp C:tboxlibs.h.toolbox C:h.kernel C:tboxlibs.h.event C:tboxlibs.h.wimplib C:tboxlibs.h.gadgets
