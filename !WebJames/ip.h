@@ -25,7 +25,7 @@ void ip_writeaddr(char *ip, int addr, int port);
 int ip_setsocketopt(socket_s socket, int opt, void *arg, int argsize);
 int ip_linger(socket_s socket, int secs);
 int ip_listen(socket_s socket);
-int ip_ready(socket_s socket);
+int ip_ready(socket_s socket, os_error **err);
 socket_s ip_accept(socket_s socket, char *host);
 int ip_select(int max, char *read, char *write, char *except);
 

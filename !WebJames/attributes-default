@@ -61,7 +61,7 @@ defaultfile index.php index.html index
 
 # Set up some handlers for specific filetypes
 Action perl-script perl %f %u
-#Action php-script php %f %u
+Action php-script php %f %u
 
 # These allow all PHP and Perl files to be run as cgi scripts, wherever they are, unless specifically overridden
 AddFiletypeHandler php-script PHP

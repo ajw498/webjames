@@ -1,11 +1,16 @@
+/*
+	$Id: openclose.c,v 1.20 2001/09/03 14:10:37 AJW Exp $
+	Open and close connections
+*/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
 #include <time.h>
 
-#include "cache.h"
 #include "webjames.h"
+#include "cache.h"
 #include "ip.h"
 #include "attributes.h"
 #include "stat.h"
@@ -18,7 +23,7 @@ struct connection *create_conn(void) {
 
 	struct connection *conn;
 
-	conn = malloc(sizeof(struct connection));
+	conn = EM(malloc(sizeof(struct connection)));
 
 	if (!conn) return NULL;
 
@@ -117,7 +122,7 @@ void open_connection(socket_s socket, char *host, int port)
 	conn->ipaddr[3] = host[7];
 
 	/* default name of the remote host is the ip-address */
-	sprintf(conn->host, "%d.%d.%d.%d", host[4], host[5], host[6], host[7]);
+	snprintf(conn->host, MAX_HOSTNAME, "%d.%d.%d.%d", host[4], host[5], host[6], host[7]);
 	if (configuration.reversedns >= 0) {
 		conn->dnsstatus = DNS_TRYING;
 		conn->dnsendtime = 0x7fffffff;      /* indefinately! */
@@ -170,14 +175,14 @@ void close_connection(struct connection *conn, int force, int real) {
 			}
 			bps = 100*conn->fileinfo.size/(clk-conn->starttime);
 			if (bps <= 0)
-				sprintf(temp, "CLOSE %s", ptr);
+				webjames_writelog(LOGLEVEL_OPEN, "CLOSE %s", ptr);
 			else if (bps < 4000)
-				sprintf(temp, "CLOSE %s (%d bytes/sec)", ptr, bps);
+				webjames_writelog(LOGLEVEL_OPEN,"CLOSE %s (%d bytes/sec)", ptr, bps);
 			else
-				sprintf(temp, "CLOSE %s (%d kb/sec)", ptr, bps>>10);
-		} else
-			sprintf(temp, "CLOSE %s", conn->uri);
-		webjames_writelog(LOGLEVEL_OPEN, temp);
+				webjames_writelog(LOGLEVEL_OPEN,"CLOSE %s (%d kb/sec)", ptr, bps>>10);
+		} else {
+			webjames_writelog(LOGLEVEL_OPEN, "CLOSE %s", conn->uri);
+		}
 #endif
     }
 

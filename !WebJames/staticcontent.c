@@ -1,3 +1,8 @@
+/*
+	$Id: staticcontent.c,v 1.9 2001/09/03 14:10:45 AJW Exp $
+	Default handler for files with static content
+*/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -42,7 +47,7 @@ void staticcontent_start(struct connection *conn)
 			}
 			/* attempt to get a read-ahead buffer for the file */
 			/* notice: things will still work if malloc fails */
-			conn->filebuffer = malloc(configuration.readaheadbuffer*1024);
+			conn->filebuffer = EM(malloc(configuration.readaheadbuffer*1024));
 			conn->flags.releasefilebuffer = 1;
 			conn->leftinbuffer = 0;
 			/* set the fields in the structure, and that's it! */
@@ -57,23 +62,23 @@ void staticcontent_start(struct connection *conn)
 
 		/* write header */
 		webjames_writestringr(conn, "HTTP/1.0 200 OK\r\n");
-		sprintf(temp, "Content-Length: %d\r\n", conn->fileinfo.size);
+		snprintf(temp, TEMPBUFFERSIZE, "Content-Length: %d\r\n", conn->fileinfo.size);
 		webjames_writestringr(conn, temp);
-		sprintf(temp, "Content-Type: %s\r\n", conn->fileinfo.mimetype);
+		snprintf(temp, TEMPBUFFERSIZE, "Content-Type: %s\r\n", conn->fileinfo.mimetype);
 		webjames_writestringr(conn, temp);
 		time(&now);
 		time_to_rfc(localtime(&now),rfcnow);
-		sprintf(temp, "Date: %s\r\n", rfcnow);
+		snprintf(temp, TEMPBUFFERSIZE, "Date: %s\r\n", rfcnow);
 		webjames_writestringr(conn, temp);
 		if (conn->vary[0]) {
-			sprintf(temp, "Vary:%s\r\n", conn->vary);
+			snprintf(temp, TEMPBUFFERSIZE, "Vary:%s\r\n", conn->vary);
 			webjames_writestringr(conn, temp);
 		}
 		for (i = 0; i < configuration.xheaders; i++) {
 			webjames_writestringr(conn, configuration.xheader[i]);
 			webjames_writestringr(conn, "\r\n");
 		}
-		if (configuration.server[0]) sprintf(temp, "Server: %s\r\n\r\n", configuration.server);
+		if (configuration.server[0]) snprintf(temp, TEMPBUFFERSIZE, "Server: %s\r\n\r\n", configuration.server);
 		webjames_writestringr(conn, temp);
 	}
 }

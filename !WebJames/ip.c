@@ -1,5 +1,5 @@
 /*
-	$Id: ip.c,v 1.6 2001/09/02 19:00:45 AJW Exp $
+	$Id: ip.c,v 1.7 2001/09/03 14:10:35 AJW Exp $
 	Socket access
 */
 
@@ -114,12 +114,12 @@ int ip_nonblocking(socket_s socket)
 }
 
 
-int ip_ready(socket_s socket)
+int ip_ready(socket_s socket, os_error **err)
 /* returns number of bytes available on the socket */
 {
 	int arg;
 
-	if (xsocket_ioctl(socket, socket_FIONREAD, (byte *)&arg))  return -1;
+	if ((*err=xsocket_ioctl(socket, socket_FIONREAD, (byte *)&arg))!=NULL)  return -1;
 	return arg;
 }
 

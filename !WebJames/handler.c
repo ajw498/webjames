@@ -1,3 +1,8 @@
+/*
+	$Id: handler.c,v 1.14 2001/09/03 14:10:34 AJW Exp $
+	Management of handlers
+*/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -6,6 +11,7 @@
 #include "webjames.h"
 #include "handler.h"
 #include "report.h"
+#include "stat.h"
 
 #include "staticcontent.h"
 #include "sendasis.h"
@@ -118,16 +124,19 @@ void add_handler(char *name, char *command)
 	struct handler *newhandler;
 	int ffound;
 	char *percent;
+	size_t len;
 
-	newhandler = malloc(sizeof(struct handler));
+	newhandler = EM(malloc(sizeof(struct handler)));
 	if (newhandler == NULL) return;
 
-	newhandler->name = malloc(strlen(name)+1);
+	len=strlen(name)+1;
+	newhandler->name = EM(malloc(len));
 	if (newhandler->name == NULL) return;
-	strcpy(newhandler->name,name);
-	newhandler->command = malloc(strlen(command)+1);
+	memcpy(newhandler->name,name,len);
+	len=strlen(command)+1;
+	newhandler->command = EM(malloc(len));
 	if (newhandler->command == NULL) return;
-	strcpy(newhandler->command,command);
+	memcpy(newhandler->command,command,len);
 	newhandler->unix = 0;
 	newhandler->cache = 0;
 	percent = strchr(newhandler->command,'%');
@@ -183,7 +192,7 @@ int init_handlers(void)
 	for (i=0;handlers[i].name;i++) {
 		struct handler *newhandler;
 	
-		newhandler = malloc(sizeof(struct handler));
+		newhandler = EM(malloc(sizeof(struct handler)));
 		if (newhandler == NULL) return 0;
 	
 		newhandler->name = handlers[i].name;

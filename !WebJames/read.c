@@ -1,3 +1,8 @@
+/*
+	$Id: read.c,v 1.17 2001/09/03 14:10:38 AJW Exp $
+	Reading requests
+*/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -5,6 +10,7 @@
 #include <time.h>
 
 #include "webjames.h"
+#include "wjstring.h"
 #include "attributes.h"
 #include "stat.h"
 #include "ip.h"
@@ -88,15 +94,11 @@ void pollread_body(struct connection *conn, int bytes)
 {
 	/* reading the body */
 
-	if (conn->used + bytes > conn->bodysize) {
-		read_report(conn);
-		report_badrequest(conn, "body larger than Content-Length indicated");
-		return;
-	}
+	if (conn->used + bytes > conn->bodysize) bytes = conn->bodysize-conn->used;
 
 	if ((bytes = webjames_readbuffer(conn, conn->body+conn->used, bytes))<0) return;
 	conn->used += bytes;
-	if (conn->used == conn->bodysize)  donereading(conn);
+	if (conn->used >= conn->bodysize)  donereading(conn);
 }
 
 
@@ -104,6 +106,7 @@ void pollread_body(struct connection *conn, int bytes)
 void pollread_header(struct connection *conn, int bytes)
 {
 	int i;
+	size_t len;
 	char upper[HTTPBUFFERSIZE], *newptr;
 
 	/* calculate the number of bytes left in the temp buffer */
@@ -127,6 +130,7 @@ void pollread_header(struct connection *conn, int bytes)
 		/* if we need to keep the header (for a cgi-script) */
 		if ((conn->header) && (*line)) {
 			int i;
+
 			if (conn->headersize > 1024*configuration.maxrequestsize) {
 				read_report(conn);
 				report_badrequest(conn, "Request is too big for this server");
@@ -164,15 +168,17 @@ void pollread_header(struct connection *conn, int bytes)
 
 			char *ptr, *file, *http;
 			int query=0;
+			size_t len;
 
 			/* save the requestline for the clf-log */
-			conn->requestline = malloc(strlen(line)+1);
+			len=strlen(line)+1;
+			conn->requestline = malloc(len);
 			if (!conn->requestline) {
 				read_report(conn);
 				report_busy(conn, "No room for requestline");
 				return;
 			}
-			strcpy(conn->requestline, line);
+			memcpy(conn->requestline, line, len);
 
 			file = line;
 			while ((*file != ' ') && (*file))  file++;  /* skip until SPACE */
@@ -205,12 +211,21 @@ void pollread_header(struct connection *conn, int bytes)
 					return;
 				}
 			}
-			conn->uri = malloc(strlen(file)+2);         /* get buffer for filename */
-			if (!conn->uri)  return;                    /* failed to get buffer */
-			conn->requesturi = malloc(strlen(file)+2);  /* get buffer for filename */
-			if (!conn->requesturi)  return;             /* failed to get buffer */
+			len=strlen(file)+2;
+			conn->uri = malloc(len);         /* get buffer for filename */
+			if (!conn->uri) {
+				read_report(conn);
+				report_busy(conn, "Memory low");
+				return;
+			}
+			conn->requesturi = malloc(len);  /* get buffer for filename */
+			if (!conn->requesturi) {
+				read_report(conn);
+				report_busy(conn, "Memory low");
+				return;
+			}
 
-			strcpy(conn->requesturi,file);
+			wjstrncpy(conn->requesturi,file,len);
 			/*Copy uri*/
 			i=0;
 			do {
@@ -260,7 +275,7 @@ void pollread_header(struct connection *conn, int bytes)
 					return;
 				}
 				conn->uri = ptr;
-				strcpy(conn->uri, configuration.delete_script);
+				wjstrncpy(conn->uri, configuration.delete_script,MAX_FILENAME);
 
 				if (!configuration.casesensitive) {
 					for (i = 0; conn->uri[i]; i++) conn->uri[i] = tolower(conn->uri[i]);  /* must be lowercase */
@@ -275,14 +290,15 @@ void pollread_header(struct connection *conn, int bytes)
 				conn->method = METHOD_PUT;
 				conn->methodstr="PUT";
 				conn->requesturi = conn->uri;
-				ptr = malloc(strlen(configuration.put_script)+1);
+				len=strlen(configuration.put_script)+1;
+				ptr = malloc(len);
 				if (!ptr) {
 					read_report(conn);
 					report_busy(conn, "Memory low");
 					return;
 				}
 				conn->uri = ptr;
-				strcpy(conn->uri, configuration.put_script);
+				memcpy(conn->uri, configuration.put_script,len);
 
 				if (!configuration.casesensitive) {
 					for (i = 0; conn->uri[i]; i++) conn->uri[i] = tolower(conn->uri[i]);  /* must be lowercase */
@@ -305,33 +321,61 @@ void pollread_header(struct connection *conn, int bytes)
 
 			conn->header = malloc(HTTPBUFFERSIZE);    /* allocate header-buffer */
 			if (conn->header) {
-				sprintf(conn->header, "%s\n", conn->requestline);
+				snprintf(conn->header, HTTPBUFFERSIZE, "%s\n", conn->requestline);
 				conn->headersize = strlen(conn->header);
 				conn->headerallocated = HTTPBUFFERSIZE;
+			} else {
+				read_report(conn);
+				report_busy(conn, "Memory low");
+				return;
 			}
 
 		} else if (strncmp(upper, "ACCEPT: ", 8) == 0) {
 			if (conn->accept)  free(conn->accept);
-			conn->accept = malloc(strlen(line+8)+1);
-			strcpy(conn->accept, line+8);
+			len=strlen(line+8)+1;
+			conn->accept = malloc(len);
+			if (conn->accept==NULL) {
+				read_report(conn);
+				report_busy(conn, "Memory low");
+				return;
+			}
+			memcpy(conn->accept, line+8,len);
 
 		} else if (strncmp(upper, "ACCEPT-LANGUAGE: ", 17) == 0) {
 			if (conn->acceptlanguage)  free(conn->acceptlanguage);
-			conn->acceptlanguage = malloc(strlen(line+17)+1);
-			strcpy(conn->acceptlanguage, line+17);
+			len=strlen(line+17)+1;
+			conn->acceptlanguage = malloc(len);
+			if (conn->acceptlanguage==NULL) {
+				read_report(conn);
+				report_busy(conn, "Memory low");
+				return;
+			}
+			memcpy(conn->acceptlanguage, line+17, len);
 
 		} else if (strncmp(upper, "ACCEPT-ENCODING: ", 17) == 0) {
 			if (conn->acceptencoding)  free(conn->acceptencoding);
-			conn->acceptencoding = malloc(strlen(line+17)+1);
-			strcpy(conn->acceptencoding, line+17);
+			len=strlen(line+17)+1;
+			conn->acceptencoding = malloc(len);
+			if (conn->acceptencoding==NULL) {
+				read_report(conn);
+				report_busy(conn, "Memory low");
+				return;
+			}
+			memcpy(conn->acceptencoding, line+17, len);
 
 		} else if (strncmp(upper, "ACCEPT-CHARSET: ", 17) == 0) {
 			if (conn->acceptcharset)  free(conn->acceptcharset);
-			conn->acceptcharset = malloc(strlen(line+17)+1);
-			strcpy(conn->acceptcharset, line+17);
+			len=strlen(line+17)+1;
+			conn->acceptcharset = malloc(len);
+			if (conn->acceptcharset==NULL) {
+				read_report(conn);
+				report_busy(conn, "Memory low");
+				return;
+			}
+			memcpy(conn->acceptcharset, line+17, len);
 
 		} else if (strncmp(upper, "CONTENT-LENGTH: ", 16) == 0) {
-			conn->bodysize = (int)strtol(upper+16,NULL,10);  /* was atoi()*/
+			conn->bodysize = atoi(upper+16);
 			if (conn->bodysize < 0) {
 				read_report(conn);
 				report_badrequest(conn, "negative request-body size");
@@ -345,18 +389,36 @@ void pollread_header(struct connection *conn, int bytes)
 
 		} else if (strncmp(upper, "CONTENT-TYPE: ", 14) == 0) {
 			if (conn->type)  free(conn->type);
-			conn->type = malloc(strlen(upper+14)+1);
-			if (conn->type)  strcpy(conn->type, upper+14);
+			len=strlen(upper+14)+1;
+			conn->type = malloc(len);
+			if (conn->type==NULL) {
+				read_report(conn);
+				report_busy(conn, "Memory low");
+				return;
+			}
+			memcpy(conn->type, upper+14, len);
 
 		} else if (strncmp(upper, "COOKIE: ", 8) == 0) {
 			if (conn->cookie)  free(conn->cookie);
-			conn->cookie = malloc(strlen(line+8)+1);
-			strcpy(conn->cookie, line+8);
+			len=strlen(line+8)+1;
+			conn->cookie = malloc(len);
+			if (conn->cookie==NULL) {
+				read_report(conn);
+				report_busy(conn, "Memory low");
+				return;
+			}
+			memcpy(conn->cookie, line+8,len);
 
 		} else if (strncmp(upper, "REFERER: ", 9) == 0) {
 			if (conn->referer)  free(conn->referer);
-			conn->referer = malloc(strlen(line+9)+1);
-			if (conn->referer)  strcpy(conn->referer, line+9);
+			len=strlen(line+9)+1;
+			conn->referer = malloc(len);
+			if (conn->referer==NULL) {
+				read_report(conn);
+				report_busy(conn, "Memory low");
+				return;
+			}
+			memcpy(conn->referer, line+9,len);
 			webjames_writelog(LOGLEVEL_REFERER, line);
 
 		} else if (strncmp(upper, "FROM: ", 6) == 0) {
@@ -364,8 +426,14 @@ void pollread_header(struct connection *conn, int bytes)
 
 		} else if (strncmp(upper, "USER-AGENT: ", 12) == 0) {
 			if (conn->useragent)  free(conn->useragent);
-			conn->useragent = malloc(strlen(line+12)+1);
-			if (conn->useragent)  strcpy(conn->useragent, line+12);
+			len=strlen(line+12)+1;
+			conn->useragent = malloc(len);
+			if (conn->useragent==NULL) {
+				read_report(conn);
+				report_busy(conn, "Memory low");
+				return;
+			}
+			memcpy(conn->useragent, line+12,len);
 			webjames_writelog(LOGLEVEL_USERAGENT, line);
 
 		} else if (strncmp(upper, "HOST: ", 6) == 0) {
@@ -461,11 +529,25 @@ void pollread(int cn) {
 
 	struct connection *conn;
 	int bytes;
+	os_error *err;
 
 	conn = connections[cn];
 	/* check if there's any data ready on the socket */
-	bytes = ip_ready(conn->socket);
-	if (bytes <= 0)  return;
+	bytes = ip_ready(conn->socket,&err);
+	if (err) {
+		if (err->errnum==socket_EPIPE) {
+			webjames_writelog(LOGLEVEL_ABORT, "ABORT connection closed by client");
+		} else {
+			webjames_writelog(LOGLEVEL_OSERROR,"ERROR %s",err->errmess);
+		}
+		conn->close(conn,1);
+		return;
+	} else if (bytes < 0) {
+		webjames_writelog(LOGLEVEL_ABORT, "ABORT connection closed by client");
+		conn->close(conn,1);
+		return;
+	} else if (bytes==0) return;
+
 	conn->timeoflastactivity = clock();
 
 	if (conn->status == WJ_STATUS_HEADER)

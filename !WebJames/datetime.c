@@ -1,5 +1,5 @@
 /*
-	$Id: datetime.c,v 1.1 2001/08/31 10:48:38 AJW Exp $
+	$Id: datetime.c,v 1.2 2001/09/03 14:10:33 AJW Exp $
 	Date and time convertion functions
 */
 
@@ -12,6 +12,7 @@
 #include "oslib/territory.h"
 
 #include "webjames.h"
+#include "stat.h"
 #include "datetime.h"
 
 
@@ -41,7 +42,7 @@ void utc_to_time(os_date_and_time *utc, struct tm *time) {
 /* time             tm structure to fill in */
 	territory_ordinals ordinals;
 
-	xterritory_convert_time_to_utc_ordinals((os_date_and_time const *)utc, &ordinals);
+	EV(xterritory_convert_time_to_utc_ordinals((os_date_and_time const *)utc, &ordinals));
 	time->tm_sec   = ordinals.second;
 	time->tm_min   = ordinals.minute;
 	time->tm_hour  = ordinals.hour;
@@ -60,7 +61,7 @@ void utc_to_localtime(os_date_and_time *utc, struct tm *time) {
 /* time             tm structure to fill in */
 	territory_ordinals ordinals;
 
-	xterritory_convert_time_to_ordinals(territory_CURRENT,(os_date_and_time const *)utc, &ordinals);
+	EV(xterritory_convert_time_to_ordinals(territory_CURRENT,(os_date_and_time const *)utc, &ordinals));
 	time->tm_sec   = ordinals.second;
 	time->tm_min   = ordinals.minute;
 	time->tm_hour  = ordinals.hour;
@@ -78,12 +79,10 @@ void rfc_to_time(char *rfc, struct tm *time) {
 
 /* rfc              pointer to string */
 /* time             tm structure to fill in */
-	char *start, days[12];
+	char *start;
+	char days[]="303232332323"; /* array holding (the number days in the month)-28 */
 	int date, month, year, hour, min, sec, letter1, letter2, letter3;
 	int wday, yday, m;
-
-	/* array holding (the number days in the month)-28 */
-	strcpy(days, "303232332323");
 
 	date = 0;
 	month = 6;

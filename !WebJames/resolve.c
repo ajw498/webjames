@@ -1,5 +1,5 @@
 /*
-	$Id: resolve.c,v 1.6 2001/09/02 19:00:49 AJW Exp $
+	$Id: resolve.c,v 1.7 2001/09/03 14:10:41 AJW Exp $
 	Reverse DNS
 */
 
@@ -11,8 +11,9 @@
 
 #include "oslib/socket.h"
 
-#include "stat.h"
 #include "webjames.h"
+#include "wjstring.h"
+#include "stat.h"
 #include "resolve.h"
 #include "ip.h"
 
@@ -29,7 +30,7 @@ void resolver_poll(struct connection *conn)
 
 	if (configuration.reversedns>=0) {
 		regs.r[0]=(int)conn->host;
-		if (_kernel_swi(Resolver_GetHost, &regs, &regs)) {
+		if (E((os_error*)_kernel_swi(Resolver_GetHost, &regs, &regs))) {
 			abort_reverse_dns(conn, DNS_FAILED);
 		} else {
 			dnsstat = regs.r[0];
@@ -47,7 +48,7 @@ void resolver_poll(struct connection *conn)
 #endif
 					webjames_writelog(LOGLEVEL_DNS, "DNS %s is %s", conn->host, ip[0]);
 
-					strncpy(conn->host, ip[0], 127);
+					wjstrncpy(conn->host, ip[0], 127);
 #ifdef MemCheck_MEMCHECK
 					MemCheck_UnRegisterMiscBlock(ip[0]);
 					MemCheck_UnRegisterMiscBlock(ip);

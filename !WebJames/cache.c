@@ -14,6 +14,7 @@
 #include "oslib/osfscontrol.h"
 
 #include "webjames.h"
+#include "wjstring.h"
 #include "datetime.h"
 #include "cache.h"
 #include "write.h"
@@ -108,14 +109,14 @@ struct cache *get_file_through_cache(struct connection *conn)
 		return NULL;
 	}
 
-	if (xosfile_load_stamped_no_path(conn->filename, (byte *)cachedfiles[use]->buffer, NULL, NULL, NULL, NULL, NULL)) {
+	if (E(xosfile_load_stamped_no_path(conn->filename, (byte *)cachedfiles[use]->buffer, NULL, NULL, NULL, NULL, NULL))) {
 		remove_from_cache(use);
 		return NULL;
 	}
 
 	cachedfiles[use]->filetype = conn->fileinfo.filetype;
 
-	strcpy(cachedfiles[use]->mimetype, conn->fileinfo.mimetype);
+	wjstrncpy(cachedfiles[use]->mimetype, conn->fileinfo.mimetype, MAX_MIMETYPE);
 
 	memcpy(&cachedfiles[use]->date, &conn->fileinfo.date, sizeof(struct tm));
 
@@ -125,7 +126,7 @@ struct cache *get_file_through_cache(struct connection *conn)
 	cachedfiles[use]->namelen = namelen;
 	cachedfiles[use]->checksum = checksum;
 	cachedfiles[use]->removewhenidle = 0;
-	strcpy(cachedfiles[use]->name, name);
+	wjstrncpy(cachedfiles[use]->name, name, MAX_FILENAME);
 
 	webjames_writelog(LOGLEVEL_CACHE, "CACHING %s", name);
 
@@ -180,10 +181,10 @@ void init_cache(char *list) {
 	for (i = 0; i < MAXCACHEFILES; i++)  cachedfiles[i] = NULL;
 
 	if (xosdynamicarea_create((os_dynamic_area_no)-1, configuration.cachesize, (byte *)-1, 128, configuration.cachesize, 0, 0, "WebJames cache", &cachedynamicarea, &cachestart, &limit)) {
-		if (xwimp_slot_size(-1, -1, &curr, &next, &freeslot))  return;
+		if (E(xwimp_slot_size(-1, -1, &curr, &next, &freeslot)))  return;
 		curr += configuration.cachesize;
-		if (xwimp_slot_size(curr, -1, &curr, &next, &freeslot))  return;
-		cachestart = malloc(configuration.cachesize);
+		if (E(xwimp_slot_size(curr, -1, &curr, &next, &freeslot)))  return;
+		cachestart = EM(malloc(configuration.cachesize));
 	} else {
 #ifdef MemCheck_MEMCHECK
 		MemCheck_RegisterMiscBlock(cachestart,configuration.cachesize);
@@ -193,21 +194,6 @@ void init_cache(char *list) {
 
 	memset(cachestart, 0, configuration.cachesize);
 	heap_initialise(cachestart, configuration.cachesize);
-
-/*
-	if (list) {
-		FILE *file;
-		struct cache *entry;
-		char filename[256], name[256];
-		file = fopen(list);
-		while (!feof(file)) {
-			if (fscanf(file, "%s %s", filename, name) == 2) {
-				entry = get_file_through_cache(name, filename);
-				if (entry)  cache_release_file(entry);
-			}
-		}
-		fclose(file);
-	} */
 }
 
 

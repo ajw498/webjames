@@ -5,6 +5,7 @@
 #include <time.h>
 
 #include "webjames.h"
+#include "wjstring.h"
 #include "write.h"
 #include "attributes.h"
 #include "stat.h"
@@ -75,8 +76,8 @@ static void insert_attributes(struct attributes *attr) {
 		/* increase the size of the hash table */
 		struct hashentry *newhash;
 
-		newhash = malloc((hashsize+HASHINCREMENT)*sizeof(struct hashentry));
-		if (!newhash) return;
+		newhash = EM(malloc((hashsize+HASHINCREMENT)*sizeof(struct hashentry)));
+		if (newhash==NULL) return;
 		for (i=0; i<hashsize+HASHINCREMENT; i++) newhash[i].uri = NULL;
 		for (i=0; i<hashsize; i++) {
 			if (hash[i].uri) insert_into_hash(newhash,hashsize+HASHINCREMENT,hash[i].uri,hash[i].attr);
@@ -125,13 +126,13 @@ static void scan_filetype_list(char *list, struct attributes *attr, int allowed)
 	}
 
 	if (count) {
-		newlist = malloc(4*count);
-		if (!newlist)  return;
+		newlist = EM(malloc(4*count));
+		if (newlist==NULL)  return;
 		memcpy(newlist, filetypeslist, 4*count);
 	} else {
 		newlist = NULL;
 	}
-	if (oldlist)  free(oldlist);
+	if (oldlist) free(oldlist);
 
 	if (allowed) {
 		attr->allowedfiletypes = newlist;
@@ -145,7 +146,7 @@ static void scan_filetype_list(char *list, struct attributes *attr, int allowed)
 
 static void scan_defaultfiles_list(char *list, struct attributes *attr) {
 
-	char *filelist[256], **newlist;
+	char *filelist[MAX_FILENAME], **newlist;
 	int count, more;
 
 	if (attr->defaultfiles) {
@@ -164,26 +165,26 @@ static void scan_defaultfiles_list(char *list, struct attributes *attr) {
 	more = 1;
 	do {
 		int n, ch;
-		char buffer[256];
+		char buffer[MAX_FILENAME];
 
 		n = sscanf(list, "%s%n", buffer, &ch);
 		list += ch;
 
 		if (n == 1) {
-			filelist[count] = malloc(ch+1);
+			filelist[count] = EM(malloc(ch+1));
 			if (filelist[count] == NULL) return;
-			strcpy(filelist[count],buffer);
+			wjstrncpy(filelist[count],buffer,ch+1);
 			count++;
 		} else {
 			more = 0;
 		}
 
 		if (strchr(list, ',')) list = strchr(list, ',')+1;
-	} while (more);
+	} while (more && count<MAX_FILENAME);
 
 	if (!count)  return;
-	newlist = malloc(sizeof(char *)*count);
-	if (!newlist)  return;
+	newlist = EM(malloc(sizeof(char *)*count));
+	if (newlist==NULL)  return;
 
 	memcpy(newlist, filelist, sizeof(char *)*count);
 
@@ -222,8 +223,8 @@ static void scan_host_list(char *list, struct attributes *attr, int allowed) {
 	} while (more);
 
 	if (!count)  return;
-	newlist = malloc(4*count);
-	if (!newlist)  return;
+	newlist = EM(malloc(4*count));
+	if (newlist==NULL)  return;
 	if (oldlist)  free(oldlist);
 
 	memcpy(newlist, hostlist, 4*count);
@@ -242,8 +243,8 @@ static struct attributes *create_attribute_structure(char *uri) {
 
 	struct attributes *attr;
 
-	attr = malloc(sizeof(struct attributes));
-	if (!attr)  return NULL;
+	attr = EM(malloc(sizeof(struct attributes)));
+	if (attr==NULL)  return NULL;
 
 	/* reset the structure to default state */
 	attr->cacheable = attr->hidden = attr->ignore = attr->stripextensions = attr->multiviews = 0;
@@ -272,9 +273,9 @@ static struct attributes *create_attribute_structure(char *uri) {
 		attr->defined.stripextensions = attr->defined.multiviews = attr->defined.setcsd = 0;
 
 	attr->urilen = strlen(uri);
-	attr->uri = malloc(attr->urilen+1);
-	if (!attr->uri)  return NULL;
-	strcpy(attr->uri, uri);
+	attr->uri = EM(malloc(attr->urilen+1));
+	if (attr->uri==NULL)  return NULL;
+	wjstrncpy(attr->uri, uri,attr->urilen+1);
 
 	return attr;
 }
@@ -316,7 +317,7 @@ static struct attributes *read_attributes_file(char *filename, char *base) {
 
 
 	FILE *file;
-	char line[256], *attribute, *ptr, *end, uri[256];
+	char line[256], *attribute, *ptr, *end, uri[MAX_FILENAME];
 	int i;
 	struct attributes *attr;
 	enum sectiontype section;
@@ -412,7 +413,7 @@ static struct attributes *read_attributes_file(char *filename, char *base) {
 					for (i = 0; i < len; i++)  ptr[i] = tolower(ptr[i]);
 				}
 
-				if (match) strcpy(uri,ptr); else sprintf(uri, "%s%s", base, ptr);
+				if (match) wjstrncpy(uri,ptr, MAX_FILENAME); else snprintf(uri, MAX_FILENAME, "%s%s", base, ptr);
 				attr = create_attribute_structure(uri);
 				if (!attr) {
 					fclose(file);
@@ -426,7 +427,7 @@ static struct attributes *read_attributes_file(char *filename, char *base) {
 					attr->attrnext = globallocations;
 					globallocations = attr;
 
-					attr->regex = malloc(sizeof(regex_t));
+					attr->regex = EM(malloc(sizeof(regex_t)));
 					if (attr->regex == NULL) {
 						fclose(file);
 						return NULL;
@@ -443,7 +444,7 @@ static struct attributes *read_attributes_file(char *filename, char *base) {
 				}
 			} else if (strcmp(type,"directory") == 0 || strcmp(type,"directorymatch") == 0) {
 				int match = 0;
-				char buffer[256];
+				char buffer[MAX_FILENAME];
 				int spare;
 
 				if (section != section_NONE) continue; /* cannot have a directory inside anything else */
@@ -468,10 +469,10 @@ static struct attributes *read_attributes_file(char *filename, char *base) {
 				}
 
 				if (match) {
-					strcpy(buffer,ptr);
+					wjstrncpy(buffer,ptr,MAX_FILENAME);
 				} else {
-					sprintf(uri, "%s%s", base, ptr);
-					if (xosfscontrol_canonicalise_path(uri,buffer,NULL,NULL,255,&spare)) strcpy(buffer,uri);
+					snprintf(uri, MAX_FILENAME, "%s%s", base, ptr);
+					if (E(xosfscontrol_canonicalise_path(uri,buffer,NULL,NULL,MAX_FILENAME,&spare))) wjstrncpy(buffer,uri,MAX_FILENAME);
 				}
 
 				attr = create_attribute_structure(buffer);
@@ -487,7 +488,7 @@ static struct attributes *read_attributes_file(char *filename, char *base) {
 					attr->attrnext = globaldirectories;
 					globaldirectories = attr;
 
-					attr->regex = malloc(sizeof(regex_t));
+					attr->regex = EM(malloc(sizeof(regex_t)));
 					if (attr->regex == NULL) {
 						fclose(file);
 						return NULL;
@@ -540,7 +541,7 @@ static struct attributes *read_attributes_file(char *filename, char *base) {
 				if (match) {
 					int ret;
 
-					attr->regex = malloc(sizeof(regex_t));
+					attr->regex = EM(malloc(sizeof(regex_t)));
 					if (attr->regex == NULL) {
 						fclose(file);
 						return NULL;
@@ -572,12 +573,13 @@ static struct attributes *read_attributes_file(char *filename, char *base) {
 				while (*ptr!='\0' && (isspace(*ptr) || *ptr=='=')) ptr++;
 
 				if (*ptr) {
-					value = malloc(strlen(ptr)+1);
+					size_t len=strlen(ptr)+1;
+					value = EM(malloc(len));
 					if (!value) {                  /* malloc failed */
 						fclose(file);
 						return NULL;
 					}
-					strcpy(value, ptr);            /* make copy of value */
+					memcpy(value, ptr, len);            /* make copy of value */
 				}
 			}
 			/* make attribute matching case insensitive */
@@ -639,7 +641,7 @@ static struct attributes *read_attributes_file(char *filename, char *base) {
 				if (notfound) {
 					webjames_writelog(LOGLEVEL_ATTRIBUTES, "Filetype '%s' unknown, ignoring handler for this filetype",filetypetext);
 				} else {
-					newhandler = malloc(sizeof(struct handlerlist));
+					newhandler = EM(malloc(sizeof(struct handlerlist)));
 					if (newhandler == NULL) {
 						fclose(file);
 						return NULL;
@@ -680,11 +682,11 @@ static struct attributes *read_attributes_file(char *filename, char *base) {
 
 					if (!configuration.casesensitive) lower_case(value);
 					/* canonicalise the path, so <WebJames$Dir> etc are expanded, otherwise they can cause problems */
-					if (xosfscontrol_canonicalise_path(value,NULL,NULL,NULL,0,&size) == NULL) {
-						buffer = malloc(1-size);
+					if (E(xosfscontrol_canonicalise_path(value,NULL,NULL,NULL,0,&size)) == NULL) {
+						buffer = EM(malloc(1-size));
 						if (buffer == NULL) {
 							buffer = value;
-						} else if (xosfscontrol_canonicalise_path(value,buffer,NULL,NULL,1-size,&size) != NULL) {
+						} else if (E(xosfscontrol_canonicalise_path(value,buffer,NULL,NULL,1-size,&size)) != NULL) {
 							free(buffer);
 							buffer = value;
 						}
@@ -831,7 +833,7 @@ static struct attributes *read_attributes_file(char *filename, char *base) {
 				} else if (strcmp(attribute, "more-attributes") == 0) {
 					if (value) {
 						if (attr->uri[attr->urilen-1] == '/') {
-							strcpy(uri, attr->uri);
+							wjstrncpy(uri, attr->uri, MAX_FILENAME);
 							uri[attr->urilen-1] = '\0';         /* remove the terminating / */
 							read_attributes_file(value, uri);
 						}
@@ -901,7 +903,7 @@ static void merge_attributes3(struct connection *conn, struct attributes *attr) 
 		/* add to top of linked list */
 		struct errordoc *error;
 
-		error = malloc(sizeof(struct errordoc));
+		error = EM(malloc(sizeof(struct errordoc)));
 		if (!error) return;
 		error->status = attr->errordocs[i].status;
 		error->report = attr->errordocs[i].report;
@@ -1075,7 +1077,7 @@ void get_attributes(char *uri, struct connection *conn) {
 /* dir              pointer to the directory to match */
 /* conn             structure to fill in */
 	int found;
-	char buffer[256], path[256], *ptr, splitchar, *leafname, leafnamebuffer[256];
+	char buffer[MAX_FILENAME], path[MAX_FILENAME], *ptr, splitchar, *leafname, leafnamebuffer[MAX_FILENAME];
 	int len, last, first, key;
 	struct attributes *filesattrstart = NULL, *filesattrend = NULL;
 
@@ -1083,7 +1085,7 @@ void get_attributes(char *uri, struct connection *conn) {
 		/* must be a directory */
 
 		/* remove any terminating '.' */
-		strcpy(path,uri);
+		wjstrncpy(path,uri,MAX_FILENAME);
 		len = strlen(path);
 		if (path[len-1] == '.') {
 			/* There isn't any leafname */
@@ -1100,7 +1102,7 @@ void get_attributes(char *uri, struct connection *conn) {
 		}
 
 		/* make sure we can't have two different pathnames refering to the same directory */
-		if (xosfscontrol_canonicalise_path(path,buffer,NULL,NULL,255,&len)) strcpy(buffer,path);
+		if (E(xosfscontrol_canonicalise_path(path,buffer,NULL,NULL,MAX_FILENAME,&len))) wjstrncpy(buffer,path,MAX_FILENAME);
 		splitchar = '.';
 		if (leafname) {
 			/* There isn't a leafname */
@@ -1122,7 +1124,7 @@ void get_attributes(char *uri, struct connection *conn) {
 
 	} else {
 		/* It is actually a URI */
-		strcpy(buffer,uri);
+		wjstrncpy(buffer,uri,MAX_FILENAME);
 		splitchar = '/';
 		leafname = NULL;
 
@@ -1142,7 +1144,7 @@ void get_attributes(char *uri, struct connection *conn) {
 			last = 1;
 		}
 		/* decend through each directory till the one needed */
-		strncpy(path, buffer, ptr - buffer);  /* copy path upto the '.' just found */
+		memcpy(path, buffer, ptr - buffer);  /* copy path upto the '.' just found */
 		if (uri[0] == '/' && *ptr == '/') {
 			path[ptr - buffer] = '/';
 			path[ptr - buffer + 1] = '\0';
@@ -1176,7 +1178,7 @@ void get_attributes(char *uri, struct connection *conn) {
 			struct attributes *newattr;
 			char htaccessfile[256];
 
-			sprintf(htaccessfile,"%s.%s",path,configuration.htaccessfile);
+			snprintf(htaccessfile,MAX_FILENAME,"%s.%s",path,configuration.htaccessfile);
 			newattr=read_attributes_file(htaccessfile, path);
 			if (newattr) {
 				merge_attributes(conn, newattr);
@@ -1224,7 +1226,7 @@ void init_attributes(char *filename) {
 
 	hashsize = HASHINCREMENT; /* init hash table */
 	hashentries = 0;
-	hash = malloc(hashsize*sizeof(struct hashentry));
+	hash = EM(malloc(hashsize*sizeof(struct hashentry)));
 	if (!hash) return;
 	for (i=0; i<hashsize; i++) hash[i].uri = NULL;
 

@@ -1,3 +1,8 @@
+/*
+	$Id: webjames.c,v 1.21 2001/09/03 14:10:46 AJW Exp $
+	General functions for WebJames
+*/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
@@ -11,8 +16,9 @@
 #include "oslib/osfile.h"
 #include "oslib/territory.h"
 
-#include "cache.h"
 #include "webjames.h"
+#include "wjstring.h"
+#include "cache.h"
 #include "ip.h"
 #include "stat.h"
 #include "report.h"
@@ -37,6 +43,9 @@ struct connection *connections[MAXCONNECTIONS];
 char temp[HTTPBUFFERSIZE];
 static int serverscount;
 
+/* variables used by error handling macros*/
+os_error *webjames_last_error;
+void *webjames_last_malloc;
 
 /* ------------------------------------------------ */
 /* init, kill, poll */
@@ -70,19 +79,19 @@ int webjames_init(char *config) {
 	configuration.maxrequestsize = 100000;
 	configuration.xheaders = 0;
 	configuration.logheaders = 0;
-	strcpy(configuration.server, WEBJAMES_SERVER_SOFTWARE);
+	wjstrncpy(configuration.server, WEBJAMES_SERVER_SOFTWARE,MAX_FILENAME);
 	configuration.webjames_h_revision=WEBJAMES_H_REVISION; /*used by PHP module to ensure that it was compiled with the correct version of webjames.h */
 	read_config(config);
 
 	/* create out directory in !Scrap (or wherever) */
-	xosfile_create_dir("<WebJames$Scrap>",0);
+	EV(xosfile_create_dir("<WebJames$Scrap>",0));
 	/* Supply defaults for cgi_in/out if the user hasn't specified them */
 	/* They must be canonicalised if possible as some programs (eg Perl) don't like <foo$dir> as arguments */
 	if (*configuration.cgi_in=='\0') {
-		if (xosfscontrol_canonicalise_path("<WebJames$Scrap>.In",configuration.cgi_in,NULL,NULL,256,NULL)) strcpy(configuration.cgi_in,"<WebJames$Scrap>.In");
+		if (E(xosfscontrol_canonicalise_path("<WebJames$Scrap>.In",configuration.cgi_in,NULL,NULL,256,NULL))) wjstrncpy(configuration.cgi_in,"<WebJames$Scrap>.In",MAX_FILENAME);
 	}
 	if (*configuration.cgi_out=='\0') {
-		if (xosfscontrol_canonicalise_path("<WebJames$Scrap>.Out",configuration.cgi_out,NULL,NULL,256,NULL)) strcpy(configuration.cgi_out,"<WebJames$Scrap>.Out");
+		if (E(xosfscontrol_canonicalise_path("<WebJames$Scrap>.Out",configuration.cgi_out,NULL,NULL,256,NULL))) wjstrncpy(configuration.cgi_out,"<WebJames$Scrap>.Out",MAX_FILENAME);
 	}
 
 	if ((*configuration.site == '\0') || (serverscount == 0) || (configuration.timeout < 0))
@@ -172,7 +181,7 @@ void webjames_command(char *cmd, int release) {
 /* cmd              command-string */
 /* release          when == 1, SYS OS_Module,7,,cmd is called on exit */
 
-	if (strcmp(cmd, "closeall") == 0) {                       /* CLOSEALL */
+	if (strncmp(cmd, "closeall", 8) == 0) {                       /* CLOSEALL */
 		int i;
 		for (i = 0; i < serverinfo.activeconnections; i++)
 			if (connections[i]->socket != socket_CLOSED)  connections[i]->close(connections[i], 1);
@@ -207,7 +216,7 @@ void webjames_command(char *cmd, int release) {
 
 	}
 
-	if (release)  xosmodule_free(cmd);
+	if (release) xosmodule_free(cmd);
 }
 
 
@@ -429,18 +438,19 @@ int webjames_readbuffer(struct connection *conn, char *buffer, int size)
 	return size;
 }
 
-void webjames_writelog(int level, char *fmt, ...)
+void *webjames_writelog(int level, char *fmt, ...)
 {
 #ifdef LOG
 	va_list ap;
 	char temp[256];
 
 	va_start(ap,fmt);
-	vsprintf(temp,fmt,ap);
+	vsnprintf(temp,TEMPBUFFERSIZE,fmt,ap);
 	va_end(ap);
 
 	writelog(level, temp);
 #endif
+	return NULL;
 }
 
 void read_config(char *config)
@@ -549,64 +559,65 @@ void read_config(char *config)
 				if (configuration.maxrequestsize > 2000)  configuration.maxrequestsize = 2000;
 
 			} else if (strcmp(cmd, "server") == 0)
-				strcpy(configuration.server, val);
+				wjstrncpy(configuration.server, val, MAX_FILENAME);
 
 			else if (strcmp(cmd, "clf") == 0)
-				strcpy(configuration.clflog, val);
+				wjstrncpy(configuration.clflog, val, MAX_FILENAME);
 
 			else if (strcmp(cmd, "log") == 0)
-				strcpy(configuration.weblog, val);
+				wjstrncpy(configuration.weblog, val, MAX_FILENAME);
 
 			else if (strcmp(cmd, "attributes") == 0)
-				strcpy(configuration.attributesfile, val);
+				wjstrncpy(configuration.attributesfile, val, MAX_FILENAME);
 
 			else if (strcmp(cmd, "loglevel") == 0)
 				configuration.loglevel = atoi(val);
 
 			else if (strcmp(cmd, "rename-cmd") == 0)
-				strcpy(configuration.rename_cmd, val);
+				wjstrncpy(configuration.rename_cmd, val, MAX_FILENAME);
 
 			else if (strcmp(cmd, "homedir") == 0) {
 				/* canonicalise the path, so <WebJames$Dir> etc are expanded, otherwise they can cause problems */
-				if (xosfscontrol_canonicalise_path(val,configuration.site,NULL,NULL,255,NULL) != NULL) strcpy(configuration.site,val);
+				if (E(xosfscontrol_canonicalise_path(val,configuration.site,NULL,NULL,MAX_FILENAME,NULL)) != NULL) wjstrncpy(configuration.site,val,MAX_FILENAME);
 				
 			} else if (strcmp(cmd, "put-script") == 0)
-				strncpy(configuration.put_script, val, 255);
+				wjstrncpy(configuration.put_script, val, MAX_FILENAME);
 
 			else if (strcmp(cmd, "delete-script") == 0)
-				strncpy(configuration.delete_script, val, 255);
+				wjstrncpy(configuration.delete_script, val, MAX_FILENAME);
 
 			else if (strcmp(cmd, "cgi-input") == 0)
-				strncpy(configuration.cgi_in, val, 255);
+				wjstrncpy(configuration.cgi_in, val, MAX_FILENAME);
 
 			else if (strcmp(cmd, "cgi-output") == 0)
-				strncpy(configuration.cgi_out, val, 255);
+				wjstrncpy(configuration.cgi_out, val, MAX_FILENAME);
 
 			else if (strcmp(cmd, "accessfilename") == 0)
-				strncpy(configuration.htaccessfile, val, 255);
+				wjstrncpy(configuration.htaccessfile, val, MAX_FILENAME);
 
 			else if (strcmp(cmd, "casesensitive") == 0)
 				configuration.casesensitive = atoi(val);
 
 			else if (strcmp(cmd, "panic") == 0)
-				strncpy(configuration.panic, val, 500);
+				wjstrncpy(configuration.panic, val, MAX_PANIC);
 
 			else if (strcmp(cmd, "serverip") == 0)
-				strncpy(configuration.serverip, val, 255);
+				wjstrncpy(configuration.serverip, val, MAX_FILENAME);
 
 			else if (strcmp(cmd, "reversedns") == 0)
 				configuration.reversedns = atoi(val);
 
 			else if (strcmp(cmd, "webmaster") == 0)
-				strcpy(configuration.webmaster, val);
+				wjstrncpy(configuration.webmaster, val, MAX_FILENAME);
 
-			else if ((strcmp(cmd, "x-header") == 0) && (configuration.xheaders < 16)) {
-				configuration.xheader[configuration.xheaders] = malloc(strlen(val)+1);
-				if (configuration.xheader[configuration.xheaders])  strcpy(configuration.xheader[configuration.xheaders++], val);
+			else if ((strcmp(cmd, "x-header") == 0) && (configuration.xheaders < MAX_HEADERS)) {
+				size_t len=strlen(val)+1;
+				configuration.xheader[configuration.xheaders] = EM(malloc(len));
+				if (configuration.xheader[configuration.xheaders])  memcpy(configuration.xheader[configuration.xheaders++], val, len);
 			}
 
-			else if ((strcmp(cmd, "log-header") == 0) && (configuration.logheaders < 16)) {
-				configuration.logheader[configuration.logheaders] = malloc(strlen(val)+1);
+			else if ((strcmp(cmd, "log-header") == 0) && (configuration.logheaders < MAX_HEADERS)) {
+				configuration.logheader[configuration.logheaders] = EM(malloc(strlen(val)+1));
 				if (configuration.logheader[configuration.logheaders]) {
 					char *src=val,*dest=configuration.logheader[configuration.logheaders++];
 					do {
@@ -630,7 +641,7 @@ void read_config(char *config)
 					if (strcmp(s,"ALL") == 0) {
 						filetype = filetype_ALL;
 					} else {
-						if (xosfscontrol_file_type_from_string(s,(bits*)&filetype)) notfound = 1; /* ignore unknown filetypes */
+						if (E(xosfscontrol_file_type_from_string(s,(bits*)&filetype))) notfound = 1;
 					}
 					if (!notfound) configuration.imagedirs[configuration.numimagedirs++] = filetype;
 					s=f;

@@ -1,3 +1,8 @@
+/*
+	$Id: stat.c,v 1.13 2001/09/03 14:10:44 AJW Exp $
+	Statistics and logging functions
+*/
+
 #include <time.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -8,6 +13,7 @@
 #include "oslib/os.h"
 
 #include "webjames.h"
+#include "wjstring.h"
 #include "stat.h"
 #include "ip.h"
 
@@ -62,10 +68,10 @@ void init_statistics() {
 	
 		logrotatetime = clock()/100 + configuration.log_max_age;        /* clock()/100 value */
 	
-		if (configuration.logbuffersize > 0) logbuffer = malloc(configuration.logbuffersize); /* if malloc fails then don't use a buffer */
+		if (configuration.logbuffersize > 0) logbuffer = EM(malloc(configuration.logbuffersize)); /* if malloc fails then don't use a buffer */
 		logbufferused = 0;
 
-		if (configuration.logbuffersize > 0) clfbuffer = malloc(configuration.logbuffersize); /* if malloc fails then don't use a buffer */
+		if (configuration.logbuffersize > 0) clfbuffer = EM(malloc(configuration.logbuffersize)); /* if malloc fails then don't use a buffer */
 		clfbufferused = 0;
 	}
 
@@ -80,16 +86,16 @@ void init_statistics() {
 static void rotate_log(char *logfile, int copies) {
 
 	int f;
-	char oldname[256], newname[256], cmd[256], *ptr;
+	char oldname[MAX_FILENAME], newname[MAX_FILENAME], cmd[MAX_FILENAME], *ptr;
 
 	if (copies > 1) {
 		/* remove the oldest log file */
-		sprintf(oldname, "%s_%d", logfile, copies-1);
+		snprintf(oldname, MAX_FILENAME, "%s_%d", logfile, copies-1);
 		remove(oldname);
 		/* rotate the rest */
 		for (f = copies-2; f > 0; f--) {
-			sprintf(oldname, "%s_%d", logfile, f);
-			sprintf(newname, "%s_%d", logfile, f+1);
+			snprintf(oldname, MAX_FILENAME, "%s_%d", logfile, f);
+			snprintf(newname, MAX_FILENAME, "%s_%d", logfile, f+1);
 			rename(oldname, newname);
 		}
 		/* rename the newest */
@@ -104,18 +110,18 @@ static void rotate_log(char *logfile, int copies) {
 						cmd[++write] = '%';
 						read++;
 					} else if (configuration.rename_cmd[read+1] == '0') {
-						strcpy(cmd+write, logfile);
+						wjstrncpy(cmd+write, logfile, MAX_FILENAME-write);
 						write += strlen(logfile)-1;
 						read++;
 					} else if (configuration.rename_cmd[read+1] == '1') {
-						sprintf(cmd+write, "%s_1", logfile);
+						snprintf(cmd+write, MAX_FILENAME-write, "%s_1", logfile);
 						write = strlen(cmd)-1;
 						read++;
 					} else if (configuration.rename_cmd[read+1] == '2') {
 						ptr = logfile;
 						while (strchr(ptr, '.'))  ptr = strchr(ptr, '.') + 1;
 						while (strchr(ptr, ':'))  ptr = strchr(ptr, ':') + 1;
-						strcpy(cmd+write, ptr);
+						wjstrncpy(cmd+write, ptr, MAX_FILENAME-write);
 						write = strlen(cmd)-1;
 						read++;
 					}
@@ -125,7 +131,7 @@ static void rotate_log(char *logfile, int copies) {
 			cmd[write] = '\0';
 			system(cmd);
 		} else {
-			sprintf(newname, "%s_1", logfile);
+			snprintf(newname, MAX_FILENAME, "%s_1", logfile);
 			rename(logfile, newname);
 		}
 	}
@@ -224,7 +230,7 @@ void writelog(int level, char *string)
 		regs.r[0]=(int)"WebJames";
 		regs.r[1]=(int)string;
 		regs.r[2]=level;
-		_kernel_swi(SysLog_LogMessage, &regs,&regs);
+		_kernel_swi(SysLog_LogMessage, &regs,&regs); /*If this fails then there isn't much we can do*/
 	
 	} else {
 		int newclock;
@@ -253,7 +259,7 @@ void writelog(int level, char *string)
 					logfile = NULL;
 				}
 			} else {
-				sprintf(logbuffer + logbufferused, "%s : %s\n", logclock, string);
+				snprintf(logbuffer + logbufferused, configuration.logbuffersize-logbufferused, "%s : %s\n", logclock, string);
 				logbufferused += len;
 			}
 		} else {
@@ -305,7 +311,7 @@ void clf_cgi_finished(int code, int bytes, char *host, char *request)
 
 	rightnow = time(NULL);
 	strftime(clk, 100, "%d/%b/%Y:%H:%M:%S", localtime(&rightnow));
-	sprintf(temp, "%s - - [%s +0000] \"%s\" %d %d \"\" \"\"", host, clk, request, code, bytes);
+	snprintf(temp, TEMPBUFFERSIZE, "%s - - [%s +0000] \"%s\" %d %d \"\" \"\"", host, clk, request, code, bytes);
 	writeclf(temp);
 #endif
 }
@@ -330,7 +336,7 @@ void clf_connection_closed(int cn)
 
 	rightnow = time(NULL);
 	strftime(clk, 100, "%d/%b/%Y:%H:%M:%S", localtime(&rightnow));
-	sprintf(temp, "%s - - [%s +0000] \"%s\" %d %d \"%s\" \"%s\"",
+	snprintf(temp, TEMPBUFFERSIZE, "%s - - [%s +0000] \"%s\" %d %d \"%s\" \"%s\"",
 			conn->host, clk, conn->requestline, conn->statuscode,
 			conn->fileinfo.size, referer, useragent);
 	writeclf(temp);
@@ -367,7 +373,7 @@ void writeclf(char *string)
 					clffile = NULL;
 				}
 			} else {
-				sprintf(clfbuffer + clfbufferused, "%s\n", string);
+				snprintf(clfbuffer + clfbufferused, configuration.logbuffersize-clfbufferused, "%s\n", string);
 				clfbufferused += len;
 			}
 		} else {

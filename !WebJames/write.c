@@ -1,3 +1,8 @@
+/*
+	$Id: write.c,v 1.31 2001/09/03 14:10:50 AJW Exp $
+	Get attributes for each request the send the file
+*/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -10,6 +15,7 @@
 #include "oslib/mimemap.h"
 
 #include "webjames.h"
+#include "wjstring.h"
 #include "cache.h"
 #include "ip.h"
 #include "datetime.h"
@@ -111,7 +117,7 @@ void send_file(struct connection *conn) {
 
 	/* build RISCOS filename */
 	name = conn->filename;
-	strcpy(name, conn->homedir);
+	wjstrncpy(name, conn->homedir, MAX_FILENAME);
 	name += strlen(name);
 	ptr = conn->uri + conn->homedirignore;
 	/* append requested URI, with . and / switched */
@@ -130,10 +136,10 @@ void send_file(struct connection *conn) {
 	/* if requesting a directory (ie. the uri ends with a /) use index.html */
 	len = strlen(conn->filename);
 	if (conn->filename[len-1] == '.') {
-		char testfile[256];
+		char testfile[MAX_FILENAME];
 		int i;
 
-		strcpy(testfile,conn->filename);
+		wjstrncpy(testfile,conn->filename,MAX_FILENAME);
 		uri_to_filename("index.html", testfile+len, conn->flags.stripextensions); /* incase the list is empty */
 		for(i=0; i<conn->defaultfilescount; i++) {
 			int type, size;
@@ -142,7 +148,7 @@ void send_file(struct connection *conn) {
 			type = get_file_info(testfile,NULL,NULL,NULL,&size,1);
 			if (type != FILE_DOESNT_EXIST) break;
 		}
-		strcpy(conn->filename,testfile);
+		wjstrncpy(conn->filename,testfile,MAX_FILENAME);
 	}
 
 
@@ -167,8 +173,8 @@ void send_file(struct connection *conn) {
 	} else if (conn->fileinfo.filetype == OBJECT_IS_DIRECTORY) {
 		len = strlen(conn->uri);
 		if (conn->uri[len-1] != '/') {
-			char newurl[512];
-			sprintf(newurl, "%s/", conn->uri);
+			char newurl[MAX_FILENAME];
+			snprintf(newurl, MAX_FILENAME,"%s/", conn->uri);
 			report_moved(conn, newurl);
 		} else {
 			report_notfound(conn);
@@ -181,7 +187,7 @@ void send_file(struct connection *conn) {
 		report_badrequest(conn, "error occured when reading file info");
 		return;
 	} else if (conn->fileinfo.filetype >= FILE_NO_MIMETYPE) {
-		strcpy(conn->fileinfo.mimetype, "text/plain");
+		wjstrncpy(conn->fileinfo.mimetype, "text/plain", MAX_MIMETYPE);
 		conn->fileinfo.filetype-=FILE_NO_MIMETYPE;
 	}
 
@@ -246,7 +252,7 @@ void send_file(struct connection *conn) {
 
 	if (conn->cache) {
 		conn->fileinfo.filetype = conn->cache->filetype;
-		strcpy(conn->fileinfo.mimetype, conn->cache->mimetype);
+		wjstrncpy(conn->fileinfo.mimetype, conn->cache->mimetype,MAX_MIMETYPE);
 		conn->fileinfo.size = conn->cache->size;
 		conn->fileinfo.date = conn->cache->date;
 	}
@@ -320,14 +326,14 @@ int check_case(char *filename)
 {
 	int count, more, found;
 	int end;
-	char leafname[256], buffer[256];
+	char leafname[MAX_FILENAME], buffer[MAX_FILENAME];
 
 	end=strlen(filename);
 	while (1) {
 		/* Get the leafname and dirname */
 		while (filename[end]!='.' && end>0) end--;
 		if (end <= 0) return 0;
-		strcpy(leafname,filename+end+1);
+		wjstrncpy(leafname,filename+end+1,MAX_FILENAME);
 		filename[end] = '\0';
 		/* Then enumerate the directory contents to see if there is a matching file/directory */
 		found = 0;
@@ -357,11 +363,11 @@ int get_file_info(char *filename, char *mimetype, struct tm *date, os_date_and_t
 	int filetype;
 	fileswitch_attr attr;
 
-	if (xosfile_read_no_path(filename, &objtype, &load, &exec, size,&attr))  return FILE_ERROR;
+	if (E(xosfile_read_no_path(filename, &objtype, &load, &exec, size,&attr)))  return FILE_ERROR;
 	if (objtype == fileswitch_NOT_FOUND)  return FILE_DOESNT_EXIST;
 
 	if (checkcase && configuration.casesensitive) {
-		if (xosfscontrol_canonicalise_path(filename,buffer,0,0,256,NULL)) return FILE_ERROR;
+		if (E(xosfscontrol_canonicalise_path(filename,buffer,0,0,256,NULL))) return FILE_ERROR;
 		if (check_case(buffer) == 0) return FILE_DOESNT_EXIST;
 	}
 
@@ -386,8 +392,8 @@ int get_file_info(char *filename, char *mimetype, struct tm *date, os_date_and_t
 	if (date) utc_to_time(&utc, date);
 	
 	if (mimetype) {
-		if (xmimemaptranslate_filetype_to_mime_type(filetype, typename)) return FILE_NO_MIMETYPE + filetype;
-		strcpy(mimetype, typename);
+		if (E(xmimemaptranslate_filetype_to_mime_type(filetype, typename))) return FILE_NO_MIMETYPE + filetype;
+		wjstrncpy(mimetype, typename, MAX_MIMETYPE);
 	}
 	return filetype;
 }

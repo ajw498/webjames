@@ -1,6 +1,7 @@
-#ifdef MemCheck_MEMCHECK
-#include "MemCheck:MemCheck.h"
-#endif
+/*
+	$Id: main.c,v 1.11 2001/09/03 14:10:37 AJW Exp $
+	main() function, wimp polling loop
+*/
 
 #include <time.h>
 #include <ctype.h>
@@ -11,14 +12,19 @@
 #include "oslib/os.h"
 #include "oslib/wimp.h"
 
-#include "main.h"
 #include "webjames.h"
+#include "main.h"
+#include "stat.h"
+
+#ifdef MemCheck_MEMCHECK
+#include "MemCheck:MemCheck.h"
+#endif
+
 
 /* local variables */
 static int quit;
 static int wimp[64];
 static int polldelay;
-
 
 
 void init_task() {
@@ -34,7 +40,7 @@ void init_task() {
 	wimpmsg[1] = 0;
 
 	/* initialise the wimp */
-	if (xwimp_initialise(310, "WebJames", (wimp_message_list *)wimpmsg, (wimp_version_no *)&dummy, &task))   quit = 1;
+	if (E(xwimp_initialise(310, "WebJames", (wimp_message_list *)wimpmsg, (wimp_version_no *)&dummy, &task)))   quit = 1;
 }
 
 
@@ -43,9 +49,9 @@ void poll() {
 
 	int clk, flags, action;
 
-	xos_read_monotonic_time(&clk);
+	EV(xos_read_monotonic_time(&clk));
 
-	xwimp_poll_idle(0, (wimp_block *)wimp, (os_t)clk+polldelay, NULL, (wimp_event_no *)&action);
+	EV(xwimp_poll_idle(0, (wimp_block *)wimp, (os_t)clk+polldelay, NULL, (wimp_event_no *)&action));
 	switch (action) {
 	case 0:
 		polldelay = webjames_poll();

@@ -1,3 +1,8 @@
+/*
+	$Id: cgiscript.c,v 1.29 2001/09/03 14:10:30 AJW Exp $
+	CGI script handler
+*/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -11,6 +16,7 @@
 #include "oslib/wimp.h"
 
 #include "webjames.h"
+#include "wjstring.h"
 #include "datetime.h"
 #include "cgiscript.h"
 #include "openclose.h"
@@ -22,7 +28,7 @@
 
 #define MAXHEADERS 100
 
-static int Strnicmp(char *s1, char *s2,size_t n)
+static int wjstrnicmp(char *s1, char *s2,size_t n)
 /*compares n characters, case insensitively. returns zero if equal*/
 {
 	int i;
@@ -34,8 +40,6 @@ static int Strnicmp(char *s1, char *s2,size_t n)
 void cgiscript_setvars(struct connection *conn)
 /*set system variables for a CGI or SSI script*/
 {
-	char temp[30];
-
 	if (configuration.server[0])  set_var_val("SERVER_SOFTWARE", configuration.server);
 	set_var_val("SERVER_PROTOCOL", conn->protocol);
 	if (configuration.serverip[0])  set_var_val("SERVER_NAME", configuration.serverip);
@@ -51,19 +55,19 @@ void cgiscript_setvars(struct connection *conn)
 
 	if (conn->args) set_var_val("QUERY_STRING", conn->args);
 
-	sprintf(temp, "%d.%d.%d.%d", conn->ipaddr[0], conn->ipaddr[1], conn->ipaddr[2], conn->ipaddr[3]);
+	snprintf(temp, TEMPBUFFERSIZE, "%d.%d.%d.%d", conn->ipaddr[0], conn->ipaddr[1], conn->ipaddr[2], conn->ipaddr[3]);
 	set_var_val("REMOTE_ADDR", temp);
 	if (conn->dnsstatus == DNS_OK)  set_var_val("REMOTE_HOST", conn->host);
 
 	set_var_val("REQUEST_METHOD", conn->methodstr);
 
 	if ((conn->method == METHOD_POST) || (conn->method == METHOD_PUT)) {
-		sprintf(temp, "%d", conn->bodysize);
+		snprintf(temp, TEMPBUFFERSIZE, "%d", conn->bodysize);
 		set_var_val("CONTENT_LENGTH", temp);
 		set_var_val("CONTENT_TYPE", conn->type);
 	}
 
-	sprintf(temp, "%d", conn->port);
+	snprintf(temp, TEMPBUFFERSIZE, "%d", conn->port);
 	set_var_val("SERVER_PORT", temp);
 
 	if ((conn->method == METHOD_PUT) || (conn->method == METHOD_DELETE))
@@ -121,7 +125,7 @@ void cgiscript_removevars(void)
 void cgiscript_start(struct connection *conn)
 /* start a CGI script with redirection */
 {
-	char cmd[256], cmdformat[256], temp[HTTPBUFFERSIZE+1];
+	char cmd[MAX_FILENAME], cmdformat[MAX_FILENAME];
 	int size, unix;
 	int input=0; /*whether an input file was created*/
 	FILE *file;
@@ -135,49 +139,49 @@ void cgiscript_start(struct connection *conn)
 
 	/* change currently selected directory if required */
 	if (conn->flags.setcsd) {
-		char dirname[256], *dot;
+		char dirname[MAX_FILENAME], *dot;
 
-		strcpy(dirname,conn->filename);
+		wjstrncpy(dirname,conn->filename,MAX_FILENAME);
 		dot = strrchr(dirname,'.');
 		if (dot != NULL) {
 			*dot = '\0';
-			xosfscontrol_dir(dirname);
+			EV(xosfscontrol_dir(dirname));
 		}
 	}
 
 	/* set up the system variables */
 	cgiscript_setvars(conn);
 
-	strcpy(cmdformat,"*%s");
+	wjstrncpy(cmdformat,"*%s",MAX_FILENAME);
 	unix = 0;
 	if (conn->handler) {
 		if (conn->handler->unix) {
 			unix = 1;
 		}
 		if (conn->handler->command) {
-			strcpy(cmdformat,conn->handler->command);
+			wjstrncpy(cmdformat,conn->handler->command,MAX_FILENAME);
 		}
 	}
 
 	if (conn->method == METHOD_POST) {
 		/* generate input filename */
-		xosfile_save_stamped(configuration.cgi_in, 0xfff, (byte *)conn->body, (byte *)conn->body+conn->bodysize);
+		EV(xosfile_save_stamped(configuration.cgi_in, 0xfff, (byte *)conn->body, (byte *)conn->body+conn->bodysize));
 		input=1;
 		/* build command with redirection */
-		if (unix) strcat(cmdformat," < %s > %s"); else strcat(cmdformat," { < %s > %s }");
-		sprintf(cmd, cmdformat, conn->filename, configuration.cgi_in, configuration.cgi_out);
+		if (unix) wjstrncat(cmdformat," < %s > %s",MAX_FILENAME); else wjstrncat(cmdformat," { < %s > %s }",MAX_FILENAME);
+		snprintf(cmd, MAX_FILENAME, cmdformat, conn->filename, configuration.cgi_in, configuration.cgi_out);
 	} else {
 		if (strchr(cmdformat,'%')) {
-			if (unix) strcat(cmdformat," > %s"); else strcat(cmdformat," { > %s }");
-			sprintf(cmd, cmdformat, conn->filename, configuration.cgi_out);
+			if (unix) wjstrncat(cmdformat," > %s",MAX_FILENAME); else wjstrncat(cmdformat," { > %s }",MAX_FILENAME);
+			snprintf(cmd, MAX_FILENAME, cmdformat, conn->filename, configuration.cgi_out);
 		} else {
-			if (unix) strcat(cmdformat," > %s"); else strcat(cmdformat," { > %s }");
-			sprintf(cmd, cmdformat, configuration.cgi_out);
+			if (unix) wjstrncat(cmdformat," > %s",MAX_FILENAME); else wjstrncat(cmdformat," { > %s }",MAX_FILENAME);
+			snprintf(cmd, MAX_FILENAME, cmdformat, configuration.cgi_out);
 		}
 	}
 
 	/* execute the cgi-script */
-	if (xwimp_start_task(cmd, &task)) {
+	if (E(xwimp_start_task(cmd, &task))) {
 		/* failed to start cgi-script */
 		if (input) remove(configuration.cgi_in);
 		report_servererr(conn, "script couldn't be started");
@@ -193,7 +197,7 @@ void cgiscript_start(struct connection *conn)
 	cgiscript_removevars();
 
 	/* Set the CSD back to what it was if we changed it */
-	if (conn->flags.setcsd) xosfscontrol_back();
+	if (conn->flags.setcsd) EV(xosfscontrol_back());
 
 	/* disable reading */
 	if (fd_is_set(serverinfo.select_read, conn->socket)) {
@@ -219,12 +223,12 @@ void cgiscript_start(struct connection *conn)
 
 	/* attempt to get a read-ahead buffer for the file */
 	/* notice: things will still work if malloc fails */
-	conn->filebuffer = malloc(configuration.readaheadbuffer*1024);
+	conn->filebuffer = EM(malloc(configuration.readaheadbuffer*1024));
 	conn->flags.releasefilebuffer = 1;    /* ignored if filebuffer == NULL */
 	conn->leftinbuffer = 0;
 
 	conn->flags.deletefile = 1;           /* delete the file when done */
-	strcpy(conn->filename, configuration.cgi_out);
+	wjstrncpy(conn->filename, configuration.cgi_out, MAX_FILENAME);
 
 	conn->flags.is_cgi = 0;               /* make close() output clf-info */
 
@@ -282,17 +286,17 @@ void cgiscript_start(struct connection *conn)
 		for (i=0;i<MAXHEADERS;i++) {
 			if (headers[i]) {
 				/*overwrite any Date: or Server: headers from the script*/
-				if (Strnicmp(headers[i],"Date:",5)==0) {
+				if (wjstrnicmp(headers[i],"Date:",5)==0) {
 					headers[i]=NULL;
-				} else if (Strnicmp(headers[i],"Server:",7)==0) {
+				} else if (wjstrnicmp(headers[i],"Server:",7)==0) {
 					headers[i]=NULL;
-				} else if (Strnicmp(headers[i],"Location:",9)==0) {
+				} else if (wjstrnicmp(headers[i],"Location:",9)==0) {
 					location=1;
-				} else if (Strnicmp(headers[i],"Status:",7)==0) {
+				} else if (wjstrnicmp(headers[i],"Status:",7)==0) {
 					status=headers[i]+7;
 					while (isspace(*status)) status++;
 					headers[i]=NULL;
-				} else if (Strnicmp(headers[i],"HTTP/",5)==0) {
+				} else if (wjstrnicmp(headers[i],"HTTP/",5)==0) {
 					status=headers[i];
 					headers[i]=NULL;
 				}
@@ -301,10 +305,10 @@ void cgiscript_start(struct connection *conn)
 
 		/*if there was a Location: header, then output the status as 302, unless the script explicitly gave a status code*/
 		if (status) {
-			if (Strnicmp(status,"HTTP/",5)==0) {
-				sprintf(temp,"%s\r\n",status);
+			if (wjstrnicmp(status,"HTTP/",5)==0) {
+				snprintf(temp, TEMPBUFFERSIZE, "%s\r\n",status);
 			} else {
-				sprintf(temp,"HTTP/1.0 %s\r\n",status);
+				snprintf(temp, TEMPBUFFERSIZE, "HTTP/1.0 %s\r\n",status);
 			}
 			webjames_writestringr(conn,temp);
 		} else if (location) {
@@ -315,10 +319,10 @@ void cgiscript_start(struct connection *conn)
 
 		time(&now);
 		time_to_rfc(localtime(&now),rfcnow);
-		sprintf(temp, "Date: %s\r\n", rfcnow);
+		snprintf(temp, TEMPBUFFERSIZE, "Date: %s\r\n", rfcnow);
 		webjames_writestringr(conn, temp);
 		if (conn->vary[0]) {
-			sprintf(temp, "Vary:%s\r\n", conn->vary);
+			snprintf(temp, TEMPBUFFERSIZE, "Vary:%s\r\n", conn->vary);
 			webjames_writestringr(conn, temp);
 		}
 		for (i = 0; i < configuration.xheaders; i++) {
@@ -327,11 +331,11 @@ void cgiscript_start(struct connection *conn)
 		}
 		for (i=0;i<MAXHEADERS;i++) {
 			if (headers[i]) {
-				sprintf(temp,"%s\r\n",headers[i]);
+				snprintf(temp, TEMPBUFFERSIZE, "%s\r\n",headers[i]);
 				webjames_writestringr(conn,temp);
 			}
 		}
-		if (configuration.server[0]) sprintf(temp, "Server: %s\r\n\r\n", configuration.server);
+		if (configuration.server[0]) snprintf(temp, TEMPBUFFERSIZE, "Server: %s\r\n\r\n", configuration.server);
 		webjames_writestringr(conn, temp);
 	}
 }

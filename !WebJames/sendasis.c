@@ -3,6 +3,7 @@
 #include <time.h>
 
 #include "webjames.h"
+#include "stat.h"
 #include "report.h"
 #include "datetime.h"
 #include "cache.h"
@@ -39,7 +40,7 @@ void sendasis_start(struct connection *conn)
 			}
 			/* attempt to get a read-ahead buffer for the file */
 			/* notice: things will still work if malloc fails */
-			conn->filebuffer = malloc(configuration.readaheadbuffer*1024);
+			conn->filebuffer = EM(malloc(configuration.readaheadbuffer*1024));
 			conn->flags.releasefilebuffer = 1;
 			conn->leftinbuffer = 0;
 			/* set the fields in the structure, and that's it! */

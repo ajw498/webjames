@@ -1,6 +1,7 @@
-#ifdef MemCheck_MEMCHECK
-#include "MemCheck:MemCheck.h"
-#endif
+/*
+	$Id: webjamesscript.c,v 1.21 2001/09/03 14:10:48 AJW Exp $
+	Handler for WebJames style CGI scripts
+*/
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -14,7 +15,12 @@
 #include "oslib/osmodule.h"
 #include "oslib/wimp.h"
 
+#ifdef MemCheck_MEMCHECK
+#include "MemCheck:MemCheck.h"
+#endif
+
 #include "webjames.h"
+#include "wjstring.h"
 #include "webjamesscript.h"
 #include "openclose.h"
 #include "report.h"
@@ -49,29 +55,29 @@ void webjamesscript_start(struct connection *conn)
 		memcpy(ptr + conn->headersize, conn->body, conn->bodysize);
 
 	/* start cgi-script */
-	sprintf(temp,
+	snprintf(temp, TEMPBUFFERSIZE,
 			"*%s -http %d -socket %d -remove -size %d -rma %d -bps %d -port %d -host %d.%d.%d.%d",
 			conn->filename, conn->httpmajor*10+conn->httpminor, (int)conn->socket, size,
 			(int)ptr, configuration.bandwidth/100, conn->port, conn->ipaddr[0], conn->ipaddr[1],
 			conn->ipaddr[2], conn->ipaddr[3]);
 	if (conn->method == METHOD_HEAD)
-		strcat(temp, " -head");
+		wjstrncat(temp, " -head", TEMPBUFFERSIZE);
 	else if (conn->method == METHOD_POST)
-		strcat(temp, " -post");
+		wjstrncat(temp, " -post", TEMPBUFFERSIZE);
 	else if (conn->method == METHOD_DELETE)
-		strcat(temp, " -delete");
+		wjstrncat(temp, " -delete", TEMPBUFFERSIZE);
 	else if (conn->method == METHOD_PUT)
-		strcat(temp, " -put");
+		wjstrncat(temp, " -put", TEMPBUFFERSIZE);
 
 	if (conn->pwd) {
 		*strchr(conn->authorization, ':') = '\0';
-		strcat(temp, " -user ");
-		strcat(temp, conn->authorization);
+		wjstrncat(temp, " -user ", TEMPBUFFERSIZE);
+		wjstrncat(temp, conn->authorization, TEMPBUFFERSIZE);
 	}
 
 	webjames_writelog(LOGLEVEL_CGISTART, temp);
 
-	if (xwimp_start_task(temp, &handle)) {
+	if (E(xwimp_start_task(temp, &handle))) {
 		/* failed to start cgi-script */
 		xosmodule_free(ptr);
 		report_badrequest(conn, "script couldn't be started");

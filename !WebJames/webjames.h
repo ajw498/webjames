@@ -1,7 +1,7 @@
 #ifndef WEBJAMES_H
 #define WEBJAMES_H
 
-#define WEBJAMES_H_REVISION "$Revision: 1.25 $"
+#define WEBJAMES_H_REVISION "$Revision: 1.26 $"
 
 #define WEBJAMES_VERSION "0.31"
 #define WEBJAMES_DATE "31/9/01"
@@ -14,14 +14,12 @@ typedef int socket_s;
 
 #include "oslib/os.h"
 #include "oslib/socket.h"
-
+#include <stdarg.h>
 #endif
 
 #define MAXCONNECTIONS    100
 #define HTTPBUFFERSIZE    4096
 #define TEMPBUFFERSIZE    4096
-
-#define MAX_IMAGEDIRS 16
 
 #define filetype_NONE -1
 #define filetype_ALL  -2
@@ -58,6 +56,13 @@ typedef int socket_s;
 #define DNS_TRYING        1
 #define DNS_OK            2
 
+#define MAX_FILENAME 256
+#define MAX_HEADERS 17
+#define MAX_PANIC 504
+#define MAX_IMAGEDIRS 16
+#define MAX_MIMETYPE 128
+#define MAX_HOSTNAME 128
+#define MAX_VARY 60
 
 typedef struct listeninfo {
 	int port;
@@ -80,7 +85,7 @@ typedef struct connection {
 	int statuscode;             /* code returned to the user */
 
 	char dnsstatus;             /* DNS_FAILED, DNS_TRYING or DNS_OK */
-	char host[128];             /* a.b.c.d or name */
+	char host[MAX_HOSTNAME];             /* a.b.c.d or name */
 	char ipaddr[4];
 	int dnsendtime;             /* clock() value */
 
@@ -127,16 +132,16 @@ typedef struct connection {
 
 	int headersize, headerallocated;
 	char *header;               /* malloc()'ed */
-	char vary[60];
+	char vary[MAX_VARY];
 
 	FILE *file;                 /* if file != NULL, data will be read */
 								/* directly from the file */
 	char *filebuffer;           /* if file == NULL, data will be read from */
 								/* the filebuffer (typically the cached file) */
-	char filename[256];
+	char filename[MAX_FILENAME];
 	struct {
 		int filetype;
-		char mimetype[128];
+		char mimetype[MAX_MIMETYPE];
 		int size;               /* no. of bytes to write */
 		struct tm date;
 	} fileinfo;
@@ -173,13 +178,34 @@ typedef	void (*closefn)(struct connection *conn, int force); /*function to call 
 
 #ifndef WEBJAMES_PHP_ONLY
 
+/*Error handling*/
+/*Globals, but only used by the error handling macros*/
+extern os_error *webjames_last_error;
+extern void *webjames_last_malloc;
+
+/*Check the return from a SWI call, log the error if the was one, then return the error block pointer (or NULL)*/
+#define E(x) ((webjames_last_error=(x))==NULL ? NULL : (webjames_writelog(LOGLEVEL_OSERROR,"ERROR %s",webjames_last_error->errmess),webjames_last_error))
+/*As above, but prevent warning when used as a statement rather than as a test*/
+#define EV(x) ((void)(E(x)))
+/*Same as E(), but for malloc*/
+#define EM(x) ((webjames_last_malloc=(x))!=NULL ? webjames_last_malloc : (webjames_writelog(LOGLEVEL_OSERROR,"ERROR malloc failed")))
+/*#define EM(x) ((webjames_last_malloc=(x))==NULL ? (NULL) : webjames_last_malloc)*/
+
+/*The following functions should not be used; the wjstring functions or [v]snprintf should be used instead*/
+#define strncpy(x,y,z) dontusestrncpy(x,y,z)
+#define strcpy(x,y) dontusestrcpy(x,y)
+#define strncat(x,y,z) dontusestrncat(x,y,z)
+#define strcat(x,y) dontusestrcat(x,y)
+#define sprintf dontusesprintf
+#define vsprintf dontusevsprintf
+
 /* configuration */
 typedef struct config {
 	int timeout, bandwidth;
-	char server[128], panic[504], *xheader[17], *logheader[17], webmaster[256];
-	char delete_script[256], put_script[256], site[256];
-	char attributesfile[256], serverip[256], cgi_in[256], cgi_out[256];
-	char htaccessfile[256];
+	char server[MAX_FILENAME], panic[MAX_PANIC], *xheader[MAX_HEADERS], *logheader[MAX_HEADERS], webmaster[MAX_FILENAME];
+	char delete_script[MAX_FILENAME], put_script[MAX_FILENAME], site[MAX_FILENAME];
+	char attributesfile[MAX_FILENAME], serverip[MAX_FILENAME], cgi_in[MAX_FILENAME], cgi_out[MAX_FILENAME];
+	char htaccessfile[MAX_FILENAME];
 	int imagedirs[MAX_IMAGEDIRS];
 	int numimagedirs;
 	int xheaders;
@@ -190,7 +216,7 @@ typedef struct config {
 	int cachesize, maxcachefilesize;
 	int readaheadbuffer, maxrequestsize;
 
-	char weblog[256], clflog[256], rename_cmd[256];
+	char weblog[MAX_FILENAME], clflog[MAX_FILENAME], rename_cmd[MAX_FILENAME];
 	int syslog;
 	int clfupdatetime;
 	int loglevel, log_close_delay;
@@ -226,6 +252,9 @@ void webjames_command(char *cmd, int release);
 void abort_reverse_dns(struct connection *conn, int newstatus);
 void read_config(char *config);
 
+int snprintf(char *buf, size_t len, const char *format,...);
+int vsnprintf(char *buf, size_t len, const char *format, va_list ap);
+
 #endif /*WEBJAMES_PHP_ONLY*/
 
 #define webjames_writestringr(conn,string) \
@@ -236,6 +265,6 @@ int webjames_writebuffer(struct connection *conn, char *buffer, int size);
 
 int webjames_readbuffer(struct connection *conn, char *buffer, int size);
 
-void webjames_writelog(int level, char *fmt, ...);
+void *webjames_writelog(int level, char *fmt, ...);
 
 #endif /*WEBJAMES_H*/

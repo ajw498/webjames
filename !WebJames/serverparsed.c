@@ -1,5 +1,5 @@
 /*
-	$Id: serverparsed.c,v 1.9 2001/09/02 19:00:51 AJW Exp $
+	$Id: serverparsed.c,v 1.10 2001/09/03 14:10:42 AJW Exp $
 	Support for Server Side Includes (SSI)
 */
 
@@ -14,6 +14,7 @@
 #include "regex/regex.h"
 
 #include "webjames.h"
+#include "wjstring.h"
 #include "ip.h"
 #include "openclose.h"
 #include "write.h"
@@ -101,7 +102,7 @@ void serverparsed_start(struct connection *conn)
 		}
 		/* attempt to get a read-ahead buffer for the file */
 		/* notice: things will still work if malloc fails */
-		conn->filebuffer = malloc(configuration.readaheadbuffer*1024);
+		conn->filebuffer = EM(malloc(configuration.readaheadbuffer*1024));
 		conn->flags.releasefilebuffer = 1;
 		conn->leftinbuffer = 0;
 		conn->file = handle;
@@ -115,21 +116,21 @@ void serverparsed_start(struct connection *conn)
 		/* write header */
 		webjames_writestringr(conn, "HTTP/1.0 200 OK\r\n");
 		/* we can't give a content length as we don't know it until the entire doc has been parsed*/
-		sprintf(temp, "Content-Type: %s\r\n", conn->fileinfo.mimetype);
+		snprintf(temp, TEMPBUFFERSIZE, "Content-Type: %s\r\n", conn->fileinfo.mimetype);
 		webjames_writestringr(conn, temp);
 		time(&now);
 		time_to_rfc(localtime(&now),rfcnow);
-		sprintf(temp, "Date: %s\r\n", rfcnow);
+		snprintf(temp, TEMPBUFFERSIZE, "Date: %s\r\n", rfcnow);
 		webjames_writestringr(conn, temp);
 		if (conn->vary[0]) {
-			sprintf(temp, "Vary:%s\r\n", conn->vary);
+			snprintf(temp, TEMPBUFFERSIZE, "Vary:%s\r\n", conn->vary);
 			webjames_writestringr(conn, temp);
 		}
 		for (i = 0; i < configuration.xheaders; i++) {
 			webjames_writestringr(conn, configuration.xheader[i]);
 			webjames_writestringr(conn, "\r\n");
 		}
-		sprintf(temp, "Server: %s\r\n\r\n", configuration.server);
+		snprintf(temp, TEMPBUFFERSIZE, "Server: %s\r\n\r\n", configuration.server);
 		webjames_writestringr(conn, temp);
 	}
 
@@ -137,7 +138,7 @@ void serverparsed_start(struct connection *conn)
 	cgiscript_setvars(conn);
 	leafname=strrchr(conn->filename,'.');
 	if (leafname) {
-		strcpy(temp,leafname+1);
+		wjstrncpy(temp,leafname+1,TEMPBUFFERSIZE);
 		while ((leafname=strchr(temp,'/'))!=NULL) *leafname='.';
 		set_var_val("DOCUMENT_NAME",temp);
 	}
@@ -160,10 +161,10 @@ static void serverparsed_writeerror(struct connection *conn,char *msg)
 static char *serverparsed_reltofilename(char *base,char *rel)
 /*convert a unix style filename relative to base to a full RISC OS filename*/
 {
-	static char filename[256];
+	static char filename[MAX_FILENAME];
 	char *p,*q=rel;
 
-	strcpy(filename,base);
+	wjstrncpy(filename,base,MAX_FILENAME);
 	p=strrchr(filename,'.');
 	if (p++) {
 		while (*q) {
@@ -201,13 +202,13 @@ static char *serverparsed_reltofilename(char *base,char *rel)
 static char *serverparsed_reltouri(char *base,char *rel)
 /*convert a uri relative to base to a complete uri*/
 {
-	static char uri[256];
+	static char uri[MAX_FILENAME];
 	char *p,*q=rel;
 
 	if (rel[0]=='/') {
-		strcpy(uri,rel);
+		wjstrncpy(uri,rel,MAX_FILENAME);
 	} else {
-		strcpy(uri,base);
+		wjstrncpy(uri,base,MAX_FILENAME);
 		p=strrchr(uri,'/');
 		if (p++) {
 			while (*q) {
@@ -252,7 +253,7 @@ static char *serverparsed_getvar(struct connection *conn,char *var)
 		time_t tm1;
 		struct tm *tm2;
 
-		result=malloc(50);
+		result=EM(malloc(50));
 		if (result) {
 			time(&tm1);
 			tm2=gmtime(&tm1);
@@ -263,7 +264,7 @@ static char *serverparsed_getvar(struct connection *conn,char *var)
 		time_t tm1;
 		struct tm *tm2;
 
-		result=malloc(50);
+		result=EM(malloc(50));
 		if (result) {
 			time(&tm1);
 			tm2=localtime(&tm1);
@@ -297,7 +298,7 @@ static char *serverparsed_getvar(struct connection *conn,char *var)
 
 				utc_to_localtime(&utc,&time);
 	
-				result=malloc(50);
+				result=EM(malloc(50));
 				if (result) {
 					if (info->timefmt==NULL) time_to_rfc(&time,result); else strftime(result,49,info->timefmt,&time);
 					result[49]='\0';
@@ -317,7 +318,7 @@ static char *serverparsed_getvar(struct connection *conn,char *var)
 
 		if (size) {
 			size=~size;
-			result=malloc(size+1);
+			result=EM(malloc(size+1));
 			if (result) {
 				if (xos_read_var_val(var,result,size,0,os_VARTYPE_STRING,NULL,NULL,NULL)==NULL) result[size]='\0'; else result[0]='\0';
 			}
@@ -332,7 +333,7 @@ static char *serverparsed_getvar(struct connection *conn,char *var)
 		size_t pos=o-expanded;\
 \
 		len=len+(inc>128 ? 2*inc : 256);\
-		newmem=realloc(expanded,len);\
+		newmem=EM(realloc(expanded,len));\
 		if (newmem==NULL) {\
 			serverparsed_writeerror(conn,"Not enough memory");\
 			expanded[0]='\0';\
@@ -354,7 +355,7 @@ static char *serverparsed_expandvars(struct connection *conn,char *str)
 	if (valid && expanded) free(expanded);
 	len=strlen(str)*2;
 	if (len<256) len=256;
-	expanded=malloc(len);
+	expanded=EM(malloc(len));
 	if (expanded) {
 		char *o=expanded;
 		char *end, *expandedvar;
@@ -503,9 +504,9 @@ static int serverparsed_evaluateexpression(struct connection *conn,char *exp)
 			}
 
 			/*split the string into everything to the left of an =, <=, etc and everything to the right*/
-			lhs=lhs0=malloc(len+1);
+			lhs=lhs0=EM(malloc(len+1));
 			if (lhs==NULL) return 0;
-			rhs=rhs0=malloc(len+1);
+			rhs=rhs0=EM(malloc(len+1));
 			if (rhs==NULL) {
 				free(lhs);
 				return 0;
@@ -625,14 +626,14 @@ static void serverparsed_close(struct connection *conn,int force)
 }
 
 #define COPY(member) newconn->member=conn->member
-#define STRCOPY(member) strcpy(newconn->member,conn->member)
+#define STRNCOPY(member,n) wjstrncpy(newconn->member,conn->member,n)
 #define MEMCOPY(member) {\
 	if (conn->member==NULL) {\
 		newconn->member=NULL;\
 	} else {\
 		size_t len;\
 		len=strlen(conn->member)+1;\
-		newconn->member=malloc(len);\
+		newconn->member=EM(malloc(len));\
 		if (newconn==NULL) {\
 			serverparsed_writeerror(conn,"Out of memory");\
 			return;\
@@ -658,7 +659,7 @@ static void serverparsed_includevirtual(struct connection *conn,char *reluri)
 	}
 
 	len=strlen(uri)+1;
-	newconn->uri=malloc(len);
+	newconn->uri=EM(malloc(len));
 	if (newconn->uri==NULL) {
 		serverparsed_writeerror(conn,"Out of memory");
 		return;
@@ -671,7 +672,7 @@ static void serverparsed_includevirtual(struct connection *conn,char *reluri)
 	COPY(method);
 	COPY(httpminor);
 	COPY(httpmajor);
-	STRCOPY(host);
+	STRNCOPY(host,MAX_HOSTNAME);
 	COPY(ipaddr[0]);
 	COPY(ipaddr[1]);
 	COPY(ipaddr[2]);
@@ -694,7 +695,7 @@ static void serverparsed_includevirtual(struct connection *conn,char *reluri)
 	if (conn->header==NULL) {
 		newconn->header=NULL;
 	} else {
-		newconn->header=malloc(newconn->headersize);
+		newconn->header=EM(malloc(newconn->headersize));
 		if (newconn==NULL) {
 			serverparsed_writeerror(conn,"Out of memory");
 			return;
@@ -725,7 +726,7 @@ static char *serverparsed_virtualtofilename(struct connection *conn,char *virt)
 
 	/* build RISCOS filename */
 	name = newconn->filename;
-	strcpy(name, newconn->homedir);
+	wjstrncpy(name, newconn->homedir, MAX_FILENAME);
 	name += strlen(name);
 	ptr = uri + newconn->homedirignore;
 	/* append URI, with . and / switched */
@@ -735,7 +736,7 @@ static char *serverparsed_virtualtofilename(struct connection *conn,char *virt)
 		return NULL;
 	}
 
-	strcpy(filename,newconn->filename);
+	wjstrncpy(filename,newconn->filename,MAX_FILENAME);
 	close_connection(newconn,0,0);
 	return filename;
 }
@@ -769,13 +770,13 @@ static void serverparsed_fsize(struct connection *conn,char *filename)
 		default:
 
 			if (info->abbrev) {
-				if (size<1024) sprintf(buf,"%d bytes",size);
-				else if (size<1024*10) sprintf(buf,"%.1f KB",(double)size/1024);
-				else if (size<1024*1024) sprintf(buf,"%d KB",size/1024);
-				else if (size<1024*1024*10) sprintf(buf,"%.1f MB",(double)size/(1024*1024));
-				else sprintf(buf,"%d MB",size/(1024*1024));
+				if (size<1024) snprintf(buf,12,"%d bytes",size);
+				else if (size<1024*10) snprintf(buf,12,"%.1f KB",(double)size/1024);
+				else if (size<1024*1024) snprintf(buf,12,"%d KB",size/1024);
+				else if (size<1024*1024*10) snprintf(buf,12,"%.1f MB",(double)size/(1024*1024));
+				else snprintf(buf,12,"%d MB",size/(1024*1024));
 			} else {
-				sprintf(buf,"%d",size);
+				snprintf(buf,12,"%d",size);
 			}
 			webjames_writestringr(conn,buf);
 	}
@@ -828,7 +829,7 @@ static void serverparsed_execcommand(struct connection *conn,char *cmd)
 		return;
 	}
 
-	strcpy(newconn->filename,conn->filename);
+	wjstrncpy(newconn->filename,conn->filename,MAX_FILENAME);
 	newconn->flags.setcsd=conn->flags.setcsd;
 	newconn->method=METHOD_GET;
 	MEMCOPY(uri);
@@ -912,7 +913,7 @@ static void serverparsed_command(struct connection *conn,char *command,char *arg
 					if (strcmp(attrs[i],"errmsg")==0) {
 						size_t len=strlen(vals[i]);
 						if (info->errmsg) free(info->errmsg);
-						info->errmsg=malloc(len+1);
+						info->errmsg=EM(malloc(len+1));
 						if (info->errmsg) memcpy(info->errmsg,vals[i],len+1);
 					} else if (strcmp(attrs[i],"sizefmt")==0) {
 						lower_case(vals[i]);
@@ -926,7 +927,7 @@ static void serverparsed_command(struct connection *conn,char *command,char *arg
 					} else if (strcmp(attrs[i],"timefmt")==0) {
 						size_t len=strlen(vals[i]);
 						if (info->timefmt) free(info->timefmt);
-						info->timefmt=malloc(len+1);
+						info->timefmt=EM(malloc(len+1));
 						if (info->timefmt) memcpy(info->timefmt,vals[i],len+1);
 					} else if (attrs[i][0]=='\0') {
 						/*ignore*/
@@ -998,7 +999,7 @@ static void serverparsed_command(struct connection *conn,char *command,char *arg
 						return;
 					}
 
-					strcpy(newconn->filename,filename);
+					wjstrncpy(newconn->filename,filename,MAX_FILENAME);
 					newconn->method=METHOD_GET;
 					MEMCOPY(uri);
 

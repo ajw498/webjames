@@ -4,6 +4,7 @@
 #include <stdlib.h>
 
 #include "webjames.h"
+#include "wjstring.h"
 #include "cache.h"
 #include "stat.h"
 #include "datetime.h"
@@ -109,7 +110,7 @@ static char *report_substitute(struct reportcache *report, struct substitute sub
 		}
 	}
 
-	buffer = malloc(newsize + 1);
+	buffer = EM(malloc(newsize + 1));
 	if (!buffer)  return NULL;
 
 	if (!matches) {
@@ -135,7 +136,7 @@ static char *report_substitute(struct reportcache *report, struct substitute sub
 		}
 		for (match = 0; match <= num; match++) {
 			if (strncmp(search, subs[match].name, subs[match].namelen) == 0) {
-				strcpy(write, subs[match].value);
+				wjstrncpy(write, subs[match].value,newsize+1-(write-buffer));
 				write += subs[match].valuelen;
 				search += subs[match].namelen;
 				break;
@@ -159,7 +160,7 @@ struct reportcache *report_getfile(int report) {
 /* report           http status code */
 
 	int rep, size;
-	char filename[256];
+	char filename[MAX_FILENAME];
 	FILE *file;
 
 	/* check if the report is already cached */
@@ -197,13 +198,16 @@ struct reportcache *report_getfile(int report) {
 	}
 
 	/* cache the file */
-	sprintf(filename, "<WebJames$Dir>.Reports.%d", report);
+	snprintf(filename, MAX_FILENAME, "<WebJames$Dir>.Reports.%d", report);
 	file = fopen(filename, "r");
-	if (!file)  return NULL;
+	if (file==NULL) {
+		webjames_writelog(LOGLEVEL_OSERROR,"ERROR couldn't open report file %s",filename);
+		return NULL;
+	}
 	fseek(file, 0, SEEK_END);
 	size = (int)ftell(file);
 
-	reports[rep].buffer = malloc(size+1);
+	reports[rep].buffer = EM(malloc(size+1));
 	if (!reports[rep].buffer) {
 		fclose(file);
 		return NULL;
@@ -251,15 +255,15 @@ static void report_quickanddirty(struct connection *conn, int report) {
 		char rfcnow[50];
 
 		name = get_report_name(report);
-		sprintf(temp, "HTTP/1.0 %d %s\r\n", report, name);
+		snprintf(temp, TEMPBUFFERSIZE, "HTTP/1.0 %d %s\r\n", report, name);
 		webjames_writestringr(conn, temp);
-		if (configuration.server[0]) sprintf(temp, "Server: %s\r\n", configuration.server);
+		if (configuration.server[0]) snprintf(temp, TEMPBUFFERSIZE, "Server: %s\r\n", configuration.server);
 		webjames_writestringr(conn, temp);
 		time(&now);
 		time_to_rfc(localtime(&now),rfcnow);
-		sprintf(temp, "Date: %s\r\n", rfcnow);
+		snprintf(temp, TEMPBUFFERSIZE, "Date: %s\r\n", rfcnow);
 		webjames_writestringr(conn, "Content-Type: text/html\r\n");
-		sprintf(temp, "Content-Length: %d\r\n\r\n", strlen(configuration.panic));
+		snprintf(temp, TEMPBUFFERSIZE, "Content-Length: %d\r\n\r\n", strlen(configuration.panic));
 		webjames_writestringr(conn, temp);
 		webjames_writestringr(conn, temp);
 	}
@@ -329,13 +333,13 @@ void report(struct connection *conn, int code, int subno, int headerlines, char 
 
 					/* build RISCOS filename */
 					name = tempconn->filename;
-					strcpy(name, tempconn->homedir);
+					wjstrncpy(name, tempconn->homedir, MAX_FILENAME);
 					name += strlen(name);
 					/* append requested URI, with . and / switched */
 					if (!uri_to_filename(tempconn->uri + tempconn->homedirignore,name,tempconn->flags.stripextensions)) {
 						struct cache *cacheentry;
 
-						strcpy(conn->filename,tempconn->filename);
+						wjstrncpy(conn->filename,tempconn->filename,MAX_FILENAME);
 
 						tempconn->fileinfo.filetype = get_file_info(tempconn->filename, NULL, &tempconn->fileinfo.date, NULL, &tempconn->fileinfo.size,1);
 
@@ -373,7 +377,7 @@ void report(struct connection *conn, int code, int subno, int headerlines, char 
 							if (handle) {
 								/* attempt to get a read-ahead buffer for the file */
 								/* notice: things will still work if malloc fails */
-								conn->filebuffer = malloc(configuration.readaheadbuffer*1024);
+								conn->filebuffer = EM(malloc(configuration.readaheadbuffer*1024));
 								conn->flags.releasefilebuffer = 1;
 								conn->flags.is_cgi = 0;
 								conn->leftinbuffer = 0;
@@ -405,7 +409,9 @@ void report(struct connection *conn, int code, int subno, int headerlines, char 
 				}
 			} else {
 				/* file is on another server (or this server, but the whole url including hostname was given) */
-				strcpy(url, reporttext);
+				size_t len;
+
+				wjstrncpy(url, reporttext, MAX_FILENAME);
 
 				for (i = 0; i < headerlines; i++) {
 					if (header[i]) {
@@ -414,8 +420,9 @@ void report(struct connection *conn, int code, int subno, int headerlines, char 
 					}
 				}
 
-				header[0] = malloc(strlen(url)+11);
-				if (header[0])  sprintf(header[0], "Location: %s", url);
+				len=strlen(url)+11;
+				header[0] = EM(malloc(len));
+				if (header[0])  snprintf(header[0], len, "Location: %s", url);
 
 				subs[0].name = "%NEWURL%";
 				subs[0].value = url;
@@ -460,17 +467,17 @@ void report(struct connection *conn, int code, int subno, int headerlines, char 
 		time_t now;
 		char rfcnow[50];
 
-		sprintf(temp, "HTTP/1.0 %d %s\r\n", code, reportname);
+		snprintf(temp, TEMPBUFFERSIZE, "HTTP/1.0 %d %s\r\n", code, reportname);
 		webjames_writestringr(conn, temp);
 		webjames_writestringr(conn, "Content-Type: text/html\r\n");
 		/* if no substitution was required, simply send the cached file */
-		sprintf(temp, "Content-Length: %d\r\n", size);
+		snprintf(temp, TEMPBUFFERSIZE, "Content-Length: %d\r\n", size);
 		webjames_writestringr(conn, temp);
-		if (configuration.server[0]) sprintf(temp, "Server: %s\r\n", configuration.server);
+		if (configuration.server[0]) snprintf(temp, TEMPBUFFERSIZE, "Server: %s\r\n", configuration.server);
 		webjames_writestringr(conn, temp);
 		time(&now);
 		time_to_rfc(localtime(&now),rfcnow);
-		sprintf(temp, "Date: %s\r\n", rfcnow);
+		snprintf(temp, TEMPBUFFERSIZE, "Date: %s\r\n", rfcnow);
 		webjames_writestringr(conn, temp);
 		for (i = 0; i < headerlines; i++) {
 			if (header[i]) {
@@ -490,16 +497,18 @@ void report(struct connection *conn, int code, int subno, int headerlines, char 
 
 void report_moved(struct connection *conn, char *newurl) {
 
-	char url[HTTPBUFFERSIZE];
+	char url[MAX_FILENAME];
+	size_t len;
 
 	if (*configuration.serverip)
-		sprintf(url, "http://%s%s", configuration.serverip, newurl);
+		snprintf(url, MAX_FILENAME, "http://%s%s", configuration.serverip, newurl);
 	else
-		strcpy(url, newurl);
+		wjstrncpy(url, newurl, MAX_FILENAME);
 
-	sprintf(temp, "Location: %s", url);
-	header[0] = malloc(strlen(temp)+1);
-	if (header[0])  strcpy(header[0], temp);
+	snprintf(temp, TEMPBUFFERSIZE, "Location: %s", url);
+	len=strlen(temp)+1;
+	header[0] = EM(malloc(len));
+	if (header[0])  memcpy(header[0], temp, len);
 
 	subs[0].name = "%NEWURL%";
 	subs[0].value = url;
@@ -512,16 +521,18 @@ void report_moved(struct connection *conn, char *newurl) {
 
 void report_movedtemporarily(struct connection *conn, char *newurl) {
 
-	char url[HTTPBUFFERSIZE];
+	char url[MAX_FILENAME];
+	size_t len;
 
 	if (*configuration.serverip)
-		sprintf(url, "http://%s%s", configuration.serverip, newurl);
+		snprintf(url, MAX_FILENAME, "http://%s%s", configuration.serverip, newurl);
 	else
-		strcpy(url, newurl);
+		wjstrncpy(url, newurl, MAX_FILENAME);
 
-	sprintf(temp, "Location: %s", url);
-	header[0] = malloc(strlen(temp)+1);
-	if (header[0])  strcpy(header[0], temp);
+	snprintf(temp, TEMPBUFFERSIZE, "Location: %s", url);
+	len=strlen(temp)+1;
+	header[0] = EM(malloc(len));
+	if (header[0])  memcpy(header[0], temp, len);
 
 	subs[0].name = "%NEWURL%";
 	subs[0].value = url;
@@ -535,12 +546,14 @@ void report_movedtemporarily(struct connection *conn, char *newurl) {
 void report_notimplemented(struct connection *conn, char *request) {
 
 	char *supported = "Public: GET, POST, HEAD";
+	size_t len;
 
 	subs[0].name = "%METHOD%";
 	subs[0].value = request;
 
-	header[0] = malloc(strlen(supported)+1);
-	if (header[0])  strcpy(header[0], supported);
+	len=strlen(supported)+1;
+	header[0] = EM(malloc(len));
+	if (header[0])  memcpy(header[0], supported, len);
 
 	report(conn, HTTP_NOTIMPLEMENTED, 1, 1, request);
 }
@@ -576,7 +589,7 @@ void report_notacceptable(struct connection *conn,struct varmap *map) {
 		tempmap=tempmap->next;
 	}
 
-	list=malloc(len+1);
+	list=EM(malloc(++len));
 	if (!list) {
 		report_quickanddirty(conn, HTTP_NOTACCEPTABLE);
 		conn->close(conn, 0);
@@ -604,13 +617,13 @@ void report_notacceptable(struct connection *conn,struct varmap *map) {
 				d++;
 			}
 			*d='\0';
-			strcat(list,"<A HREF=\"");
-			strcat(list,buffer);
-			strcat(list,"\">");
-			strcat(list,buffer);
-			strcat(list,"</A> \n");
-			if (tempmap->description) strcat(list,tempmap->description);
-			strcat(list,"<BR>\n");
+			wjstrncat(list,"<A HREF=\"",len);
+			wjstrncat(list,buffer,len);
+			wjstrncat(list,"\">",len);
+			wjstrncat(list,buffer,len);
+			wjstrncat(list,"</A> \n",len);
+			if (tempmap->description) wjstrncat(list,tempmap->description,len);
+			wjstrncat(list,"<BR>\n",len);
 		}
 		tempmap=tempmap->next;
 	}
@@ -640,9 +653,9 @@ void report_unauthorized(struct connection *conn, char *realm) {
 	subs[0].name = "%URL%";
 	subs[0].value = conn->uri;
 
-	header[0] = malloc(256);
+	header[0] = EM(malloc(MAX_FILENAME));
 	if (header[0])
-		sprintf(header[0], "WWW-Authenticate: basic realm=\"%s\"", realm);
+		snprintf(header[0], MAX_FILENAME, "WWW-Authenticate: basic realm=\"%s\"", realm);
 
 	report(conn, HTTP_UNAUTHORIZED, 1, 1, realm);
 }
