@@ -53,7 +53,6 @@
  * <panos@alumni.cs.colorado.edu> for xinetd.
  */
 
-#if !defined(__GNUC__) || defined(__TARGET_SCL__)
 #if !defined(HAVE_SNPRINTF) || !defined(HAVE_VSNPRINTF)
 
 #include <stdio.h>
@@ -930,5 +929,6 @@ int vsnprintf(char *buf, size_t len, const char *format, va_list ap)
 	return (cc);
 }
 
+#else
+int dummy; /* Prevent Norcroft barfing over an empty file */
 #endif							/* HAVE_SNPRINTF */
-#endif
