@@ -1,5 +1,5 @@
 /*
-	$Id: write.c,v 1.31 2001/09/03 14:10:50 AJW Exp $
+	$Id: write.c,v 1.32 2001/09/07 15:42:17 AJW Exp $
 	Get attributes for each request the send the file
 */
 
@@ -98,13 +98,13 @@ void send_file(struct connection *conn) {
 	conn->args = strchr(conn->uri, '?');
 	if (conn->args)  *(conn->args)++ = '\0';
 
-	get_attributes(conn->uri, conn);
-
 	/* uri MUST start with a / */
 	if (conn->uri[0] != '/') {
 		report_badrequest(conn, "uri must start with a /");
 		return;
 	}
+
+	get_attributes(conn->uri, conn);
 
 	/* RISC OS filename limit - really should be removed... */
 	len = strlen(conn->uri);
@@ -356,8 +356,8 @@ int get_file_info(char *filename, char *mimetype, struct tm *date, os_date_and_t
 /* return filetype or error-code, fill in date (secs since 1990) and mimetype */
 {
 	os_date_and_time utc;
-	char typename[128];
-	char buffer[256];
+	char typename[MAX_MIMETYPE];
+	char buffer[MAX_FILENAME];
 	fileswitch_object_type objtype;
 	bits load, exec;
 	int filetype;
@@ -367,7 +367,7 @@ int get_file_info(char *filename, char *mimetype, struct tm *date, os_date_and_t
 	if (objtype == fileswitch_NOT_FOUND)  return FILE_DOESNT_EXIST;
 
 	if (checkcase && configuration.casesensitive) {
-		if (E(xosfscontrol_canonicalise_path(filename,buffer,0,0,256,NULL))) return FILE_ERROR;
+		if (E(xosfscontrol_canonicalise_path(filename,buffer,0,0,MAX_FILENAME,NULL))) return FILE_ERROR;
 		if (check_case(buffer) == 0) return FILE_DOESNT_EXIST;
 	}
 
