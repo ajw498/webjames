@@ -18,6 +18,7 @@
 
 <ul>
   <li>Fixed problem with serving imagefs files in UnixLib builds
+  <li>Fixed bug that could cause a crash when logging some header lines that contained a % character
 
 </ul>
 

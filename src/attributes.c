@@ -1,5 +1,5 @@
 /*
-	$Id: attributes.c,v 1.1 2002/02/17 22:50:10 ajw Exp $
+	$Id: attributes.c,v 1.2 2002/10/19 15:18:17 ajw Exp $
 	Reading and using attributes files
 */
 
@@ -442,7 +442,7 @@ static struct attributes *read_attributes_file(char *filename, char *base) {
 						char temp[256] = "Error in attributes file: ";
 
 						regerror(ret, attr->regex, temp+26, 256-26);
-						webjames_writelog(LOGLEVEL_ATTRIBUTES,temp);
+						webjames_writelog(LOGLEVEL_ATTRIBUTES, "%s", temp);
 						free(attr->regex);
 						attr->regex = NULL;
 					}
@@ -503,7 +503,7 @@ static struct attributes *read_attributes_file(char *filename, char *base) {
 						char temp[256] = "Error in attributes file: ";
 
 						regerror(ret, attr->regex, temp+26, 256-26);
-						webjames_writelog(LOGLEVEL_ATTRIBUTES,temp);
+						webjames_writelog(LOGLEVEL_ATTRIBUTES, "%s", temp);
 						free(attr->regex);
 						attr->regex = NULL;
 					}
@@ -555,7 +555,7 @@ static struct attributes *read_attributes_file(char *filename, char *base) {
 						char temp[256] = "Error in attributes file: ";
 
 						regerror(ret, attr->regex, temp+26, 256-26);
-						webjames_writelog(LOGLEVEL_ATTRIBUTES,temp);
+						webjames_writelog(LOGLEVEL_ATTRIBUTES, "%s", temp);
 						free(attr->regex);
 						attr->regex = NULL;
 					}

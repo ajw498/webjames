@@ -1,5 +1,5 @@
 /*
-	$Id: webjames.c,v 1.1 2002/02/17 22:50:10 ajw Exp $
+	$Id: webjames.c,v 1.2 2002/10/19 15:18:17 ajw Exp $
 	General functions for WebJames
 */
 
@@ -191,7 +191,7 @@ void webjames_command(char *cmd, int release)
 		quitwhenidle = 1;
 
 	} else if (strncmp(cmd, "log ", 4) == 0) {                /* LOG */
-		if (cmd[4])  webjames_writelog(LOGLEVEL_CMD, cmd+4);
+		if (cmd[4])  webjames_writelog(LOGLEVEL_CMD, "%s", cmd+4);
 
 	} else if (strncmp(cmd, "clf ", 4) == 0) {                /* CLF */
 		int bytes, code;

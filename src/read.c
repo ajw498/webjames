@@ -1,5 +1,5 @@
 /*
-	$Id: read.c,v 1.2 2002/03/09 00:19:35 ajw Exp $
+	$Id: read.c,v 1.3 2002/10/19 15:18:17 ajw Exp $
 	Reading requests
 */
 
@@ -426,10 +426,10 @@ void pollread_header(struct connection *conn, int bytes)
 				return;
 			}
 			memcpy(conn->referer, line+9,len);
-			webjames_writelog(LOGLEVEL_REFERER, line);
+			webjames_writelog(LOGLEVEL_REFERER, "%s", line);
 
 		} else if (strncmp(upper, "FROM: ", 6) == 0) {
-			webjames_writelog(LOGLEVEL_FROM, line);
+			webjames_writelog(LOGLEVEL_FROM, "%s", line);
 
 		} else if (strncmp(upper, "USER-AGENT: ", 12) == 0) {
 			if (conn->useragent)  free(conn->useragent);
@@ -441,10 +441,10 @@ void pollread_header(struct connection *conn, int bytes)
 				return;
 			}
 			memcpy(conn->useragent, line+12,len);
-			webjames_writelog(LOGLEVEL_USERAGENT, line);
+			webjames_writelog(LOGLEVEL_USERAGENT, "%s", line);
 
 		} else if (strncmp(upper, "HOST: ", 6) == 0) {
-			webjames_writelog(LOGLEVEL_FROM, line);
+			webjames_writelog(LOGLEVEL_FROM, "%s", line);
 
 		} else if (strncmp(upper, "AUTHORIZATION: ", 15) == 0) {
 			int pos, bytes;
@@ -522,7 +522,7 @@ void pollread_header(struct connection *conn, int bytes)
 #ifdef LOG
 		for (i=0;i<configuration.logheaders;i++) {
 			if (strncmp(upper, configuration.logheader[i], strlen(configuration.logheader[i])) == 0) {
-				webjames_writelog(LOGLEVEL_HEADER, line);
+				webjames_writelog(LOGLEVEL_HEADER, "%s", line);
 			}
 		}
 #endif

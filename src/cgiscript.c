@@ -1,5 +1,5 @@
 /*
-	$Id: cgiscript.c,v 1.1 2002/02/17 22:50:10 ajw Exp $
+	$Id: cgiscript.c,v 1.2 2002/10/19 15:18:17 ajw Exp $
 	CGI script handler
 */
 
@@ -196,7 +196,7 @@ void cgiscript_start(struct connection *conn)
 		return;
 	}
 
-	webjames_writelog(LOGLEVEL_CGISTART, cmd);
+	webjames_writelog(LOGLEVEL_CGISTART, "%s", cmd);
 
 	/* remove cgi-spool-input file (if any) */
 	if (*cgiin) remove(cgiin);

@@ -1,5 +1,5 @@
 /*
-	$Id: stat.c,v 1.1 2002/02/17 22:50:10 ajw Exp $
+	$Id: stat.c,v 1.2 2002/10/19 15:18:17 ajw Exp $
 	Statistics and logging functions
 */
 
@@ -143,6 +143,7 @@ static void write_buffer(void)
 {
 	if (logfile == NULL) logfile = fopen(configuration.weblog, "a+");
 	if (logfile == NULL) logfile = fopen(configuration.weblog, "w");
+
 	if (logfile) fwrite(logbuffer,1,logbufferused,logfile);
 	logbufferused = 0;
 }
