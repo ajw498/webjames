@@ -1,5 +1,5 @@
 /*
-	$Id: report.c,v 1.22 2001/09/05 09:39:20 AJW Exp $
+	$Id: report.c,v 1.23 2001/09/13 13:01:36 AJW Exp $
 	Error reporting functions
 */
 
@@ -269,7 +269,6 @@ static void report_quickanddirty(struct connection *conn, int report) {
 		snprintf(temp, TEMPBUFFERSIZE, "Date: %s\r\n", rfcnow);
 		webjames_writestringr(conn, "Content-Type: text/html\r\n");
 		snprintf(temp, TEMPBUFFERSIZE, "Content-Length: %d\r\n\r\n", strlen(configuration.panic));
-		webjames_writestringr(conn, temp);
 		webjames_writestringr(conn, temp);
 	}
 	webjames_writestringr(conn, configuration.panic);
