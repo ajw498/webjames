@@ -1,4 +1,4 @@
-#include "regex/regex.h"
+#include "regex.h"
 
 #define CGI_API_WEBJAMES      0
 #define CGI_API_REDIRECT      1
