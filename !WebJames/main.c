@@ -1,5 +1,5 @@
 /*
-	$Id: main.c,v 1.12 2001/09/06 11:09:56 AJW Exp $
+	$Id: main.c,v 1.13 2001/09/18 20:59:07 AJW Exp $
 	main() function, wimp polling loop
 */
 
@@ -8,6 +8,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+
+#include "kernel.h"
 #include "swis.h"
 
 #include "oslib/os.h"
@@ -26,27 +28,31 @@
 #define SocketWatch_AtomicReset 0x52282
 #define SocketWatch_AllocPW 0x52283
 #define SocketWatch_DeallocPW 0x52284
+#define MESSAGE_WEBJAMES_CMD 0x4f988
+
+#ifdef PHP
+const char *__dynamic_da_name="WebJames and PHP Heap";
+#endif
 
 /* local variables */
-static int quit;
 static int wimp[64];
+static int quit;
 static os_t polldelay;
 static int *pollword=NULL;
 
 void init_task() {
 
-	int wimpmsg[4], dummy;
-	wimp_t task;
+	int wimpmsg[4];
 
 	quit = 0;
 	polldelay = 5;
 
 	/* select which messages to receive */
-	wimpmsg[0] = 0x4f988;
+	wimpmsg[0] = MESSAGE_WEBJAMES_CMD;
 	wimpmsg[1] = 0;
 
 	/* initialise the wimp */
-	if (E(xwimp_initialise(310, "WebJames", (wimp_message_list *)wimpmsg, (wimp_version_no *)&dummy, &task)))   quit = 1;
+	if (E(xwimp_initialise(310, "WebJames", (wimp_message_list *)wimpmsg, NULL, NULL))) quit = 1;
 }
 
 
@@ -64,23 +70,24 @@ void poll(void)
 	} else {
 		pollmask=0;
 	}
-	EV(xwimp_poll_idle(pollmask, (wimp_block *)wimp, clk+polldelay, pollword, &action));
+	EV(xwimp_poll_idle(pollmask, (wimp_block *)&wimp, clk+polldelay, pollword, &action));
 	switch (action) {
 	case wimp_POLLWORD_NON_ZERO:
 		*pollword=0;
 		/*fall through*/
 	case wimp_NULL_REASON_CODE:
 		polldelay = webjames_poll(pollword ? 100 : 10);
-		if (polldelay < 0)  quit = 1;
+		if (polldelay < 0) quit = 1;
+		break;
+	case wimp_USER_MESSAGE_ACKNOWLEDGE:
 		break;
 	case wimp_USER_MESSAGE:
 	case wimp_USER_MESSAGE_RECORDED:
-	case wimp_USER_MESSAGE_ACKNOWLEDGE:
 		switch (wimp[4]) {
-		case 0:                             /* WIMP_MESSAGE_QUIT */
+		case message_QUIT:
 			quit = 1;
-			break;                            /* WIMP_MESSAGE_QUIT */
-		case 0x4f988:                       /* MESSAGE_WEBJAMES_CMD */
+			break;
+		case MESSAGE_WEBJAMES_CMD:
 			flags = wimp[5];
 			if (flags & 0xfffffff9)  break;   /* reply or reserved bit set */
 			if (flags &2) {                   /* 'long' message */
@@ -99,7 +106,7 @@ void poll(void)
 				char cmd[200], *ptr1, *ptr2;
 				ptr1 = (char *)&wimp[6];
 				ptr2 = cmd;
-				while (*ptr1 >= ' ')  *ptr2++ = *ptr1++;
+				while (*ptr1 >= ' ' && ptr2<cmd+199)  *ptr2++ = *ptr1++;
 				*ptr2 = '\0';
 				webjames_command(cmd, 0);
 			}
@@ -137,27 +144,31 @@ int main(int argc, char *argv[])
 	init_task();
 	if (!quit)
 		if (!webjames_init(configfile))  quit = 1;
-	if (_swix(SocketWatch_AllocPW,_OUT(0),&pollword)) {
-		/* if this failed, then socketwatch is probably not loaded */
-		pollword=NULL;
-	} else {
-#ifdef MemCheck_MEMCHECK
-		MemCheck_RegisterMiscBlock(pollword,4);
-#endif
-		for (i = 0; i < serverinfo.serverscount; i++) {
-			EV((os_error*)_swix(SocketWatch_Register,_INR(0,2),pollword,1,serverinfo.servers[i].socket));
-		}
-	}
 
-	while (!quit)   poll();
-	if (pollword) {
-		for (i = 0; i < serverinfo.serverscount; i++) {
-			EV((os_error*)_swix(SocketWatch_Deregister,_INR(0,1),serverinfo.servers[i].socket,pollword));
-		}
+	if (!quit) {
+		if (_swix(SocketWatch_AllocPW,_OUT(0),&pollword)) {
+			/* if this failed, then socketwatch is probably not loaded */
+			pollword=NULL;
+		} else {
 #ifdef MemCheck_MEMCHECK
-		MemCheck_UnRegisterMiscBlock(pollword);
+			MemCheck_RegisterMiscBlock(pollword,4);
 #endif
-		EV((os_error*)_swix(SocketWatch_DeallocPW,_IN(0),pollword));
+			for (i = 0; i < serverinfo.serverscount; i++) {
+				EV((os_error*)_swix(SocketWatch_Register,_INR(0,2),pollword,1,serverinfo.servers[i].socket));
+			}
+		}
+	
+		while (!quit)   poll();
+	
+		if (pollword) {
+			for (i = 0; i < serverinfo.serverscount; i++) {
+				EV((os_error*)_swix(SocketWatch_Deregister,_INR(0,1),serverinfo.servers[i].socket,pollword));
+			}
+#ifdef MemCheck_MEMCHECK
+			MemCheck_UnRegisterMiscBlock(pollword);
+#endif
+			EV((os_error*)_swix(SocketWatch_DeallocPW,_IN(0),pollword));
+		}
 	}
 
 	webjames_kill();
