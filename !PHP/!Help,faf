@@ -108,6 +108,10 @@ example) Squiggle. The obey file should contain the line
 Run <Obey$Dir>.Splodge
 Then in your browser, entering
 http://www.your.domain.com/cgi-bin/squiggle will run the PHP script.
+Alternatively, with version 1.70 open the !Netplex.Resources.UK.Messages
+file and change the line PerlFiletype:&102 to PerlFiletype:&18A (This
+will mean that you can't run Perl scripts though). Thanks to Nik Gare
+for pointing this out.
 
 Errors
 ~~~~~~
