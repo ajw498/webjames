@@ -79,7 +79,8 @@ typedef struct connection {
   char *realm;                // NULL if not password protected
   char *moved;                // new URI
   char *tempmoved;            // new URI
-  char *defaultfile;          // usually 'index.html'
+  char **defaultfiles;        // usually 'index.html'
+  int defaultfilescount;
   int *allowedfiletypes;      // filetypes that are allowed to be run as cgi scripts
   int allowedfiletypescount;
   int *forbiddenfiletypes;    // filetypes that are forbidden to be run as cgi scripts

@@ -69,7 +69,9 @@ void open_connection(int socket, char *host, int port) {
   // attributes
   conn->homedir = configuration.site;
   conn->accessfile = conn->userandpwd = conn->realm = NULL;
-  conn->moved = conn->tempmoved = conn->defaultfile = NULL;
+  conn->moved = conn->tempmoved = NULL;
+  conn->defaultfiles = NULL;
+  conn->defaultfilescount = 0;
   conn->attrflags.accessallowed = 1;
   conn->cgi_api = CGI_API_WEBJAMES;
   conn->homedirignore = 0;

@@ -207,19 +207,16 @@ void send_file(struct connection *conn) {
   // if requesting a directory (ie. the uri ends with a /) use index.html
   len = strlen(conn->filename);
   if (conn->filename[len-1] == '.') {
-    if (conn->defaultfile) {
-      char testfile[256];
+    char testfile[256];
+    int i;
 
-      strcpy(testfile,conn->filename);
-      // for(i=0 to numdefaultfiles) {
-        uri_to_filename(conn->defaultfile, testfile+len);
-        type = get_file_info(testfile,NULL,NULL,&size);
-        //if (type != FILE_DOESNT_EXIST) break;
-      //}
-      strcpy(conn->filename,testfile);
-    } else {
-      strcpy(conn->filename+len, "index/html");
+    strcpy(testfile,conn->filename);
+    for(i=0; i<conn->defaultfilescount; i++) {
+      uri_to_filename(conn->defaultfiles[i], testfile+len);
+      type = get_file_info(testfile,NULL,NULL,&size);
+      if (type != FILE_DOESNT_EXIST) break;
     }
+    strcpy(conn->filename,testfile);
   }
 
   // check if the file has been moved

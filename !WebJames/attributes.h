@@ -13,7 +13,8 @@ typedef struct attributes {
 
   char *moved;
   char *tempmoved;
-  char *defaultfile;
+  char **defaultfiles; // list of default files to use for an index page
+  int defaultfilescount;
 
   char cacheable;   // 0 no, 1 yes
   char hidden;      // 0 no, 1 yes

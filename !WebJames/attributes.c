@@ -127,6 +127,53 @@ static void scan_filetype_list(char *list, struct attributes *attr, int allowed)
 }
 
 
+static void scan_defaultfiles_list(char *list, struct attributes *attr) {
+
+  char *filelist[256], **newlist;
+  int count, more;
+
+  if (attr->defaultfiles) {
+    int i;
+
+    for (i=0; i<attr->defaultfilescount; i++) free(attr->defaultfiles[i]);
+    free(attr->defaultfiles);
+  }
+
+  attr->defaultfilescount = 0;
+  attr->defaultfiles = NULL;
+  attr->defined.defaultfile = 1;
+
+  count = 0;
+
+  more = 1;
+  do {
+    int n, ch;
+    char buffer[256];
+
+    n = sscanf(list, "%s%n", buffer, &ch);
+    list += ch;
+   
+    if (n == 1) {
+      filelist[count] = malloc(ch);
+      if (filelist[count] == NULL) return;
+      strcpy(filelist[count],buffer);
+      count++;
+    } else {
+      more = 0;
+    }
+
+    if (strchr(list, ',')) list = strchr(list, ',')+1;
+  } while (more);
+
+  if (!count)  return;
+  newlist = malloc(sizeof(char *)*count);
+  if (!newlist)  return;
+
+  memcpy(newlist, filelist, sizeof(char *)*count);
+
+  attr->defaultfiles = newlist;
+  attr->defaultfilescount = count;
+}
 
 static void scan_host_list(char *list, struct attributes *attr, int allowed) {
 
@@ -186,7 +233,8 @@ static struct attributes *create_attribute_structure(char *uri) {
   attr->cacheable = attr->hidden = attr->ignore = 0;
   attr->realm = attr->accessfile = attr->userandpwd = NULL;
   attr->homedir = attr->moved = attr->tempmoved = NULL;
-  attr->defaultfile = NULL;
+  attr->defaultfiles = NULL;
+  attr->defaultfilescount = 0;
   attr->next = attr->previous = NULL;
   attr->forbiddenhosts = attr->allowedhosts = NULL;
   attr->forbiddenhostscount = attr->allowedhostscount = 0;
@@ -377,9 +425,7 @@ static struct attributes *read_attributes_file(char *filename, char *base) {
 
         if (strcmp(attribute, "defaultfile") == 0) {
           if (section == section_LOCATION && attr->uri[attr->urilen-1] != '/') continue;
-          if (attr->defaultfile)  free(attr->defaultfile);
-          attr->defined.defaultfile = 1;
-          attr->defaultfile = value;
+          scan_defaultfiles_list(value,attr);
 
         } else if ((strcmp(attribute, "homedir") == 0)) {
           if (section == section_LOCATION && attr->uri[attr->urilen-1] == '/') continue;
@@ -595,7 +641,10 @@ static void merge_attributes1(struct connection *conn, struct attributes *attr) 
     conn->homedir       = attr->homedir;
     conn->homedirignore = attr->ignore;
   }
-  if (attr->defined.defaultfile)  conn->defaultfile     = attr->defaultfile;
+  if (attr->defined.defaultfile) {
+    conn->defaultfiles     = attr->defaultfiles;
+    conn->defaultfilescount     = attr->defaultfilescount;
+  }
   if (attr->defined.cacheable)    conn->flags.cacheable = attr->cacheable;
   if (attr->defined.moved)        conn->moved           = attr->moved;
   if (attr->defined.tempmoved)    conn->tempmoved       = attr->tempmoved;
