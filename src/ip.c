@@ -1,5 +1,5 @@
 /*
-	$Id: ip.c,v 1.4 2004/01/17 17:02:37 ajw Exp $
+	$Id: ip.c,v 1.5 2004/01/17 17:05:30 ajw Exp $
 	Socket access
 */
 
@@ -72,9 +72,8 @@ int ip_read(socket_s socket, char *buffer, int size, os_error **err)
 	if (*err) {
 		if (CHECK_INET_ERR((*err)->errnum,socket_EWOULDBLOCK)) {
 			*err=NULL;
-		} else {
-			read=0;
 		}
+		read=0;
 	}
 	return read;
 }
