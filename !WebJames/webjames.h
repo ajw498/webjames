@@ -1,10 +1,10 @@
 #ifndef WEBJAMES_H
 #define WEBJAMES_H
 
-#define WEBJAMES_H_REVISION "$Revision: 1.33 $"
+#define WEBJAMES_H_REVISION "$Revision: 1.34 $"
 
-#define WEBJAMES_VERSION "0.33"
-#define WEBJAMES_DATE "20/12/01"
+#define WEBJAMES_VERSION "0.34"
+#define WEBJAMES_DATE "10/1/02"
 #define WEBJAMES_SERVER_SOFTWARE "WebJames/" WEBJAMES_VERSION
 
 #ifdef WEBJAMES_PHP_ONLY
@@ -151,7 +151,7 @@ typedef struct connection {
 		int size;               /* no. of bytes to write */
 		struct tm date;
 	} fileinfo;
-	
+
 	int fileused;               /* no. of bytes left */
 	int leftinbuffer;           /* no. of bytes left in temp buffer (if */
 								/*  file == NULL) */
@@ -170,7 +170,7 @@ typedef struct connection {
 	struct handlerlist *handlers; /* linked list of handlers to apply */
 	struct handler *handler; /* handler that is chosen from above list */
 
-	
+
 	int pwd; /* if if the file is password-protected */
 	char *args; /* arguments passed to script */
 
