@@ -14,6 +14,13 @@
 </td></tr></table>
 </h3>
 
+<i>0.33 (20/12/2001)</i>
+
+<ul>
+  <li>fixed bug that prevented nested SSI files from working.
+
+</ul>
+
 <i>0.32 (17/11/2001)</i>
 
 <ul>
