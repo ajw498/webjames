@@ -1,9 +1,0 @@
-This archive contains some libraries that are needed if you are compiling WebJames, and especially if you are linking with PHP.
-
-There were all compiled without modification from the source available at the URLs given.
-
-regex             From the PHP source
-zlib     1.1.3    http://www.gzip.org/zlib/
-libpng   1.2.0    http://www.libpng.org/pub/png/libpng.html
-libgd    1.8.4    http://www.boutell.com/gd/
-libjpeg  6b       ftp://ftp.uu.net/graphics/jpeg/
