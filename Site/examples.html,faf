@@ -34,19 +34,24 @@ otherwise they may cause a filecore in use error.
 
 <h4>ErrorDocument</h4>
 <ul>
-<li><a href="cgi-bin2/themeaningoflife">themeaningoflife</a> - a non existant file, causes the file Site/filenotfound.html to
-be served instead. This was set up in the file Site/cgi-bin2/.htaccess
+<li><a href="cgi-bin2/themeaningoflife">themeaningoflife</a> - a non existant file, causes the file /filenotfound.html to
+be served instead. This was set up in the /cgi-bin2/.htaccess
 </ul>
 
 <h4>Send-as-is</h4>
 <ul>
-<li><a href="moved.asis">moved.asis</a> - a file that contains suiatble HTTP headers to redirect the browser back to the index page
+<li><a href="moved.asis">moved.asis</a> - a file that contains suitable HTTP headers to redirect the browser back to the index page
 </ul>
 
 <h4>Content negotiation</h4>
 <ul>
 <li><a href="content/page">page</a> - Either <tt>page.fr.html</tt>, <tt>page.en.html</tt> or <tt>page.html</tt> will be served, depending on the prefered language
 specified by the browser. <tt>page.var</tt> contains details of each variant.
+</ul>
+
+<h4>SSI</h4>
+<ul>
+<li><a href="example.shtml">example.shtml</a> - A page containing some server side includes to give some dynamic content.
 </ul>
 
 </body>
