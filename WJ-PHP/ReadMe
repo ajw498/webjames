@@ -1,0 +1,13 @@
+To compile WebJames with a PHP handler, copy the contents of this
+archive into !WebJames, edit !WebJames.Makefile so the first include
+line is include build.gcc
+You should ensure that it is linked with a recent version of UnixLib
+(ie. a version later than August 2001)
+
+You will also need the following libraries, which can be obtained from
+the same place as this archive came from.
+regex
+zlib
+libpng
+libgd 1.8.4
+libjpeg
