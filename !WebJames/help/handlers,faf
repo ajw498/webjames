@@ -331,7 +331,7 @@
  ... the size of the file is &lt;!--#fsize file="foo.bar" --&gt;.
  </pre>
  <p>
-  There should no spaces between the <code>&lt;!--#</code> and the command, but
+  There should be no spaces between the <code>&lt;!--#</code> and the command, but
   there should be at least one space between the last attribute and the
   <code>--&gt;</code>
  <p>
@@ -483,7 +483,7 @@
 
  <tr>
  <td valign="top"><code>DATE_GMT</code></td>
- <td>The current date/time in Greewich Mean Time</td>
+ <td>The current date/time in Greenwich Mean Time</td>
  </tr>
 
  <tr>
@@ -551,6 +551,8 @@
   This allows, for example, the normal runtype for a perl script when you
  double click on it to run the script in a taskwindow, but when run from
  WebJames as a cgi script it is single tasking.
+ <p>
+  To include a % in the command then escape it with a second %.
  <p>
   There can also be a %u at the end of the command
  <pre>
