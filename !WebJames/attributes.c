@@ -225,12 +225,14 @@ struct attributes *create_attribute_structure(char *uri) {
 }
 
 
-
-void read_attributes_file(char *filename, char *baseuri) {
+void read_attributes_file(char *filename, char *base) {
+// filename - name of the attributes file
+// base - base uri
+//
 
   FILE *file;
-  char line[256], *ptr, *temp, uri[256];
-  int read, len, i, eq;
+  char line[256], *attribute, *ptr, *end, uri[256];
+  int i;
   struct attributes *attr;
 
   attr = NULL;
@@ -238,221 +240,260 @@ void read_attributes_file(char *filename, char *baseuri) {
   if (!file)  return;
 
   while (!feof(file)) {
-    line[0] = '\0';                               // clear the linebuffer
+    line[0] = '\0';  // clear the linebuffer
     fgets(line, 255, file);
 
-    // remove all SPACES and ctrl-chars
-    read = len = 0;
-    eq = 0;
-    while (line[read]) {                          // remove all spaces up to '='
-      if ( (line[read] > ' ') || ((eq) && (line[read] == ' ')) )
-        line[len++] = line[read];
-      if (line[read] == '=')  eq = 1;
-      read++;
-    }
-    line[len] = '\0';
-    ptr = line;
+    // remove all leading whitespace
+    attribute = line;
+    while (*attribute && isspace(*attribute)) attribute++;
+    ptr = attribute;
+
+    // remove any trailing whitespace
+    end = ptr;
+    while (*end) end++;
+    while (end>ptr && isspace(*(end-1))) end--;
+    *end='\0';
 
     // **** lines are either start-of-section
-    if ((ptr[0] == '[') && (ptr[len-1] == ']') && (len >= 3)) {
+    if ((ptr[0] == '[') || (ptr[0] == '<')) {
       // start of a new section
-      if (ptr[1] != '/')  break;        // MUST start with a /
-      ptr[len-1] = '\0';
-      ptr++;
-      len -= 2;
-#ifndef CASESENSITIVE
-      // URIs are case-insensitive
-      for (i = 0; i < len; i++)  ptr[i] = tolower(ptr[i]);
-#endif
-      if (attr)  insert_attributes(attr);
+      char *type = NULL;
+      int len;
 
-      sprintf(uri, "%s%s", baseuri, ptr);
-      attr = create_attribute_structure(uri);
-      if (!attr) {
-        fclose(file);
-        return;
+      if ((ptr[0] == '[') || (ptr[0] == '<' && ptr[1] == '/')) {
+        // end of a section
+        if (attr) {
+          insert_attributes(attr);
+        }
+        if (ptr[0] == '<') break; // end of section, but not the start of a new one
       }
 
-    // **** or inside a section
-    } else if (attr) {
+      if (ptr[0] == '<') {
+        ptr++;
+        // skip whitespace
+        while (*ptr != '\0' && isspace(*ptr)) ptr++;
+        type = ptr;
+        // find end of type, and start of URI/filename
+        while (*ptr!='\0' && !isspace(*ptr)) ptr++;
+        *ptr = '\0';
+      }
 
-      temp = NULL;
+      ptr++;
+      len = strlen(ptr);
 
-      ptr = strchr(line, '=');          // split 'variable=value' at '='
-      if (ptr) {
-        *ptr++ = '\0';
-        while (*ptr == ' ')  ptr++;     // strip leading spaces
-        if (*ptr) {
-          temp = malloc(strlen(ptr)+1);
-          if (!temp) {                  // malloc failed
+      if (type == NULL || strcmp(type,"location") == 0) {
+        if (ptr[0] != '/')  break;        // MUST start with a /
+        ptr[len-1] = '\0';
+        len--;
+#ifndef CASESENSITIVE
+        // URIs are case-insensitive
+        for (i = 0; i < len; i++)  ptr[i] = tolower(ptr[i]);
+#endif
+
+        sprintf(uri, "%s%s", base, ptr);
+        attr = create_attribute_structure(uri);
+        if (!attr) {
+          fclose(file);
+          return;
+        }
+      } else {
+        // must be a <files> or <directory> (not supported yet)
+      }
+
+    // **** or an attribute and value
+    } else {
+      char *value = NULL;
+
+      ptr = attribute;
+      // find end of attribute
+      while (*ptr!='\0' && !isspace(*ptr) && *ptr!='=') ptr++;
+
+      if (*ptr) {
+        *(ptr++) = '\0';
+
+      	// remove any whitespace and '=' at start of attribute value
+      	while (*ptr!='\0' && (isspace(*ptr) || *ptr=='=')) ptr++;
+
+      	if (*ptr) {
+          value = malloc(strlen(ptr)+1);
+          if (!value) {                  // malloc failed
             fclose(file);
             return;
           }
-          strcpy(temp, ptr);            // make copy of value
-        }
+          strcpy(value, ptr);            // make copy of value
+      	}
       }
 
-      if ((strcmp(line, "defaultfile") == 0) && (attr->uri[attr->urilen-1] == '/')) {
-        if (attr->defaultfile)  free(attr->defaultfile);
-        attr->defined.defaultfile = 1;
-        attr->defaultfile = temp;
+      // **** either inside a section
+      if (attr) {
 
-      } else if ((strcmp(line, "homedir") == 0) && (attr->uri[attr->urilen-1] == '/')) {
-        // define where on the harddisc the directory is stored
-        if (attr->homedir)  free(attr->homedir);
-        attr->defined.homedir = 1;
-        attr->homedir = temp;
-        if (temp)
-          // calc how many chars at the start of the URI will be
-          // replaced by the home-directory-path
-          attr->ignore = attr->urilen-1;
-        else
-          attr->ignore = 0;
+        if (strcmp(attribute, "defaultfile") == 0) {
+          if (attr->uri[attr->urilen-1] != '/') break;
+          if (attr->defaultfile)  free(attr->defaultfile);
+          attr->defined.defaultfile = 1;
+          attr->defaultfile = value;
 
-      } else if (strcmp(line, "moved") == 0) {
-        // URI has been changed
-        if (attr->moved)  free(attr->moved);
-        attr->defined.moved = 1;
-        attr->moved = temp;
-      } else if (strcmp(line, "tempmoved") == 0) {
-        if (attr->tempmoved)  free(attr->tempmoved);
-        attr->defined.tempmoved = 1;
-        attr->tempmoved = temp;
+        } else if ((strcmp(attribute, "homedir") == 0) && (attr->uri[attr->urilen-1] == '/')) {
+          // define where on the harddisc the directory is stored
+          if (attr->homedir)  free(attr->homedir);
+          attr->defined.homedir = 1;
+          attr->homedir = value;
+          if (value)
+            // calc how many chars at the start of the URI will be
+            // replaced by the home-directory-path
+            attr->ignore = attr->urilen-1;
+          else
+            attr->ignore = 0;
 
-      } else if (strcmp(line, "realm") == 0) {
-        // define realm or password-protected data
-        if (attr->realm)  free(attr->realm);
-        attr->defined.realm = 1;
-        attr->realm = temp;
-      } else if (strcmp(line, "accessfile") == 0) {
-        // name of file holding all login:password pairs
-        if (attr->accessfile)  free(attr->accessfile);
-        attr->defined.accessfile = 1;
-        attr->accessfile = temp;
-      } else if (strcmp(line, "userandpwd") == 0) {
-        // login:password pair
-        if (attr->userandpwd)  free(attr->userandpwd);
-        attr->defined.userandpwd = 1;
-        attr->userandpwd = temp;
+        } else if (strcmp(attribute, "moved") == 0) {
+          // URI has been changed
+          if (attr->moved)  free(attr->moved);
+          attr->defined.moved = 1;
+          attr->moved = value;
+        } else if (strcmp(attribute, "tempmoved") == 0) {
+          if (attr->tempmoved)  free(attr->tempmoved);
+          attr->defined.tempmoved = 1;
+          attr->tempmoved = value;
 
-      } else if (strcmp(line, "port") == 0) {
-        // allowed port
-        if (temp) {
-          attr->port = atoi(temp);
-          free(temp);
-          attr->defined.port = 1;
-        }
+        } else if (strcmp(attribute, "realm") == 0) {
+          // define realm or password-protected data
+          if (attr->realm)  free(attr->realm);
+          attr->defined.realm = 1;
+          attr->realm = value;
+        } else if (strcmp(attribute, "accessfile") == 0) {
+          // name of file holding all login:password pairs
+          if (attr->accessfile)  free(attr->accessfile);
+          attr->defined.accessfile = 1;
+          attr->accessfile = value;
+        } else if (strcmp(attribute, "userandpwd") == 0) {
+          // login:password pair
+          if (attr->userandpwd)  free(attr->userandpwd);
+          attr->defined.userandpwd = 1;
+          attr->userandpwd = value;
 
-      } else if (strcmp(line, "is-cgi") == 0) {
-        // URI is cgi
-        attr->defined.is_cgi = 1;
-        attr->is_cgi = 1;
-      } else if (strcmp(line, "isnt-cgi") == 0) {
-        // URI isn't cgi
-        attr->defined.is_cgi = 1;
-        attr->is_cgi = 0;
-      } else if (strcmp(line, "cgi-api") == 0) {
-        // which type of cgi
-        attr->defined.cgi_api = 1;
-        if (strcmp(temp, "redirect") == 0) {
-          attr->cgi_api = CGI_API_REDIRECT;
-          attr->defined.cgi_api = 1;
-        } else if (strcmp(temp, "webjames") == 0) {
-          attr->cgi_api = CGI_API_WEBJAMES;
-          attr->defined.cgi_api = 1;
-        }
-        if (temp)  free(temp);
-
-      } else if (strcmp(line, "forbidden-hosts") == 0) {
-        // list of hosts that may not access the data
-        if (temp) {
-          scan_host_list(temp, attr, 0);
-          free(temp);
-        }
-      } else if (strcmp(line, "allowed-hosts") == 0) {
-        // list of hosts that may access the data
-        if (temp) {
-          scan_host_list(temp, attr, 1);
-          free(temp);
-        }
-
-      } else if (strcmp(line, "forbidden-filetypes") == 0) {
-        // list of filetypes that may not be treated as cgi scripts
-        if (temp) {
-          scan_filetype_list(temp, attr, 0);
-          free(temp);
-        }
-      } else if (strcmp(line, "allowed-filetypes") == 0) {
-        // list of filetypes that may be treated as cgi scripts
-        if (temp) {
-          scan_filetype_list(temp, attr, 1);
-          free(temp);
-        }
-
-      } else if (strcmp(line, "methods") == 0) {
-        // allowed request-methods
-        if (temp) {
-          for (i = 0; i < strlen(temp); i++)  temp[i] = toupper(temp[i]);
-          attr->defined.methods = 1;
-          attr->methods = 0;
-          if (strstr(temp, "\"GET\""))     attr->methods |= 1<<METHOD_GET;
-          if (strstr(temp, "\"POST\""))    attr->methods |= 1<<METHOD_POST;
-          if (strstr(temp, "\"HEAD\""))    attr->methods |= 1<<METHOD_HEAD;
-          if (strstr(temp, "\"DELETE\""))  attr->methods |= 1<<METHOD_DELETE;
-          if (strstr(temp, "\"PUT\""))     attr->methods |= 1<<METHOD_PUT;
-          free(temp);
-        }
-
-      } else if (strcmp(line, "priority") == 0) {
-        // priority/bandwidth - NOT SUPPORTED
-        if (temp)  free(temp);
-
-      } else if (strcmp(line, "ram-faster") == 0) {
-        // allow WebJames to move the file to a faster media - NOT SUPPORTED
-
-      } else if (strcmp(line, "notcacheable") == 0) {
-        // data is not cacheable
-        attr->defined.cacheable = 1;
-        attr->cacheable = 0;
-      } else if (strcmp(line, "cacheable") == 0) {
-        // data is cacheable
-        attr->defined.cacheable = 1;
-        attr->cacheable = 1;
-
-      } else if (strcmp(line, "more-attributes") == 0) {
-        if (temp) {
-          if (attr->uri[attr->urilen-1] == '/') {
-            strcpy(uri, attr->uri);
-            uri[attr->urilen-1] = '\0';         // remove the terminating /
-            read_attributes_file(temp, uri);
+        } else if (strcmp(attribute, "port") == 0) {
+          // allowed port
+          if (value) {
+            attr->port = atoi(value);
+            free(value);
+            attr->defined.port = 1;
           }
-          free(temp);
+
+        } else if (strcmp(attribute, "is-cgi") == 0) {
+          // URI is cgi
+          attr->defined.is_cgi = 1;
+          attr->is_cgi = 1;
+        } else if (strcmp(attribute, "isnt-cgi") == 0) {
+          // URI isn't cgi
+          attr->defined.is_cgi = 1;
+          attr->is_cgi = 0;
+        } else if (strcmp(attribute, "cgi-api") == 0) {
+          // which type of cgi
+          attr->defined.cgi_api = 1;
+          if (strcmp(value, "redirect") == 0) {
+            attr->cgi_api = CGI_API_REDIRECT;
+            attr->defined.cgi_api = 1;
+          } else if (strcmp(value, "webjames") == 0) {
+            attr->cgi_api = CGI_API_WEBJAMES;
+            attr->defined.cgi_api = 1;
+          }
+          if (value)  free(value);
+
+        } else if (strcmp(attribute, "forbidden-hosts") == 0) {
+          // list of hosts that may not access the data
+          if (value) {
+            scan_host_list(value, attr, 0);
+            free(value);
+          }
+        } else if (strcmp(attribute, "allowed-hosts") == 0) {
+          // list of hosts that may access the data
+          if (value) {
+            scan_host_list(value, attr, 1);
+            free(value);
+          }
+
+        } else if (strcmp(attribute, "forbidden-filetypes") == 0) {
+          // list of filetypes that may not be treated as cgi scripts
+          if (value) {
+            scan_filetype_list(value, attr, 0);
+            free(value);
+          }
+        } else if (strcmp(attribute, "allowed-filetypes") == 0) {
+          // list of filetypes that may be treated as cgi scripts
+          if (value) {
+            scan_filetype_list(value, attr, 1);
+            free(value);
+          }
+
+        } else if (strcmp(attribute, "methods") == 0) {
+          // allowed request-methods
+          if (value) {
+            for (i = 0; i < strlen(value); i++)  value[i] = toupper(value[i]);
+            attr->defined.methods = 1;
+            attr->methods = 0;
+            if (strstr(value, "\"GET\""))     attr->methods |= 1<<METHOD_GET;
+            if (strstr(value, "\"POST\""))    attr->methods |= 1<<METHOD_POST;
+            if (strstr(value, "\"HEAD\""))    attr->methods |= 1<<METHOD_HEAD;
+            if (strstr(value, "\"DELETE\""))  attr->methods |= 1<<METHOD_DELETE;
+            if (strstr(value, "\"PUT\""))     attr->methods |= 1<<METHOD_PUT;
+            free(value);
+          }
+
+        } else if (strcmp(attribute, "priority") == 0) {
+          // priority/bandwidth - NOT SUPPORTED
+          if (value)  free(value);
+
+        } else if (strcmp(attribute, "ram-faster") == 0) {
+          // allow WebJames to move the file to a faster media - NOT SUPPORTED
+
+        } else if (strcmp(attribute, "notcacheable") == 0) {
+          // data is not cacheable
+          attr->defined.cacheable = 1;
+          attr->cacheable = 0;
+        } else if (strcmp(attribute, "cacheable") == 0) {
+          // data is cacheable
+          attr->defined.cacheable = 1;
+          attr->cacheable = 1;
+
+        } else if (strcmp(attribute, "more-attributes") == 0) {
+          if (value) {
+            if (attr->uri[attr->urilen-1] == '/') {
+              strcpy(uri, attr->uri);
+              uri[attr->urilen-1] = '\0';         // remove the terminating /
+              read_attributes_file(value, uri);
+            }
+            free(value);
+          }
+
+        } else if (strcmp(attribute, "hidden") == 0) {
+          // file does not exist
+          attr->defined.hidden = 1;
+          attr->hidden = 1;
+        } else if (strcmp(attribute, "nothidden") == 0) {
+          // file _does_ exist
+          attr->defined.hidden = 1;
+          attr->hidden = 0;
+
+        } else {
+          if (value)  free(value);
         }
 
-      } else if (strcmp(line, "hidden") == 0) {
-        // file does not exist
-        attr->defined.hidden = 1;
-        attr->hidden = 1;
-      } else if (strcmp(line, "nothidden") == 0) {
-        // file _does_ exist
-        attr->defined.hidden = 1;
-        attr->hidden = 0;
-
-      } else
-        if (temp)  free(temp);
-
-    // **** or outside all sections
-    } else if (strncmp(line, "more-attributes=", 16) == 0) {
-      read_attributes_file(line+16, baseuri);
-
+      // **** or outside all sections
+      } else {
+        if (strcmp(attribute, "more-attributes") == 0) {
+          if (value) read_attributes_file(value, base);
+        }
+        if (value) free(value);
+      }
     }
-
   }
-  if (attr)  insert_attributes(attr);
+  if (attr) {
+    insert_attributes(attr);
+  }
 
   fclose(file);
+  return;
 }
-
 
 
 void get_attributes(char *uri, struct connection *conn) {
