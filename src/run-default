@@ -5,6 +5,8 @@ Set WebJames$Dir <Obey$Dir>
 If "<PHP$Mail>"="" Then Set PHP$Mail <WebJames$Dir>.PHPMail
 Set File$Type_18A PHP
 
+|clibRMEnsure SharedCLibrary 5.17 RMLoad System:Modules.CLib
+|clibRMEnsure SharedCLibrary 5.34 Error WebJames requires SharedCLibrary 5.34 or later
 RMEnsure MimeMap 0.10 RMLoad System:Modules.Network.MimeMap
 RMEnsure MimeMap 0.10 Error You need version 0.10 (or later) of the MimeMap module
 

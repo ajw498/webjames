@@ -71,7 +71,7 @@ $(WJTARGET): $(WJOBJECTS)
 	$(MEMCHECK) $(CC) -c $(CFLAGS) $(PHP_CFLAGS) $< -o $@
 
 $(WJRUN): run-default
-	sed -e "s/|wimpslot/WimpSlot -min $(WIMPSLOT) -max $(WIMPSLOT)/" -e "s/|stderr$(STDERR)//" -e "s/|typestderr$(TYPESTDERR)//" run-default > $@
+	sed -e "s/|wimpslot/WimpSlot -min $(WIMPSLOT) -max $(WIMPSLOT)/" -e "s/|stderr$(STDERR)//" -e "s/|typestderr$(TYPESTDERR)//" -e "s/|clib$(CLIB)//" run-default > $@
 	$(SETTYPE)
 
 

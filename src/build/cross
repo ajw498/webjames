@@ -41,6 +41,7 @@ EXT_FAF = ,faf
 WIMPSLOT = $(WIMPSLOT_UNIXLIB)
 STDERR = .*
 TYPESTDERR = .*
+CLIB = .*
 
 all2: all
 
