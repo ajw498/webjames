@@ -19,8 +19,19 @@
 #include "write.h"
 #include "handler.h"
 
+#define MAXHEADERS 100
+
+static int Strnicmp(char *s1, char *s2,size_t n)
+/*compares n characters, case insensitively. returns zero if equal*/
+{
+	int i;
+
+	for (i=0;i<n;i++) if (tolower(s1[i])!=tolower(s2[i])) return 1;
+	return 0;
+}
 
 void cgiscript_setvars(struct connection *conn)
+/*set system variables for a CGI or SSI script*/
 {
 	char temp[30];
 
@@ -105,6 +116,7 @@ void cgiscript_setvars(struct connection *conn)
 }
 
 void cgiscript_removevars(void)
+/* remove all variables set by cgiscript_setvars()*/
 {
 	remove_var("SERVER_SOFTWARE");
 	remove_var("SERVER_PORT");
@@ -142,6 +154,12 @@ void cgiscript_start(struct connection *conn)
 	int size, unix;
 	FILE *file;
 	wimp_t task;
+	char *headers[MAXHEADERS];
+	char *headerbuffer;
+	int headerbufferlength;
+	int location=0;
+	char *status=0;
+	int i,j;
 
 	/* change currently selected directory if required */
 	if (conn->flags.setcsd) {
@@ -254,16 +272,91 @@ void cgiscript_start(struct connection *conn)
 
 	conn->flags.is_cgi = 0;               /* make close() output clf-info */
 
-	/* set the fields in the structure, and that's it! */
+	/* set the fields in the structure */
 	conn->file = file;
 	conn->fileused = 0;
 	conn->fileinfo.size = size;
+
+	/*read the first chunk of the file*/
+	if (conn->filebuffer) {
+		headerbuffer=conn->filebuffer;
+		headerbufferlength=conn->leftinbuffer = fread(conn->filebuffer, 1, configuration.readaheadbuffer*1024, conn->file);
+		conn->positioninbuffer = 0;
+	} else {
+		headerbuffer=temp;
+		headerbufferlength=fread(temp, 1, HTTPBUFFERSIZE, conn->file);
+	}
+
+	for (i=0;i<MAXHEADERS;i++) headers[i]=NULL;
+
+	/*set headers[] to point to start of each header line*/
+	for (i=0,j=0;i<MAXHEADERS;i++) {
+		headers[i]=headerbuffer+j;
+		while (j<headerbufferlength && headerbuffer[j]!='\r' && headerbuffer[j]!='\n') j++; /*find end of line*/
+		if (j>=headerbufferlength-1) {
+			/*we have reached the end of the buffer before finding the end of the headers, so reset everything and don't bother to parse the headers*/
+			for (i=0;i<MAXHEADERS;i++) headers[i]=NULL;
+			j=0;
+			break;
+		}
+		if (headerbuffer[j]!=headerbuffer[j+1]) {
+			headerbuffer[j++]='\0';
+			if (headerbuffer[j]=='\r' || headerbuffer[j]=='\n') j++; /*supports CR,LF,CRLF and LFCR*/
+			if (headers[i][0]=='\0') {
+				/*end of headers reached*/
+				headers[i]=NULL;
+				break;
+			}
+		} else {
+			/*either a \r\r or a \n\n so must be the end of the headers*/
+			headerbuffer[j++]='\0';
+			break;
+		}
+	}
+
+	/*set so that staticcontent_poll will carry on from the end of the headers*/
+	conn->fileused=j;
+	conn->positioninbuffer=j;
+	conn->leftinbuffer-=j;
 
 	if (conn->flags.outputheaders) {
 		time_t now;
 		char rfcnow[50];
 
-		writestring(conn->socket, "HTTP/1.0 200 OK\r\n");
+		for (i=0;i<MAXHEADERS;i++) {
+			if (headers[i]) {
+				/*overwrite any Date: or Server: headers from the script*/
+				if (Strnicmp(headers[i],"Date:",5)==0) {
+					headers[i]=NULL;
+				} else if (Strnicmp(headers[i],"Server:",7)==0) {
+					headers[i]=NULL;
+				} else if (Strnicmp(headers[i],"Location:",9)==0) {
+					location=1;
+				} else if (Strnicmp(headers[i],"Status:",7)==0) {
+					status=headers[i]+7;
+					while (isspace(*status)) status++;
+					headers[i]=NULL;
+				} else if (Strnicmp(headers[i],"HTTP/",5)==0) {
+					status=headers[i];
+					headers[i]=NULL;
+				}
+			}
+		}
+
+		/*if there was a Location: header, then output the status as 302, unless the script explicitly gave a status code*/ 
+		if (status) {
+			if (Strnicmp(status,"HTTP/",5)==0) {
+				sprintf(temp,"%s\r\n",status);
+			} else {
+				sprintf(temp,"HTTP/1.0 %s\r\n",status);
+			}
+			writestring(conn->socket,temp);
+		} else if (location) {
+			writestring(conn->socket, "HTTP/1.0 302 Moved Temporarily\r\n");
+		} else {
+			writestring(conn->socket, "HTTP/1.0 200 OK\r\n");
+		}
+
 		time(&now);
 		time_to_rfc(localtime(&now),rfcnow);
 		sprintf(temp, "Date: %s\r\n", rfcnow);
@@ -272,7 +365,18 @@ void cgiscript_start(struct connection *conn)
 			sprintf(temp, "Vary:%s\r\n", conn->vary);
 			writestring(conn->socket, temp);
 		}
-		/*also strip all headers output by the cgi*/
+		for (i = 0; i < configuration.xheaders; i++) {
+			writestring(conn->socket, configuration.xheader[i]);
+			writestring(conn->socket, "\r\n");
+		}
+		for (i=0;i<MAXHEADERS;i++) {
+			if (headers[i]) {
+				sprintf(temp,"%s\r\n",headers[i]);
+				writestring(conn->socket,temp);
+			}
+		}
+		sprintf(temp, "Server: %s\r\n\r\n", configuration.server);
+		writestring(conn->socket, temp);
 	}
 }
 
