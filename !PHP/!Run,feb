@@ -6,5 +6,5 @@ RMEnsure Toolbox 1.36 Error You need Toolbox 1.36 or later
 RMEnsure Window 1.44 RMLoad System:Modules.Toolbox.Window
 RMEnsure Window 1.44 Error You need Window Object 1.44 or later
 
-WimpSlot -Min 128k -Max 128k
+WimpSlot -Min 160k -Max 160k
 Run <PHP$Dir>.!RunImage
