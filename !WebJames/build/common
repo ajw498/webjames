@@ -13,6 +13,8 @@ LINKFLAGS = $(LINKDEBUG)
 OBJECTS = \
 	main.o\
 	webjames.o\
+	wjstring.o\
+	snprintf.o\
 	ip.o\
 	stat.o\
 	datetime.o\
