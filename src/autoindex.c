@@ -192,6 +192,7 @@ void autoindex_start(struct connection *conn)
 			snprintf(temp, TEMPBUFFERSIZE, "Server: %s\r\n", configuration.server);
 			webjames_writestringr(conn, temp);
 		}
+		webjames_writestringr(conn, "Content-type: text/html\r\n");
 		webjames_writestringr(conn, "\r\n");
 	}
 	if (conn->method==METHOD_HEAD) conn->close(conn,0);
