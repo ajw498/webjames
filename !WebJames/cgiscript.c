@@ -1,5 +1,5 @@
 /*
-	$Id: cgiscript.c,v 1.30 2001/09/18 21:05:27 AJW Exp $
+	$Id: cgiscript.c,v 1.31 2001/11/21 23:24:17 AJW Exp $
 	CGI script handler
 */
 
@@ -27,10 +27,12 @@
 #include "handler.h"
 
 #define MAXHEADERS 100
+#define SETVARSBUFSIZE 30
 
 void cgiscript_setvars(struct connection *conn)
 /*set system variables for a CGI or SSI script*/
 {
+	char buffer[SETVARSBUFSIZE];
 	if (configuration.server[0])  set_var_val("SERVER_SOFTWARE", configuration.server);
 	set_var_val("SERVER_PROTOCOL", conn->protocol);
 	if (configuration.serverip[0])  set_var_val("SERVER_NAME", configuration.serverip);
@@ -46,20 +48,20 @@ void cgiscript_setvars(struct connection *conn)
 
 	if (conn->args) set_var_val("QUERY_STRING", conn->args);
 
-	snprintf(temp, TEMPBUFFERSIZE, "%d.%d.%d.%d", conn->ipaddr[0], conn->ipaddr[1], conn->ipaddr[2], conn->ipaddr[3]);
-	set_var_val("REMOTE_ADDR", temp);
+	snprintf(buffer, SETVARSBUFSIZE, "%d.%d.%d.%d", conn->ipaddr[0], conn->ipaddr[1], conn->ipaddr[2], conn->ipaddr[3]);
+	set_var_val("REMOTE_ADDR", buffer);
 	if (conn->dnsstatus == DNS_OK)  set_var_val("REMOTE_HOST", conn->host);
 
 	set_var_val("REQUEST_METHOD", conn->methodstr);
 
 	if ((conn->method == METHOD_POST) || (conn->method == METHOD_PUT)) {
-		snprintf(temp, TEMPBUFFERSIZE, "%d", conn->bodysize);
-		set_var_val("CONTENT_LENGTH", temp);
+		snprintf(buffer, SETVARSBUFSIZE, "%d", conn->bodysize);
+		set_var_val("CONTENT_LENGTH", buffer);
 		set_var_val("CONTENT_TYPE", conn->type);
 	}
 
-	snprintf(temp, TEMPBUFFERSIZE, "%d", conn->port);
-	set_var_val("SERVER_PORT", temp);
+	snprintf(buffer, SETVARSBUFSIZE, "%d", conn->port);
+	set_var_val("SERVER_PORT", buffer);
 
 	if ((conn->method == METHOD_PUT) || (conn->method == METHOD_DELETE))
 		set_var_val("ENTITY_PATH", conn->requesturi);
