@@ -1,5 +1,5 @@
 /*
-	$Id: main.c,v 1.2 2002/10/05 17:25:58 ajw Exp $
+	$Id: main.c,v 1.3 2002/10/20 21:29:54 ajw Exp $
 	main() function, wimp polling loop
 */
 
@@ -22,6 +22,7 @@
 #include "webjames.h"
 #include "main.h"
 #include "stat.h"
+#include "ip.h"
 
 #ifdef MemCheck_MEMCHECK
 #include "MemCheck:MemCheck.h"
@@ -163,7 +164,7 @@ int main(int argc, char *argv[])
 			MemCheck_RegisterMiscBlock(pollword,4);
 #endif
 			for (i = 0; i < serverinfo.serverscount; i++) {
-				EV((os_error*)_swix(SocketWatch_Register,_INR(0,2),pollword,1,serverinfo.servers[i].socket));
+				if (serverinfo.servers[i].socket != socket_CLOSED) EV((os_error*)_swix(SocketWatch_Register,_INR(0,2),pollword,1,serverinfo.servers[i].socket));
 			}
 		}
 	
@@ -171,7 +172,7 @@ int main(int argc, char *argv[])
 	
 		if (pollword) {
 			for (i = 0; i < serverinfo.serverscount; i++) {
-				EV((os_error*)_swix(SocketWatch_Deregister,_INR(0,1),serverinfo.servers[i].socket,pollword));
+				if (serverinfo.servers[i].socket != socket_CLOSED) EV((os_error*)_swix(SocketWatch_Deregister,_INR(0,1),serverinfo.servers[i].socket,pollword));
 			}
 #ifdef MemCheck_MEMCHECK
 			MemCheck_UnRegisterMiscBlock(pollword);
