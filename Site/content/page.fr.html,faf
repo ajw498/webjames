@@ -1,0 +1,16 @@
+<html>
+<head>
+<title>Content negotiation example</title>
+</head>
+
+<body bgcolor="#ffffff">
+
+<center>
+<h1>Content negotiation example</h1>
+
+<h3>Bonjour</h3>
+
+<p>Ici le webpage Fran&ccedil;ais.
+
+</body>
+</html>
