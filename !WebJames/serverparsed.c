@@ -70,10 +70,17 @@ void serverparsed_start(struct connection *conn)
 
 	if (conn->flags.outputheaders && conn->httpmajor >= 1) {
 		int i;
+		time_t now;
+		char rfcnow[50];
+
 		/* write header */
 		writestring(conn->socket, "HTTP/1.0 200 OK\r\n");
 		/* we can't give a content length as we don't know it until the entire doc has been parsed*/
 		sprintf(temp, "Content-Type: %s\r\n", conn->fileinfo.mimetype);
+		writestring(conn->socket, temp);
+		time(&now);
+		time_to_rfc(localtime(&now),rfcnow);
+		sprintf(temp, "Date: %s\r\n", rfcnow);
 		writestring(conn->socket, temp);
 		if (conn->vary[0]) {
 			sprintf(temp, "Vary:%s\r\n", conn->vary);

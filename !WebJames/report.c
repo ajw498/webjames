@@ -247,6 +247,9 @@ static void report_quickanddirty(struct connection *conn, int report) {
 	char *name;
 
 	if (conn->flags.outputheaders && conn->httpmajor >= 1) {
+		time_t now;
+		char rfcnow[50];
+
 		name = get_report_name(report);
 		sprintf(temp, "HTTP/1.0 %d %s\r\n", report, name);
 		writestring(conn->socket, temp);
@@ -254,6 +257,10 @@ static void report_quickanddirty(struct connection *conn, int report) {
 		writestring(conn->socket, temp);
 		writestring(conn->socket, "Content-Type: text/html\r\n");
 		sprintf(temp, "Content-Length: %d\r\n\r\n", strlen(configuration.panic));
+		writestring(conn->socket, temp);
+		time(&now);
+		time_to_rfc(localtime(&now),rfcnow);
+		sprintf(temp, "Date: %s\r\n", rfcnow);
 		writestring(conn->socket, temp);
 	}
 	writestring(conn->socket, configuration.panic);
@@ -452,6 +459,9 @@ void report(struct connection *conn, int code, int subno, int headerlines, char 
 	}
 
 	if (conn->flags.outputheaders && conn->httpmajor >= 1) {
+		time_t now;
+		char rfcnow[50];
+
 		sprintf(temp, "HTTP/1.0 %d %s\r\n", code, reportname);
 		writestring(conn->socket, temp);
 		writestring(conn->socket, "Content-Type: text/html\r\n");
@@ -459,6 +469,10 @@ void report(struct connection *conn, int code, int subno, int headerlines, char 
 		sprintf(temp, "Content-Length: %d\r\n", size);
 		writestring(conn->socket, temp);
 		sprintf(temp, "Server: %s\r\n", configuration.server);
+		writestring(conn->socket, temp);
+		time(&now);
+		time_to_rfc(localtime(&now),rfcnow);
+		sprintf(temp, "Date: %s\r\n", rfcnow);
 		writestring(conn->socket, temp);
 		for (i = 0; i < headerlines; i++) {
 			if (header[i]) {

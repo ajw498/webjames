@@ -260,7 +260,14 @@ void cgiscript_start(struct connection *conn)
 	conn->fileinfo.size = size;
 
 	if (conn->flags.outputheaders) {
+		time_t now;
+		char rfcnow[50];
+
 		writestring(conn->socket, "HTTP/1.0 200 OK\r\n");
+		time(&now);
+		time_to_rfc(localtime(&now),rfcnow);
+		sprintf(temp, "Date: %s\r\n", rfcnow);
+		writestring(conn->socket, temp);
 		if (conn->vary[0]) {
 			sprintf(temp, "Vary:%s\r\n", conn->vary);
 			writestring(conn->socket, temp);
