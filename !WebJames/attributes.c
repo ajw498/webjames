@@ -81,36 +81,43 @@ static void scan_filetype_list(char *list, struct attributes *attr, int allowed)
   int count, filetypeslist[256], *oldlist, *newlist, more;
 
   if (allowed) {
+    attr->defined.allowedfiletypes = 1;
     count = attr->allowedfiletypescount;
     oldlist = attr->allowedfiletypes;
   } else {
+    attr->defined.forbiddenfiletypes = 1;
     count = attr->forbiddenfiletypescount;
     oldlist = attr->forbiddenfiletypes;
   }
 
   if ((count > 0) && (oldlist))    memcpy(filetypeslist, oldlist, count*4);
 
-  more = 1;
-  do {
-    int n, f, ch;
+  if (list) {
+    more = 1;
+    do {
+      int n, f, ch;
 
-    n = sscanf(list, "%x%n", &f, &ch);
-    list += ch;
-    if (n == 1) {
-      filetypeslist[count++] = f;
-    } else {
-      more = 0;
-    }
+      n = sscanf(list, "%x%n", &f, &ch);
+      list += ch;
+      if (n == 1) {
+        filetypeslist[count++] = f;
+      } else {
+        more = 0;
+      }
 
-    if (strchr(list, ',')) list = strchr(list, ',')+1;
-  } while (more);
+      if (strchr(list, ',')) list = strchr(list, ',')+1;
+    } while (more);
+  }
 
-  if (!count)  return;
-  newlist = malloc(4*count);
-  if (!newlist)  return;
+  if (count) {
+    newlist = malloc(4*count);
+    if (!newlist)  return;
+    memcpy(newlist, filetypeslist, 4*count);
+  } else {
+    newlist = NULL;
+  }
   if (oldlist)  free(oldlist);
 
-  memcpy(newlist, filetypeslist, 4*count);
   if (allowed) {
     attr->allowedfiletypes = newlist;
     attr->allowedfiletypescount = count;
@@ -244,7 +251,7 @@ static struct attributes *create_attribute_structure(char *uri) {
     attr->defined.moved = attr->defined.tempmoved = attr->defined.cacheable =
     attr->defined.homedir = attr->defined.is_cgi = attr->defined.cgi_api =
     attr->defined.methods = attr->defined.port = attr->defined.hidden =
-    attr->defined.defaultfile = 0;
+    attr->defined.defaultfile = attr->defined.allowedfiletypes = attr->defined.forbiddenfiletypes = 0;
 
   attr->urilen = strlen(uri);
   attr->uri = malloc(attr->urilen+1);
@@ -508,16 +515,13 @@ static struct attributes *read_attributes_file(char *filename, char *base) {
 
         } else if (strcmp(attribute, "forbidden-filetypes") == 0) {
           // list of filetypes that may not be treated as cgi scripts
-          if (value) {
-            scan_filetype_list(value, attr, 0);
-            free(value);
-          }
+          scan_filetype_list(value, attr, 0);
+          if (value) free(value);
+
         } else if (strcmp(attribute, "allowed-filetypes") == 0) {
           // list of filetypes that may be treated as cgi scripts
-          if (value) {
-            scan_filetype_list(value, attr, 1);
-            free(value);
-          }
+          scan_filetype_list(value, attr, 1);
+          if (value) free(value);
 
         } else if (strcmp(attribute, "methods") == 0) {
           // allowed request-methods
@@ -612,11 +616,9 @@ static struct attributes *read_attributes_file(char *filename, char *base) {
   return attr;
 }
 
-
-static void merge_attributes2(struct connection *conn, struct attributes *attr) {
+static void merge_attributes3(struct connection *conn, struct attributes *attr) {
 // merge all attributes from attr into conn
   int i;
-
   if (attr->defined.realm)        conn->realm           = attr->realm;
   if (attr->defined.accessfile)   conn->accessfile      = attr->accessfile;
   if (attr->defined.userandpwd)   conn->userandpwd      = attr->userandpwd;
@@ -633,14 +635,19 @@ static void merge_attributes2(struct connection *conn, struct attributes *attr) 
     error->next = conn->errordocs;
     conn->errordocs = error;
   }
-  if (attr->allowedfiletypescount) {
+  if (attr->defined.allowedfiletypes) {
     conn->allowedfiletypes = attr->allowedfiletypes;
     conn->allowedfiletypescount = attr->allowedfiletypescount;
   }
-  if (attr->forbiddenfiletypescount) {
+  if (attr->defined.forbiddenfiletypes) {
     conn->forbiddenfiletypes = attr->forbiddenfiletypes;
     conn->forbiddenfiletypescount = attr->forbiddenfiletypescount;
   }
+}
+
+static void merge_attributes2(struct connection *conn, struct attributes *attr) {
+// merge all attributes from attr into conn
+  
   if (attr->defined.methods)
     if (!(attr->methods & (1<<conn->method)))
       conn->attrflags.accessallowed = 0;
@@ -689,6 +696,7 @@ static void merge_attributes(struct connection *conn, struct attributes *attr) {
 
   merge_attributes1(conn,attr);
   merge_attributes2(conn,attr);
+  merge_attributes3(conn,attr);
 }
 
 void get_attributes(char *uri, struct connection *conn) {

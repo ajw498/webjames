@@ -71,6 +71,8 @@ typedef struct attributes {
     unsigned int port        : 1;
     unsigned int hidden      : 1;
     unsigned int defaultfile : 1;
+    unsigned int allowedfiletypes : 1;
+    unsigned int forbiddenfiletypes : 1;
   } defined;
 
   struct attributes *next, *previous;
