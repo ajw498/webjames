@@ -18,6 +18,8 @@ otherwise they may cause a filecore in use error.
 <li><a href="cgi-bin2/perl">perl</a> - simple script written in Perl <i>This needs !Perl to work</i>
 <li><a href="cgi-bin2/php">php</a> - simple script written in PHP <i>This needs <a href="http://www.ecs.soton.ac.uk/~ajw498/">!PHP</A> to work</i>
 <li><a href="webart.php">webart.php</a> - a more complicated PHP script that generates GIF images
+<li><a href="cgi-bin2/themeaningoflife">themeaningoflife</a> - a non existant file, causes the file Site/filenotfound.html to
+be served instead. This was set up in the file Site/cgi-bin2/.htaccess
 </ul>
 
 <h4>WebJames style scripts</h4>
