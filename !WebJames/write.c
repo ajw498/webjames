@@ -238,33 +238,35 @@ void send_file(struct connection *conn) {
     // check if cgi-script program exists, and has a suitable filetype
     type = get_file_info(conn->filename,NULL,NULL,&size);
 
-    if (type == FILE_DOESNT_EXIST || type == OBJECT_IS_DIRECTORY) {
+    if (type == FILE_DOESNT_EXIST) {
       report_notfound(conn);
       return;
     }
 
-    if (conn->forbiddenfiletypescount) {
-      int i;
-
-      for (i = 0; i < conn->forbiddenfiletypescount; i++) {
-        if (conn->forbiddenfiletypes[i] == type) forbidden = 1;
-      }
-    }
-
-    if (!forbidden) {
-      if (conn->allowedfiletypescount) {
+    if (type != OBJECT_IS_DIRECTORY) {
+      if (conn->forbiddenfiletypescount) {
         int i;
 
-        allowed = 0;
-        for (i = 0; i < conn->allowedfiletypescount; i++) {
-          if (conn->allowedfiletypes[i] == type) allowed = 1;
+        for (i = 0; i < conn->forbiddenfiletypescount; i++) {
+          if (conn->forbiddenfiletypes[i] == type) forbidden = 1;
         }
       }
-    }
 
-    if (!forbidden && allowed) {
-      script_start(SCRIPT_CGI, conn, conn->filename, pwd, args);
-      return;
+      if (!forbidden) {
+        if (conn->allowedfiletypescount) {
+          int i;
+
+          allowed = 0;
+          for (i = 0; i < conn->allowedfiletypescount; i++) {
+            if (conn->allowedfiletypes[i] == type) allowed = 1;
+          }
+        }
+      }
+
+      if (!forbidden && allowed) {
+        script_start(SCRIPT_CGI, conn, conn->filename, pwd, args);
+        return;
+      }
     }
   }
 

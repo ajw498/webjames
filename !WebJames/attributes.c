@@ -152,7 +152,7 @@ static void scan_defaultfiles_list(char *list, struct attributes *attr) {
 
     n = sscanf(list, "%s%n", buffer, &ch);
     list += ch;
-   
+
     if (n == 1) {
       filelist[count] = malloc(ch);
       if (filelist[count] == NULL) return;
@@ -718,10 +718,11 @@ void get_dir_attributes(char *dir, struct connection *conn) {
   len = strlen(path);
   if (path[len-1] == '.') path[len-1] = '\0';
 
+  // make sure we can't have two different pathnames refering to the same directory
   if (xosfscontrol_canonicalise_path(path,buffer,NULL,NULL,255,&len)) strcpy(buffer,path);
 
 // do something a bit more efficient here to find the correct attributes structure for each directory
-// some sort of binary search?
+// some sort of binary search? hash table?
 
   ptr = buffer;
   last = 0;
@@ -754,7 +755,13 @@ void get_dir_attributes(char *dir, struct connection *conn) {
 
       sprintf(htaccessfile,"%s.%s",path,configuration.htaccessfile);
       newattr=read_attributes_file(htaccessfile, path);
-      if (newattr) merge_attributes(conn, newattr);
+      if (newattr) {
+        merge_attributes(conn, newattr);
+      } else {
+        // an error occoured (probably couldn't find the file), so create a blkank structure for theis dir
+        newattr=create_attribute_structure(path);
+        insert_attributes(newattr,section_DIRECTORY);
+      }
     }
 
   } while (!last);
