@@ -1,5 +1,5 @@
 /*
-	$Id: webjames.c,v 1.2 2002/10/19 15:18:17 ajw Exp $
+	$Id: webjames.c,v 1.3 2002/10/19 16:05:24 ajw Exp $
 	General functions for WebJames
 */
 
@@ -9,6 +9,8 @@
 #include <string.h>
 #include <ctype.h>
 #include <time.h>
+
+#include "kernel.h"
 
 #include "oslib/os.h"
 #include "oslib/osmodule.h"
@@ -518,10 +520,17 @@ void read_config(char *config)
 			else if (strcmp(cmd, "logbuffersize") == 0)
 				configuration.logbuffersize = atoi(val);
 
-			else if (strcmp(cmd, "syslog") == 0)
+			else if (strcmp(cmd, "syslog") == 0) {
 				configuration.syslog = atoi(val);
+				if (configuration.syslog == 2) {
+					/* Use syslog if present, internal logging if not */
+					_kernel_swi_regs regs;
 
-			else if (strcmp(cmd, "log-rotate") == 0) {
+					regs.r[0]=(int)"WebJames";
+					if (_kernel_swi(SysLog_GetLogLevel, &regs,&regs) != NULL) configuration.syslog = 0;
+				}
+
+			} else if (strcmp(cmd, "log-rotate") == 0) {
 				int age, size, copies;
 				if (sscanf(val, "%d %d %d", &age, &size, &copies)  == 3) {
 					if ((age > 0) && (age < 24*365) && (size >= 0) && (copies >= 0)) {

@@ -1,5 +1,5 @@
 /*
-	$Id: stat.c,v 1.2 2002/10/19 15:18:17 ajw Exp $
+	$Id: stat.c,v 1.3 2002/10/19 16:05:24 ajw Exp $
 	Statistics and logging functions
 */
 
@@ -215,9 +215,6 @@ static void check_for_clfrotate(void)
 		}
 	}
 }
-
-#define SysLog_LogMessage 0x4c880
-#define SysLog_LogUnstamped 0x4c884
 
 void writelog(int level, char *string)
 {

@@ -118,9 +118,10 @@ maxcachefilesize=100
 # ------------------
 
 # syslog - whether to use the SysLog module for logging
-# 1  use SysLog module
 # 0  use logfile specified in the log entry below
-syslog=0
+# 1  use SysLog module
+# 2  use SysLog module if present, logfile below otherwise
+syslog=2
 
 # log - log file
 # remove the line to disable logging
