@@ -12,7 +12,7 @@ INCLUDE	=	L:
 
 TARGET		=	!RunImage
 
-CCFLAGS		=	$(CCEXTRA) -mthrowback -O3 -I$(INCLUDE)
+CCFLAGS		=	$(CCEXTRA) -mthrowback -Wall -O3 -I$(INCLUDE)
 
 
 CC		=	gcc -c $(CCFLAGS)

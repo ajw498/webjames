@@ -83,6 +83,8 @@ click on !PHP, then select the Stand alone icon, then click on Save.
 Enter your script in a text editor such as !StrongEd, !Zap or !Edit, and
 then save it. Set it's filetype to PHP. Double click on it, and it will
 be interpreted, and the output loaded into your browser.
+If you want PHP to multi-task when interpreting your scripts, then tick
+the Run in a task window icon.
 
 
 Using PHP with a web server

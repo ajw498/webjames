@@ -7,6 +7,6 @@ Set Alias$PHP Run <PHP$Dir>.PHP %%*0
 |You will probable need to increase the number in the wimpslot below to about 1200k or more
 Set PHP$Heap ""
 
-SetMacro Alias$@RunType_18A WimpSlot -Min 800k -Max 800k |M If "<PHP$CGI>"="Yes" Then Run <PHP$Dir>.CGIWrapper %%*0 Else Run <PHP$Dir>.NoCGI %%*0
+SetMacro Alias$@RunType_18A  WimpSlot -Min 1024k -Max 1024k |M If "<PHP$CGI>"="Yes" Then  Run <PHP$Dir>.CGIWrapper %%*0 Else If "<PHP$TaskWindow>"="Yes" Then TaskWindow "Run <PHP$Dir>.NoCGI %%*0" -wimpslot 1024K -name "PHP script" -quit Else Run <PHP$Dir>.NoCGI %%*0
 
 Obey <PHP$Dir>.Config

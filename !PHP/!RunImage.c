@@ -2,7 +2,7 @@
 	!PHP
 	Copyright © Alex Waugh 2000
 
-	Version 1.00 30/1/00
+	Version 1.01 19/2/00
 
 
     This program is free software; you can redistribute it and/or modify
@@ -46,15 +46,9 @@
 #define icon_CANCEL 5
 #define icon_SAVE 4
 #define icon_OK 2
+#define icon_TASKWINDOW 6
 
 Desk_window_handle window;
-
-char *GetStr(void)
-{
-	static char str[256];
-	sprintf(str,"Set PHP$CGI \"%s\"\n",Desk_Icon_GetSelect(window,icon_CGI) ? "Yes" : "No");
-	return str;
-}
 
 Desk_bool Cancel(Desk_event_pollblock *block, void *r)
 {
@@ -72,20 +66,41 @@ Desk_bool Help(Desk_event_pollblock *block, void *r)
 
 Desk_bool OK(Desk_event_pollblock *block, void *r)
 {
+	char str[256];
 	if (block->data.mouse.button.data.menu) return Desk_FALSE;
-	system(GetStr());
+	sprintf(str,"Set PHP$CGI \"%s\"\n",Desk_Icon_GetSelect(window,icon_CGI) ? "Yes" : "No");
+	system(str);
+	sprintf(str,"Set PHP$TaskWindow \"%s\"\n",Desk_Icon_GetSelect(window,icon_TASKWINDOW) ? "Yes" : "No");
+	system(str);
 	if (block->data.mouse.button.data.select) Desk_Event_CloseDown();
+	return Desk_TRUE;
+}
+
+Desk_bool ShadeTaskWindow(Desk_event_pollblock *block, void *r)
+{
+	Desk_Icon_Shade(window,icon_TASKWINDOW);
+	return Desk_TRUE;
+}
+
+Desk_bool UnShadeTaskWindow(Desk_event_pollblock *block, void *r)
+{
+	Desk_Icon_Unshade(window,icon_TASKWINDOW);
 	return Desk_TRUE;
 }
 
 Desk_bool Save(Desk_event_pollblock *block, void *r)
 {
 	FILE *config;
+	char str[256];
 	if (block->data.mouse.button.data.menu) return Desk_FALSE;
 	config=AJWLib_File_fopen("<PHP$Dir>.Config","w");
-	fprintf(config,GetStr());
+	sprintf(str,"Set PHP$CGI \"%s\"\n",Desk_Icon_GetSelect(window,icon_CGI) ? "Yes" : "No");
+	system(str);
+	fprintf(config,str);
+	sprintf(str,"Set PHP$TaskWindow \"%s\"\n",Desk_Icon_GetSelect(window,icon_TASKWINDOW) ? "Yes" : "No");
+	system(str);
+	fprintf(config,str);
 	fclose(config);
-	system(GetStr());
 	if (block->data.mouse.button.data.select) Desk_Event_CloseDown();
 	return Desk_TRUE;
 }
@@ -95,7 +110,7 @@ int main(void)
 	Desk_Error2_HandleAllSignals();
 	Desk_Error2_SetHandler(AJWLib_Error2_ReportFatal);
 	Desk_Resource_Initialise("PHP");
-	Desk_Event_Initialise("PHP");
+	Desk_Event_Initialise("PHP Config");
 	Desk_EventMsg_Initialise();
 	Desk_Screen_CacheModeInfo();
 	Desk_EventMsg_Claim(Desk_message_MODECHANGE,Desk_event_ANY,Desk_Handler_ModeChange,NULL);
@@ -110,7 +125,11 @@ int main(void)
 	Desk_Event_Claim(Desk_event_CLICK,window,icon_OK,OK,NULL);
 	AJWLib_Icon_RegisterCheckAdjust(window,icon_STANDALONE);
 	AJWLib_Icon_RegisterCheckAdjust(window,icon_CGI);
+	Desk_Event_Claim(Desk_event_CLICK,window,icon_CGI,ShadeTaskWindow,NULL);
+	Desk_Event_Claim(Desk_event_CLICK,window,icon_STANDALONE,UnShadeTaskWindow,NULL);
 	Desk_Icon_SetRadios(window,icon_STANDALONE,icon_CGI,Desk_stricmp(getenv("PHP$CGI"),"Yes") ? icon_STANDALONE : icon_CGI);
+	Desk_Icon_SetSelect(window,icon_TASKWINDOW,Desk_stricmp(getenv("PHP$TaskWindow"),"Yes"));
+	if (Desk_Icon_GetSelect(window,icon_CGI)) ShadeTaskWindow(NULL,NULL);
 	while (Desk_TRUE) Desk_Event_Poll();
 	return 0;
 }
