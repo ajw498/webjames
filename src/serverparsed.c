@@ -1,5 +1,5 @@
 /*
-	$Id: serverparsed.c,v 1.4 2002/10/20 11:22:37 ajw Exp $
+	$Id: serverparsed.c,v 1.5 2003/10/19 13:41:46 ajw Exp $
 	Support for Server Side Includes (SSI)
 */
 
@@ -743,6 +743,7 @@ static char *serverparsed_virtualtofilename(struct connection *conn,char *virt)
 	newconn=create_conn();
 
 	newconn->vhost = conn->vhost;
+	newconn->homedir = conn->homedir;
 	get_attributes(uri,newconn);
 
 	/* build RISCOS filename */
