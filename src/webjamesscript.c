@@ -36,15 +36,17 @@ void webjamesscript_start(struct connection *conn)
 {
 	int size;
 	char *ptr;
+	void *blk;
 	wimp_t handle;
 
 	size = conn->headersize ;
 	if (conn->bodysize > 0)  size += conn->bodysize;
-	if (xosmodule_alloc(size+16, (void **)&ptr)) {
+	if (xosmodule_alloc(size+16, &blk)) {
 		/* failed to allocate rma-block */
 		report_badrequest(conn, "cannot allocate memory");
 		return;
 	}
+	ptr = blk;
 	
 #ifdef MemCheck_MEMCHECK
 	MemCheck_RegisterMiscBlock(ptr,size+16);
