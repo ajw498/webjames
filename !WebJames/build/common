@@ -14,6 +14,7 @@ OBJECTS = \
 	main.o\
 	webjames.o\
 	wjstring.o\
+	snprintf.o\
 	ip.o\
 	stat.o\
 	datetime.o\
@@ -40,8 +41,9 @@ LIBS = \
 	$(REGEX)\
 	$(MEMCHECKLIB)
 
-all: !RunImage !Run attributes config
 
+all: !RunImage !Run attributes config
+	@echo
 
 !RunImage: $(OBJECTS)
 	$(LINK) -o $@ $(LINKFLAGS) $(PHP_LDFLAGS) $(OBJECTS) $(LIBS) $(PHP_LIBS)
@@ -81,6 +83,6 @@ dist: all
 	zip -r -9 source/zip !WebJames Site Licence -x */o/* *CVS* *stderr *log *clf *!Run *!RunImage *attributes *config
 	zip -r -9 -j libs/zip PHP/ReadMe-Libs C:regex.libregex C:libpng.libpng C:zlib.libz C:libjpeg.libjpeg C:gd-1/8/4.libgd
 	cd PHP
-	zip -r -9 libphp/zip build h libphp4 ReadMe -x */o/* *CVS*
+	zip -r -9 ^.libphp/zip build h libphp4 ReadMe -x */o/* *CVS*
 	cd ../!WebJames
 
