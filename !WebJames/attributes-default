@@ -73,16 +73,12 @@ AddHandler send-as-is .asis
 # define which directory holds 'webjames-style' cgi-scripts
 # Using AddHandler or AddFiletypeHandler with no filetype or extension means apply it to all files
 <location /cgi-bin/>
-AddHandler webjames-script
-</location>
-
-<location /ou/>
-homedir=IDEFS::4.$.TEST
+AddFiletypeHandler webjames-script ALL
 </location>
 
 # define which directory holds cgi-scripts using redirection
 <location /cgi-bin2/>
-AddHandler cgi-script
+AddFiletypeHandler cgi-script
 </location>
 
 # protect .htaccess files

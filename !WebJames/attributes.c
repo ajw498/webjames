@@ -16,6 +16,8 @@
 #define HASHINCREMENT 20
 
 #define filetype_NONE -1
+#define filetype_ALL  -2
+
 
 typedef enum sectiontype {
 	section_NONE,
@@ -421,6 +423,8 @@ static struct attributes *read_attributes_file(char *filename, char *base) {
 				}
 
 				if (match) {
+					int ret;
+
 					/* Add to linked list */
 					attr->attrnext = globallocations;
 					globallocations = attr;
@@ -431,8 +435,11 @@ static struct attributes *read_attributes_file(char *filename, char *base) {
 						return NULL;
 					}
 
-					if (regcomp(attr->regex,ptr,REG_EXTENDED | REG_NOSUB | (configuration.casesensitive ? 0 : REG_ICASE))) {
-						/* use regerror to give a meaning full error message */
+					if ((ret=regcomp(attr->regex,ptr,REG_EXTENDED | REG_NOSUB | (configuration.casesensitive ? 0 : REG_ICASE)))!=0) {
+						char temp[256] = "Error in attributes file: ";
+
+						regerror(ret, attr->regex, temp+26, 256-26);
+						writelog(LOGLEVEL_ATTRIBUTES,temp);
 						free(attr->regex);
 						attr->regex = NULL;
 					}
@@ -477,6 +484,8 @@ static struct attributes *read_attributes_file(char *filename, char *base) {
 				}
 
 				if (match) {
+					int ret;
+
 					/* Add to linked list */
 					attr->attrnext = globaldirectories;
 					globaldirectories = attr;
@@ -487,8 +496,11 @@ static struct attributes *read_attributes_file(char *filename, char *base) {
 						return NULL;
 					}
 
-					if (regcomp(attr->regex,ptr,REG_EXTENDED | REG_NOSUB)) {
-						/* use regerror to give a meaning full error message */
+					if ((ret=regcomp(attr->regex,ptr,REG_EXTENDED | REG_NOSUB))!=0) {
+						char temp[256] = "Error in attributes file: ";
+
+						regerror(ret, attr->regex, temp+26, 256-26);
+						writelog(LOGLEVEL_ATTRIBUTES,temp);
 						free(attr->regex);
 						attr->regex = NULL;
 					}
@@ -529,13 +541,18 @@ static struct attributes *read_attributes_file(char *filename, char *base) {
 				*fileslist = attr;
 
 				if (match) {
+					int ret;
+
 					attr->regex = malloc(sizeof(regex_t));
 					if (attr->regex == NULL) {
 						fclose(file);
 						return NULL;
 					}
-					if (regcomp(attr->regex,ptr,REG_EXTENDED | REG_NOSUB)) {
-						/* use regerror to give a meaning full error message */
+					if ((ret=regcomp(attr->regex,ptr,REG_EXTENDED | REG_NOSUB))!=0) {
+						char temp[256] = "Error in attributes file: ";
+
+						regerror(ret, attr->regex, temp+26, 256-26);
+						writelog(LOGLEVEL_ATTRIBUTES,temp);
 						free(attr->regex);
 						attr->regex = NULL;
 					}
@@ -607,7 +624,11 @@ static struct attributes *read_attributes_file(char *filename, char *base) {
 				lower_case(value);
 
 				if (filetypehandler) {
-					if (filetypetext[0] != '\0') {
+					if (filetypetext[0] == '\0') {
+						filetype = filetype_NONE;
+					} else if (strcmp(filetypetext,"ALL") == 0) {
+						filetype = filetype_ALL;
+					} else {
 						if (xosfscontrol_file_type_from_string(filetypetext,(bits*)&filetype)) notfound = 1;
 					}
 				} else if (!configuration.casesensitive) {
@@ -615,7 +636,12 @@ static struct attributes *read_attributes_file(char *filename, char *base) {
 					lower_case(filetypetext);
 				}
 
-				if (notfound == 0) {
+				if (notfound) {
+					char temp[256];
+
+					sprintf(temp,"Filetype '%s' unknown, ignoring handler for this filetype",filetypetext);
+					writelog(LOGLEVEL_ATTRIBUTES,temp);
+				} else {
 					newhandler = malloc(sizeof(struct handlerlist));
 					if (newhandler == NULL) {
 						fclose(file);
@@ -965,15 +991,19 @@ void find_handler(struct connection *conn)
 /* find the appropriate handler from the handlers list in conn to apply to this file */
 {
 	struct handlerlist *entry;
+	struct handler *useifnoother = NULL;
 
 	entry = conn->handlers;
 
 	while (entry != NULL) {
-		if (entry->filetype == filetype_NONE) {
+		if (entry->filetype == filetype_ALL) {
+			/* unconditional match */
+			conn->handler = entry->handler;
+			return;
+		} else if (entry->filetype == filetype_NONE) {
 			if (entry->extension == NULL) {
-				/* unconditional match */
-				conn->handler = entry->handler;
-				return;
+				/* match if nothing else explicitly matches */
+				if (useifnoother == NULL) useifnoother = entry->handler;
 			} else {
 				char *leafname, *ext;
 
@@ -1007,6 +1037,11 @@ void find_handler(struct connection *conn)
 			}
 		}
 		entry = entry->connnext;
+	}
+	/* no explicit match */
+	if (useifnoother != NULL) {
+		conn->handler = useifnoother;
+		return;
 	}
 	/* no match, so use default handler */
 	conn->handler = get_handler("static-content");

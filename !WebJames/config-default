@@ -163,9 +163,6 @@ rename-cmd=rename %0 %1
 # present in the request;
 # multiple log-header fields may be included, but only the first 16 are used;
 # eg. log-header=Accept:
-# to log all headers (some may be duplicated), use
-# log-header=
-
 
 
 # PUT and DELETE
