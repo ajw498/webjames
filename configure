@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# $ Id: $
+# $Id: configure,v 1.2 2002/02/19 20:35:11 ajw Exp $
 #
 
 LOG=-DLOG
@@ -50,6 +50,14 @@ cat > Makefile << EOF
 all:
 	(cd src; \$(MAKE) LIBDIR=$LIBDIR)
 	(cd scripts; \$(MAKE))
+
+clean:
+	(cd src; \$(MAKE) LIBDIR=$LIBDIR clean)
+	(cd scripts; \$(MAKE) clean)
+
+cvsclean: clean
+	rm -f src/Makefile
+	rm -f Makefile
 
 EOF
 

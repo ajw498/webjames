@@ -1,6 +1,6 @@
 # Makefile for WebJames the web server
 #
-# $ Id: $
+# $Id: common,v 1.2 2002/02/19 20:35:11 ajw Exp $
 #
 # Parts common to all builds
 
@@ -78,6 +78,7 @@ clean:
 	-rm -f $(WJDIR)stderr
 	-rm -f $(WJPHPHELP)
 	-rm -f *.o
+	-rm -f ../*.zip
 
 $(WJRUN): run-default
 	sed -e "s/|wimpslot/WimpSlot -min $(WIMPSLOT) -max $(WIMPSLOT)/" -e "s/|stderr$(STDERR)//" -e "s/|typestderr$(TYPESTDERR)//" run-default > $@
@@ -98,7 +99,7 @@ $(WJPHPMAIL): PHPMail.o
 
 $(WJPHPHELP): $(PHPHELP)
 	-rm -f $(WJPHPHELP)
-	$(LN_S) $(PHPHELP) $(WJPHPHELP)
+	$(LN_S) ../$(PHPHELP) $(WJPHPHELP)
 
 dist: all
 	cd ..

@@ -1,0 +1,41 @@
+#!/bin/sh
+#
+# $Id: buildrelease,v 1.1 2002/02/19 20:35:11 ajw Exp $
+#
+# usage: buildrelease 0.34 2.04
+WJVERSION=0.34
+PHPVERSION=2.04
+PHPDIR=../php4
+#check args
+
+# Make sure everything is pristine
+if test -f Makefile; then
+  make cvsclean
+fi
+
+# Make sure cvs is up to date
+#cvs commit
+#cvs tag v$WJVERSION-$PHPVERSION
+
+# Build the source zip
+zip -r9, webjames-source-$WJVERSION.zip * -x '*CVS*' '*.cvsignore' \!System scripts
+
+# Build the release zip
+./configure
+make
+zip -r9, webjames-$WJVERSION.zip \!WebJames Site Licences \!System -x '*CVS*' '*.cvsignore'
+
+# Build the PHP cgi
+(cd $PHPDIR; ./riscos.configure)
+(cd $PHPDIR; make)
+cp $PHPDIR/php !PHP/php,ff8
+zip -r9, php-$PHPVERSION.zip \!PHP Licences \!System -x '*CVS*' '*.cvsignore'
+
+# Build WebJames/PHP 
+./configure --enable-php
+(cd $PHPDIR; ./riscos.configure --with-webjames=../webjames/src --disable-pear)
+(cd $PHPDIR; make install)
+make
+zip -r9, webjames-$WJVERSION-php-$PHPVERSION.zip \!WebJames Site Licences \!System -x '*CVS*' '*.cvsignore'
+
+# Build example scripts
