@@ -2,7 +2,7 @@
 	!PHP
 	Copyright © Alex Waugh 2000
 
-	$Id: PHPFrontEnd.c,v 1.2 2002/02/19 22:45:35 ajw Exp $
+	$Id: PHPFrontEnd.c,v 1.3 2002/02/19 23:37:00 ajw Exp $
 
 
     This program is free software; you can redistribute it and/or modify
@@ -28,9 +28,9 @@
 #define WIMP_H
 #define WINDOW_H
 #define MESSAGETRANS_H
-#include "SysTypes.h"
+#include "oslibsupport/Systypes.h"
 
-#include "event.h"
+#include "oslibsupport/Event.h"
 #include "oslib/radiobutton.h"
 /*
 #include "tboxlibs/wimp.h"

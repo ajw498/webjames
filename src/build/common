@@ -1,6 +1,6 @@
 # Makefile for WebJames the web server
 #
-# $Id: common,v 1.2 2002/02/19 20:35:11 ajw Exp $
+# $Id: common,v 1.3 2002/02/19 23:37:00 ajw Exp $
 #
 # Parts common to all builds
 
@@ -39,6 +39,7 @@ WJOBJECTS = \
 	serverparsed.o
 
 WJLIBS = \
+	$(OSLIBSUPPORT)\
 	$(OSLIB)\
 	$(STUBS)\
 	$(REGEX)\
@@ -58,7 +59,7 @@ PHPMAIL = $(PHPDIR)PHPMail$(EXT_FF8)
 PHPGUI =  $(PHPDIR)!RunImage$(EXT_FF8)
 PHPHELP = $(PHPDIR)!Help$(EXT_FAF)
 
-all: $(WJTARGET) $(WJRUN) $(WJATTRIBUTES) $(WJCONFIG) $(WJPHPMAIL) $(WJPHPHELP)
+all: $(WJTARGET) $(WJRUN) $(WJATTRIBUTES) $(WJCONFIG) $(PHPGUI) $(WJPHPMAIL) $(WJPHPHELP)
 
 
 $(WJTARGET): $(WJOBJECTS)
@@ -67,18 +68,6 @@ $(WJTARGET): $(WJOBJECTS)
 
 .c.o:
 	$(MEMCHECK) $(CC) -c $(CFLAGS) $(PHP_CFLAGS) $< -o $@
-
-clean:
-	-rm -f $(WJTARGET)
-	-rm -f $(WJRUN)
-	-rm -f $(WJCONFIG)
-	-rm -f $(WJATTRIBUTES)
-	-rm -f $(WJDIR)log
-	-rm -f $(WJDIR)clf
-	-rm -f $(WJDIR)stderr
-	-rm -f $(WJPHPHELP)
-	-rm -f *.o
-	-rm -f ../*.zip
 
 $(WJRUN): run-default
 	sed -e "s/|wimpslot/WimpSlot -min $(WIMPSLOT) -max $(WIMPSLOT)/" -e "s/|stderr$(STDERR)//" -e "s/|typestderr$(TYPESTDERR)//" run-default > $@
@@ -101,17 +90,20 @@ $(WJPHPHELP): $(PHPHELP)
 	-rm -f $(WJPHPHELP)
 	$(LN_S) ../$(PHPHELP) $(WJPHPHELP)
 
-dist: all
-	cd ..
-	-rm webjames.zip
-	-rm source.zip
-	-rm libphp.zip
-	-rm libs.zip
-	zip -r -9 webjames/zip !WebJames Site Licences -x */o/* *CVS* *stderr *log *clf *build* *Makefile *libphp4 */c/* */h/* *-default *!Depend
-	zip -r -9 webjames/zip !WebJames.c.cgi-lib !WebJames.h.cgi-lib
-	zip -r -9 source/zip !WebJames Site Licences -x */o/* *CVS* *stderr *log *clf *!Run *!RunImage *libphp4 !WebJames/attributes !WebJames/config *!Depend
-	zip -r -9 -j libs/zip WJ-PHP.ReadMe-Libs C:regex.libregex C:libpng.libpng C:zlib.libz C:libjpeg.libjpeg C:gd-184.libgd
-	cd WJ-PHP
-	zip -r -9 ^.libphp/zip build h libphp4 ReadMe -x */o/* *CVS*
-	cd ../!WebJames
+$(PHPGUI): PHPFrontEnd.o
+	gcc -o $@ PHPFrontEnd.o $(OSLIBSUPPORT) $(OSLIB)
+
+
+clean:
+	-rm -f $(WJTARGET)
+	-rm -f $(WJRUN)
+	-rm -f $(WJCONFIG)
+	-rm -f $(WJATTRIBUTES)
+	-rm -f $(WJDIR)log
+	-rm -f $(WJDIR)clf
+	-rm -f $(WJDIR)stderr
+	-rm -f $(WJPHPHELP)
+	-rm -f *.o
+	-rm -f ../*.zip
+
 
