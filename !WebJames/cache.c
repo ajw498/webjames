@@ -1,6 +1,7 @@
-#ifdef MemCheck_MEMCHECK
-#include "MemCheck:MemCheck.h"
-#endif
+/*
+	$Id: cache.c,v 1.16 2001/09/05 09:39:18 AJW Exp $
+	Cache management functions
+*/
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -12,6 +13,10 @@
 #include "oslib/fileswitch.h"
 #include "oslib/osfile.h"
 #include "oslib/osfscontrol.h"
+
+#ifdef MemCheck_MEMCHECK
+#include "MemCheck:MemCheck.h"
+#endif
 
 #include "webjames.h"
 #include "wjstring.h"

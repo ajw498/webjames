@@ -1,3 +1,8 @@
+/*
+	$Id: sendasis.c,v 1.6 2001/09/05 09:39:21 AJW Exp $
+	send-as-is handler
+*/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>

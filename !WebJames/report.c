@@ -1,3 +1,8 @@
+/*
+	$Id: report.c,v 1.22 2001/09/05 09:39:20 AJW Exp $
+	Error reporting functions
+*/
+
 #include <stdio.h>
 #include <string.h>
 #include <time.h>

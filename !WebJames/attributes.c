@@ -1,3 +1,8 @@
+/*
+	$Id: attributes.c,v 1.38 2001/09/05 09:39:16 AJW Exp $
+	Reading and using attributes files
+*/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
