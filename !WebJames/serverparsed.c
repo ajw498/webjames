@@ -367,6 +367,7 @@ static int serverparsed_evaluateexpression(struct connection *conn,char *exp)
 	char op[]="\0\0";
 	int ret=0; /*return value (true/false)*/
 	char *lhs,*rhs;
+	char *lhs0,*rhs0;
 
 	/*remove leading and trailing spaces*/
 	while (*exp && isspace(*exp)) exp++;
@@ -444,14 +445,14 @@ static int serverparsed_evaluateexpression(struct connection *conn,char *exp)
 			/*expression contained no ! operators*/
 			/*it shouldn't contain any brackets at this stage*/
 			if (strchr(exp,'(') || strchr(exp,')')) {
-				serverparsed_writeerror(conn,"Syntax error");
+				serverparsed_writeerror(conn,"Syntax error (unexpected brackets)");
 				return 0;
 			}
 
 			/*split the string into everything to the left of an =, <=, etc and everything to the right*/
-			lhs=malloc(len+1);
+			lhs=lhs0=malloc(len+1);
 			if (lhs==NULL) return 0;
-			rhs=malloc(len+1);
+			rhs=rhs0=malloc(len+1);
 			if (rhs==NULL) {
 				free(lhs);
 				return 0;
@@ -500,8 +501,17 @@ static int serverparsed_evaluateexpression(struct connection *conn,char *exp)
 			*p='\0';
 			/*lhs now contains everything upto the operator*/
 			/*rhs contains everthing after the operator, or nothing if there wasn't an operator*/
+			lhs=serverparsed_expandvars(conn,lhs);
+			while (*lhs && isspace(*lhs)) lhs++;
+			len=strlen(lhs);
+			while (len>0 && isspace(lhs[len-1])) len--;
+			lhs[len]='\0';
 			if (op[0]) {
+				rhs=serverparsed_expandvars(conn,rhs);
+				while (*rhs && isspace(*rhs)) rhs++;
 				len=strlen(rhs);
+				while (len>0 && isspace(rhs[len-1])) len--;
+				rhs[len]='\0';
 				if (rhs[0]=='/' && rhs[len-1]=='/') {
 					/*rhs is a regex*/
 					regex_t regex;
@@ -537,8 +547,8 @@ static int serverparsed_evaluateexpression(struct connection *conn,char *exp)
 			} else {
 				ret=(lhs[0]!='\0');
 			}
-			free(lhs);
-			free(rhs);
+			free(lhs0);
+			free(rhs0);
 			return ret;
 	}
 	/*should never reach here*/
@@ -801,7 +811,6 @@ static void serverparsed_command(struct connection *conn,char *command,char *arg
 	if (i<MAX_ARGS) attrs[i]=vals[i]=NULL;
 
 	if (strcmp(command,"if")==0) {
-		vals[0]=serverparsed_expandvars(conn,vals[0]);
 		if (attrs[0]==NULL || strcmp(attrs[0],"expr")!=0) {
 			serverparsed_writeerror(conn,"Syntax error");
 		} else {
@@ -811,7 +820,6 @@ static void serverparsed_command(struct connection *conn,char *command,char *arg
 		if (conn->serverparsedinfo.conditionmet) {
 			conn->serverparsedinfo.output=0;
 		} else {
-			vals[0]=serverparsed_expandvars(conn,vals[0]);
 			if (attrs[0]==NULL || strcmp(attrs[0],"expr")!=0) {
 				serverparsed_writeerror(conn,"Syntax error");
 			} else {
