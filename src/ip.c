@@ -1,5 +1,5 @@
 /*
-	$Id: ip.c,v 1.3 2003/06/25 21:54:50 ajw Exp $
+	$Id: ip.c,v 1.4 2004/01/17 17:02:37 ajw Exp $
 	Socket access
 */
 
@@ -93,13 +93,11 @@ int ip_write(socket_s socket, const char *buffer, int size, os_error **err)
 	*err=(os_error *)_kernel_swi(Socket_Write,&regs,&regs);
 	written=regs.r[0];
 
-
 	if (*err) {
 		if (CHECK_INET_ERR((*err)->errnum,socket_EWOULDBLOCK)) {
 			*err=NULL;
-		} else {
-			written=0;
 		}
+		written=0;
 	}
 	return written;
 }
