@@ -1,0 +1,19 @@
+|
+| $Id: build,fd7,v 1.1 2002/02/23 21:54:18 ajw Exp $
+|
+
+Dir <Obey$Dir>
+
+SetEval Test 1
+RMEnsure SparkFS 0.00 SetEval Test 0
+If Test Then RMKill SparkFS
+Unset Test
+
+config
+make cvsclean
+zip -r9 webjames-source/zip * -x *CVS* *cvsignore scripts* WJ-PHP* !System* Site/Test*
+
+config --build=normal
+make
+zip -r9 webjames/zip !WebJames Licences Site -x *CVS* *cvsignore Site/Test Licences/PHP
+

@@ -1,10 +1,14 @@
 # Makefile for WebJames the web server
 #
+# $Id: memcheck,v 1.2 2002/02/23 21:54:18 ajw Exp $
+#
 # Settings for the memcheck build
 
 #Programs
 CC = cc
+GCC = gcc
 LINK = link
+LN_S = @echo ln -s
 MEMCHECK = MemCheck.cc
 SQUEEZE = Settype $@ ff8
 SETTYPE = SetType $@ Obey
@@ -13,6 +17,7 @@ SETTYPE = SetType $@ Obey
 MEMCHECKLIB = MemCheck:o.MC
 STUBS = C:o.stubs
 OSLIB = OSLib:o.OSLib
+OSLIBSUPPORT = C:OSLibSupport.o.OSLibSupport
 REGEX = C:regex.libregex
 
 #Compiler flags
@@ -22,6 +27,7 @@ WARNINGS = -strict -fah
 OPTIMISATION =
 DEBUG = -g
 INCLUDE = -IC: -IOSLib:
+GCCINCLUDE = -IL: -IOSLib:
 
 #Linker flags
 LINKDEBUG = -d

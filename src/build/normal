@@ -1,10 +1,14 @@
 # Makefile for WebJames the web server
 #
+# $Id: normal,v 1.2 2002/02/23 21:54:18 ajw Exp $
+#
 # Settings for the normal build
 
 #Programs
 CC = cc
+GCC = gcc
 LINK = link
+LN_S = @echo ln -s
 MEMCHECK =
 SQUEEZE = Squeeze -f $@
 SETTYPE = SetType $@ Obey
@@ -13,6 +17,7 @@ SETTYPE = SetType $@ Obey
 MEMCHECKLIB =
 STUBS = C:o.stubs
 OSLIB = OSLib:o.OSLib
+OSLIBSUPPORT = C:OSLibSupport.o.OSLibSupport
 REGEX = C:regex.libregex
 
 #Compiler flags
@@ -22,6 +27,7 @@ WARNINGS = -strict -fah
 OPTIMISATION = -Otime
 DEBUG =
 INCLUDE = -IC: -IOSLib:
+GCCINCLUDE = -IL: -IOSLib:
 
 #Linker flags
 LINKDEBUG =
