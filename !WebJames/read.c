@@ -205,7 +205,23 @@ void pollread_header(struct connection *conn, int bytes) {
 			}
 			conn->uri = malloc(strlen(file)+2);         /* get buffer for filename */
 			if (!conn->uri)  return;                    /* failed to get buffer */
-			strcpy(conn->uri, file);                    /* fill it with filename */
+
+			/*Copy uri*/
+			i=0;
+			do {
+				if (file[0]=='%' && isxdigit(file[1]) && isxdigit(file[2])) {
+					/* Treat next two chars as hex code of character */
+					char num[3],*end;
+					num[0] = file[1];
+					num[1] = file[2];
+					num[2] = 0;
+					conn->uri[i++] = (char)strtol(num,&end,16);
+					file+=3;
+				} else {
+					conn->uri[i++]=*(file++);
+				}
+			} while (*file!='\0');
+			conn->uri[i] = '\0';
 
 			if (!configuration.casesensitive) {
 				for (i = 0; conn->uri[i] && (conn->uri[i] != '?'); i++) {
