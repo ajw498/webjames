@@ -1,4 +1,9 @@
-Run <Obey$Dir>.!Boot
+Set PHP$Dir <Obey$Dir>
+IconSprites <PHP$Dir>.!Sprites
+Set File$Type_18A PHP
+Set Alias$PHP Run <PHP$Dir>.PHP %%*0
+
+SetMacro Alias$@RunType_18A If "<PHP$CGI>"="Yes" Then Run <PHP$Dir>.CGIWrapper %%*0 Else Run <PHP$Dir>.NoCGI %%*0
 
 |Enable the following line if you want PHP to use a dynamic area
 Set PHP$Heap ""
