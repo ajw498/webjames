@@ -63,19 +63,11 @@
 
  # Set up a virtual host for the domain 'bar'
  &lt;VirtualHost&gt;
- ServerName bar
+ # The servername include a port number, so will only be matched
+ # when both the hostname and the port number match (The port
+ # option in the config file must also contain this port in its list)
+ ServerName bar:8080
  DocumentRoot IDEFS::Toffee.$.bar
-
- &lt;Location /baz/&gt;
- ErrorDocument 404 /error.html
- &lt;/Location&gt;
-
- &lt;Location /&gt;
- # The port attribute restricts this virtual host to only accept
- # connections on port 8080 (The port option in the config file must
- # also contain this port in its list)
- Port 8080
- &lt;/Location&gt;
 
  &lt;/VirtualHost&gt;
 
