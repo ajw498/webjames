@@ -1,0 +1,6 @@
+|
+| !Run file for WJChat
+|
+Set WJChat$Dir <Obey$Dir>
+WimpSlot -min 200k -max 200k
+Run <WJChat$Dir>.!RunImage

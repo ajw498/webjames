@@ -1,0 +1,14 @@
+
+CCFlags       = -c -throwback -IC: -IOS:
+LinkFlags     = -o $@
+
+Libs          = C:o.Stubs
+Objects       = o.main o.cgi-lib
+
+cgi-bin.chat:    $(Objects)
+                 Link $(Linkflags) $(Objects) $(Libs)
+                 Squeeze -v -f cgi-bin.chat
+
+.c.o:;        cc $(CCflags) $< -o $@
+
+# Dynamic dependencies:

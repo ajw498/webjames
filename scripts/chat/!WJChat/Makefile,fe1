@@ -1,0 +1,14 @@
+
+CCFlags       = -c -throwback -IC: -IOS:
+LinkFlags     = -o $@
+
+Libs          = OSLib:o.OSLib C:o.Stubs
+Objects       = o.main
+
+!RunImage:    $(Objects)
+              Link $(Linkflags) $(Objects) $(Libs)
+              Squeeze -v -f !RunImage
+
+.c.o:;        cc $(CCflags) $< -o $@
+
+# Dynamic dependencies:

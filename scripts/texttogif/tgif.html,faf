@@ -1,0 +1,51 @@
+<html>
+<head>
+<title>TextToGIF</title>
+</head>
+
+<body bgcolor="#ffffff">
+<h3>TextToGIF</h3>
+
+  This page gives you access to the <i>TextToGIF</i> cgi-script.
+
+ <p>
+  The <i>TextToGIF</i> cgi-script generates GIF images from a text-string.
+ You can specify which fontface, fontsize and fore- and background colour you want and the intensity and position of the shadow.
+ <p>
+
+ <form name="form" method="GET" action="/cgi-bin/texttogif">
+
+ Text&nbsp;<input name="text" size="30" maxlength="200" value="Text to GIF"><br>
+ Font size&nbsp;<input name="size" size="5" maxlength="3" value="20">pts<br>
+
+ <input name="drop" type="checkbox" value="1" checked> Shadow<br>
+
+ Shadow intensity&nbsp;<input name="dropi" size="5" maxlength="3" value="20">%<br>
+ Shadow offset X&nbsp;<input name="dropx" size="5" maxlength="4" value="10">%<br>
+ Shadow offset Y&nbsp;<input name="dropy" size="5" maxlength="4" value="-10">%<br>
+
+ <p>
+  Colours are specified as RGB values in the range 0-255.
+
+ <p>
+ Background colour (R,G,B)&nbsp;<input name="br" size="5" maxlength="3" value="255">,<input name="bg" size="5" maxlength="3" value="255">,<input name="bb" size="5" maxlength="3" value="255"><br>
+ Foreground colour (R,G,B)&nbsp;<input name="fr" size="5" maxlength="3" value="255">,<input name="fg" size="5" maxlength="3" value="0">,<input name="fb" size="5" maxlength="3" value="0"><br>
+ <select name="font">
+ <option value="0">Helvetica, medium</option>
+ <option value="1">Helvetica, medium, oblique</option>
+ <option value="2">Helvetica, bold</option>
+ <option value="3">Helvetica, bold, oblique</option>
+ <option value="4">Times, medium</option>
+ <option value="5">Times, medium, italic</option>
+ <option value="6">Times, bold</option>
+ <option value="7">Times, bold, italic</option>
+ <option value="8">Courier, medium</option>
+ <option value="9">Courier, medium, oblique</option>
+ <option value="10">Courier, bold</option>
+ <option value="11">Courier, bold, oblique</option>
+ </select><br>
+ <input type="submit" name="" value="Generate...">
+ </form>
+
+</body>
+</html>

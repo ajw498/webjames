@@ -1,0 +1,52 @@
+
+ WJChat - horribly ugly HTML-chat-cgi-script
+ ===========================================
+
+ About WJChat
+ ------------
+  WJChat is a horribly ugly cgi-script which implements a simple chat-
+ server using HTML. It consists of two programs - a small cgi-script
+ which converts a request to a wimp-message which is sent to the main
+ program which generates the HTML.
+
+  The supplied version is compiled to allow max 8 chat-channels and
+ max 20 users, but you can recompile it to allow up to 255 channels and
+ 255 users.
+
+
+ Installation
+ ------------
+  Copy the !WJChat directory to a suitable directory somewhere on your
+ harddisc (doesn't matter where).
+  Copy chat.cgi-bin.chat to the cgi-bin directory on your server.
+
+  Start WebJames and a browser, start !WJChat and go to the url
+          http://localhost/cgi-bin/chat
+
+
+ Copyright
+ ---------
+  This program is FreeWare.
+  Unlimited redistribution and use in source and binary forms, with or
+ without modification, is permitted provided:
+
+  * this file is included unaltered 
+  * if a modified version of the source is included, you should also
+    include the original source
+  * if you charge ANYTHING for the program or for the media on
+     which the program is stored, you should include the source
+
+
+ The author
+ ----------
+ Henrik Bjerregaard Pedersen
+
+ email: henrik@login.dknet.dk
+ www:   http://login.dknet.dk/~henrik/
+
+
+ History
+ -------
+ 0.01 (15/03/1999)
+
+    first version released

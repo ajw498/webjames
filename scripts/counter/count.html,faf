@@ -1,0 +1,56 @@
+<html>
+<head>
+<title>Counter</title>
+</head>
+
+<body bgcolor="#ffffff">
+<h3>Counter</h3>
+
+ This page demonstrates how to use the counter-cgi-script for WebJames.
+
+ The cgi-script accepts the following argments:
+
+ <dl>
+   <dt><tt>id=XXXX</tt>
+   <dd><tt>id</tt> selects which of the 4096 counters to read/increment
+   <dt><tt>fg=BBGGRR</tt>
+   <dd>this selects the foregound colour; <tt>RRGGBB</tt> is a 6 digit
+       hexadecimal number
+   <dt><tt>bg=BBGGRR</tt>
+   <dd>this selects the background colour
+ </dl>
+
+
+ <h5>Examples</h5>
+
+ <p>
+  <tt>&ltimg src=&quot;/cgi-bin/counter?id=0000&amp;fg=000000&amp;bg=ffffff&quot; width=&quot;120&quot; height=&quot;20&quot;&gt</tt><br>
+  <img src="/cgi-bin/counter?id=0000&fg=000000&bg=ffffff" width="120" height="20">
+
+ <p>
+  <tt>&ltimg src=&quot;/cgi-bin/counter?id=0001&amp;fg=0000ff&amp;bg=ffff00&quot; width=&quot;120&quot; height=&quot;20&quot;&gt</tt><br>
+  <img src="/cgi-bin/counter?id=0001&fg=0000ff&bg=ffff00" width="120" height="20">
+
+ <p>
+  <tt>&ltimg src=&quot;/cgi-bin/counter?id=0002&amp;fg=008000&amp;bg=ff0000&quot; width=&quot;120&quot; height=&quot;20&quot;&gt</tt><br>
+  <img src="/cgi-bin/counter?id=0002&fg=008000&bg=ff0000" width="120" height="20">
+
+
+ <h5>IDs</h5>
+
+ Any HTML document may include a reference to the cgi-script, and it may
+ use any ID, so there is no way you can ensure that the counter is only
+ incremented when people access a certain HTML page - unless of course you
+ control which computers may access the site.
+
+ <p>
+ IDs should probably be allocated by the webmaster, to avoid users fighting
+ over IDs...
+
+ <p>
+ The IDs are stored in the file <tt>&ltWebJames$Dir&gt.cgi-res.counter</tt>.
+ This holds 4 bytes for each of the 4096 possible IDs.
+
+
+</body>
+</html>

@@ -1,0 +1,94 @@
+
+ TextToGIF - cgi-script for WebJames
+ ===================================
+
+
+ Installation
+ ------------
+  Copy the contents of the cgi-bin directory to the cgi-bin directory
+ in your website-directory (usually !WebJames.site).
+  Copy the tgif/html file to the website-directory.
+
+  Start WebJames and a browser, and go to the url
+          http://localhost/tgif.html
+
+
+ Copyright
+ ---------
+  This program is FreeWare.
+  Unlimited redistribution and use in source and binary forms, with or
+ without modification, is permitted provided:
+
+  * this file is included unaltered 
+  * if a modified version of the source is included, you should also
+    include the original source
+  * if you charge ANYTHING for the program or for the media on
+     which the program is stored, you should include the source
+
+
+ The author
+ ----------
+ Henrik Bjerregaard Pedersen
+
+ email: henrik@login.dknet.dk
+ www:   http://login.dknet.dk/~henrik/
+
+
+ History
+ -------
+ 0.03 (09/10/1999)
+
+    rewritten to use OSLib
+    added shadow
+
+
+ 0.02 (16/02/1999)
+
+    fixed some bugs in cgi-lib
+
+
+ 0.01 (15/02/1999)
+
+    first version released
+
+                -------------------------------------
+
+ miGIF Compression - mouse and ivo's GIF-compatible compression
+
+          -run length encoding compression routines-
+
+ Copyright (C) 1998 Hutchison Avenue Software Corporation
+               http://www.hasc.com
+               info@hasc.com
+
+ Permission to use, copy, modify, and distribute this software and its
+ documentation for any purpose and without fee is hereby granted, provided
+ that the above copyright notice appear in all copies and that both that
+ copyright notice and this permission notice appear in supporting
+ documentation.  This software is provided "AS IS." The Hutchison Avenue
+ Software Corporation disclaims all warranties, either express or implied,
+ including but not limited to implied warranties of merchantability and
+ fitness for a particular purpose, with respect to this code and accompanying
+ documentation.
+
+ The miGIF compression routines do not, strictly speaking, generate files
+ conforming to the GIF spec, since the image data is not LZW-compressed
+ (this is the point: in order to avoid transgression of the Unisys patent
+ on the LZW algorithm.)  However, miGIF generates data streams that any
+ reasonably sane LZW decompresser will decompress to what we want.
+
+ miGIF compression uses run length encoding. It compresses horizontal runs
+ of pixels of the same color. This type of compression gives good results
+ on images with many runs, for example images with lines, text and solid
+ shapes on a solid-colored background. It gives little or no compression
+ on images with few runs, for example digital or scanned photos.
+
+                               der Mouse
+                      mouse@rodents.montreal.qc.ca
+            7D C8 61 52 5D E7 2D 39  4E F1 31 3E E8 B3 27 4B
+
+                             ivo@hasc.com
+
+ The Graphics Interchange Format(c) is the Copyright property of
+ CompuServe Incorporated.  GIF(sm) is a Service Mark property of
+ CompuServe Incorporated.

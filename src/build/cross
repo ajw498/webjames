@@ -1,0 +1,45 @@
+# Makefile for WebJames the web server
+#
+# Settings for the gcc/unixlib build using the gccsdk cross compiler
+
+#Programs
+CC = gcc
+LINK = gcc
+MEMCHECK =
+SQUEEZE =
+SETTYPE =
+LN_S = ln -s
+
+#Libraries
+MEMCHECKLIB =
+STUBS =
+OSLIB = -loslib
+REGEX = -lregex
+
+#Compiler flags
+THROWBACK =
+DEPEND =
+WARNINGS = -Wall -Wundef -Wpointer-arith -Wmissing-prototypes
+OPTIMISATION = -O2
+DEBUG =
+INCLUDE = -I$(LIBDIR)
+
+#Linker flags
+LINKDEBUG =
+
+#File Extensions
+EXT_FEB = ,feb
+EXT_FF8 = ,ff8
+EXT_FAF = ,faf
+
+#!Run file
+WIMPSLOT = $(WIMPSLOT_UNIXLIB)
+STDERR = .*
+TYPESTDERR = .*
+
+all2: all
+
+#Legacy target
+setup:
+
+handler.o: build/php

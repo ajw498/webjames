@@ -1,0 +1,13 @@
+
+CCFlags       = -c -throwback -IC:
+LinkFlags     = -o $@
+
+Libs          = C:o.RISC_OSLib C:o.Stubs
+Objects       = o.main  o.cgi-lib o.freegif
+
+cgi-bin.counter:    $(Objects)
+              Link $(Linkflags) $(Objects) $(Libs)
+
+.c.o:;        cc $(CCflags) $< -o $@
+
+# Dynamic dependencies:

@@ -1,0 +1,116 @@
+# Makefile for WebJames the web server
+#
+# $ Id: $
+#
+# Parts common to all builds
+
+WIMPSLOT_UNIXLIB = 400k
+WIMPSLOT_SCL = 144k
+WIMPSLOT_PHP = 2000k
+WIMPSLOT_DEBUG = 3000k
+
+CFLAGS = $(THROWBACK) $(DEPEND) $(INCLUDE) $(WARNINGS) $(OPTIMISATION) $(DEBUG) $(FLAGS)
+LINKFLAGS = $(LINKDEBUG)
+
+
+WJOBJECTS = \
+	main.o\
+	webjames.o\
+	wjstring.o\
+	snprintf.o\
+	ip.o\
+	stat.o\
+	datetime.o\
+	report.o\
+	write.o\
+	openclose.o\
+	read.o\
+	cache.o\
+	coding.o\
+	attributes.o\
+	resolve.o\
+	cacheheap.o\
+	handler.o\
+	staticcontent.o\
+	webjamesscript.o\
+	cgiscript.o\
+	sendasis.o\
+	content.o\
+	serverparsed.o
+
+WJLIBS = \
+	$(OSLIB)\
+	$(STUBS)\
+	$(REGEX)\
+	$(MEMCHECKLIB)
+
+WJDIR = ../!WebJames/
+PHPDIR = ../!PHP/
+
+WJTARGET =     $(WJDIR)!RunImage$(EXT_FF8)
+WJRUN =        $(WJDIR)!Run$(EXT_FEB)
+WJATTRIBUTES = $(WJDIR)attributes
+WJCONFIG =     $(WJDIR)config
+WJPHPMAIL =    $(WJDIR)PHPMail$(EXT_FF8)
+WJPHPHELP =    $(WJDIR)help/php$(EXT_FAF)
+
+PHPMAIL = $(PHPDIR)PHPMail$(EXT_FF8)
+PHPGUI =  $(PHPDIR)!RunImage$(EXT_FF8)
+PHPHELP = $(PHPDIR)!Help$(EXT_FAF)
+
+all: $(WJTARGET) $(WJRUN) $(WJATTRIBUTES) $(WJCONFIG) $(WJPHPMAIL) $(WJPHPHELP)
+
+
+$(WJTARGET): $(WJOBJECTS)
+	$(LINK) -o $@ $(LINKFLAGS) $(PHP_LDFLAGS) $(WJOBJECTS) $(WJLIBS) $(PHP_LIBS)
+	$(SQUEEZE)
+
+.c.o:
+	$(MEMCHECK) $(CC) -c $(CFLAGS) $(PHP_CFLAGS) $< -o $@
+
+clean:
+	-rm -f $(WJTARGET)
+	-rm -f $(WJRUN)
+	-rm -f $(WJCONFIG)
+	-rm -f $(WJATTRIBUTES)
+	-rm -f $(WJDIR)log
+	-rm -f $(WJDIR)clf
+	-rm -f $(WJDIR)stderr
+	-rm -f $(WJPHPHELP)
+	-rm -f *.o
+
+$(WJRUN): run-default
+	sed -e "s/|wimpslot/WimpSlot -min $(WIMPSLOT) -max $(WIMPSLOT)/" -e "s/|stderr$(STDERR)//" -e "s/|typestderr$(TYPESTDERR)//" run-default > $@
+	$(SETTYPE)
+
+
+$(WJATTRIBUTES): attributes-default
+	sed -e "s/dummy/dummy/" -e "s/$(REMOVE_ATTRIBUTE)//" attributes-default > $@
+
+$(WJCONFIG): config-default
+	sed -e "s/dummy/dummy/" -e "s/$(REMOVE_CONFIG)//" config-default > $@
+
+PHPMail.o: PHPMail.c
+	gcc $(INCLUDE) -c PHPMail.c -o PHPMail.o
+
+$(WJPHPMAIL): PHPMail.o
+	gcc -o $@ PHPMail.o $(OSLIB)
+
+$(WJPHPHELP): $(PHPHELP)
+	-rm -f $(WJPHPHELP)
+	$(LN_S) $(PHPHELP) $(WJPHPHELP)
+
+dist: all
+	cd ..
+	-rm webjames.zip
+	-rm source.zip
+	-rm libphp.zip
+	-rm libs.zip
+	zip -r -9 webjames/zip !WebJames Site Licences -x */o/* *CVS* *stderr *log *clf *build* *Makefile *libphp4 */c/* */h/* *-default *!Depend
+	zip -r -9 webjames/zip !WebJames.c.cgi-lib !WebJames.h.cgi-lib
+	zip -r -9 source/zip !WebJames Site Licences -x */o/* *CVS* *stderr *log *clf *!Run *!RunImage *libphp4 !WebJames/attributes !WebJames/config *!Depend
+	zip -r -9 -j libs/zip WJ-PHP.ReadMe-Libs C:regex.libregex C:libpng.libpng C:zlib.libz C:libjpeg.libjpeg C:gd-184.libgd
+	cd WJ-PHP
+	zip -r -9 ^.libphp/zip build h libphp4 ReadMe -x */o/* *CVS*
+	cd ../!WebJames
+

@@ -1,0 +1,41 @@
+
+ Count - cgi-script for WebJames
+ ===============================
+
+
+ Installation
+ ------------
+  Copy the contents of the cgi-bin directory to the cgi-bin directory
+ in your website-directory (usually !WebJames.site).
+  Copy the count/html file to the website-directory.
+  Copy the contents of the cgi-res directory to the cgi-res directory
+ (!WebJames.cgi-res)
+
+  The following HTML code will display a counter which is updated every
+ time the page is reloaded:
+
+  <img src="/cgi-bin/counter?id=0000&fg=000000&bg=ffffff">
+
+  To use multiple independent counters, change the id to another value
+ (in the range 0 - 4095).
+
+
+ Copyright
+ ---------
+  This program is FreeWare.
+  Unlimited redistribution and use in source and binary forms, with or
+ without modification, is permitted provided:
+
+  * this file is included unaltered 
+  * if a modified version of the source is included, you should also
+    include the original source
+  * if you charge ANYTHING for the program or for the media on
+     which the program is stored, you should include the source
+
+
+ The author
+ ----------
+ Henrik Bjerregaard Pedersen
+
+ email: henrik@login.dknet.dk
+ www:   http://login.dknet.dk/~henrik/
