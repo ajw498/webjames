@@ -270,8 +270,10 @@ void report(struct connection *conn, int code, int subno, int headerlines) {
 // on exit, the connection is closed (reverse dns may still be going on)
 //
   struct reportcache *report;
-  char *buffer, *reportname;
+  struct errordoc *errordoc;
+  char *buffer = NULL, *reportname;
   int size, i;
+  char url[HTTPBUFFERSIZE];
 
   conn->statuscode = code;
 
@@ -284,21 +286,74 @@ void report(struct connection *conn, int code, int subno, int headerlines) {
   writelog(LOGLEVEL_REPORT, temp);
 #endif
 
-  // attempt to cache/read template HTML file
-  report = report_getfile(code);
-  if (!report) {
-    // if this failed, do it the primitive way
-    report_quickanddirty(conn, code);
-    close(conn->index, 0);
-    return;
+  // see if there is an error report/redirection specified for this directory
+  errordoc = conn->errordocs;
+  while (errordoc) {
+    if (errordoc->status == code) break;
+    errordoc = errordoc->next;
   }
 
-  // attempt to substitute the keywords with their values
-  buffer = report_substitute(report, subs, subno, &size);
-  if (!buffer) {
-    report_quickanddirty(conn, code);
-    close(conn->index, 0);
-    return;
+  if (errordoc) {
+    char *reporttext;
+
+    reporttext = errordoc->report;
+    if (reporttext[0] == '\"') {
+      // send message given in errordoc
+      reporttext++;
+      size = strlen(reporttext);
+      buffer = malloc(size+1);
+      if (!buffer) {
+        // if this failed, do it the primitive way
+        report_quickanddirty(conn, code);
+        close(conn->index, 0);
+        return;
+      }
+      strcpy(buffer,reporttext);
+    } else {
+      // must be a redirect
+      if (reporttext[0] == '/') {
+        // file is stored on this server
+        if (*configuration.serverip)
+          sprintf(url, "http://%s%s", configuration.serverip, reporttext);
+        else
+          strcpy(url, reporttext);
+      } else {
+        // file is on another server (or this server, but the whole url including hostname was given
+        strcpy(url, reporttext);
+      }
+
+      header[0] = malloc(strlen(url)+11);
+      if (header[0])  sprintf(header[0], "Location: %s", url);
+
+      subs[0].name = "%NEWURL%";
+      subs[0].value = url;
+      subs[1].name = "%URL%";
+      subs[1].value = conn->uri;
+
+      subno = 2;
+      headerlines = 1;
+      code = HTTP_TEMPMOVED;
+      errordoc = NULL;
+
+    }
+  }
+  if (!errordoc) {
+    // attempt to cache/read template HTML file
+    report = report_getfile(code);
+    if (!report) {
+      // if this failed, do it the primitive way
+      report_quickanddirty(conn, code);
+      close(conn->index, 0);
+      return;
+    }
+
+    // attempt to substitute the keywords with their values
+    buffer = report_substitute(report, subs, subno, &size);
+    if (!buffer) {
+      report_quickanddirty(conn, code);
+      close(conn->index, 0);
+      return;
+    }
   }
 
   if (conn->httpmajor >= 1) {
@@ -320,7 +375,6 @@ void report(struct connection *conn, int code, int subno, int headerlines) {
     }
     writestring(conn->socket, "\r\n");
   }
-
   // send the generated file - the buffer is released afterwards
   conn->flags.releasefilebuffer = 1;
   conn->filebuffer = buffer;
@@ -372,7 +426,7 @@ void report_movedtemporarily(struct connection *conn, char *newurl) {
   subs[1].name = "%URL%";
   subs[1].value = conn->uri;
 
-  report(conn, HTTP_TEMPMOVED, 1, 1);
+  report(conn, HTTP_TEMPMOVED, 2, 1);
 }
 
 

@@ -12,8 +12,8 @@
 #include "ip.h"
 #include "openclose.h"
 #include "stat.h"
-#include "report.h"
 #include "attributes.h"
+#include "report.h"
 #include "write.h"
 #include "mimemap.h"
 
@@ -162,12 +162,6 @@ void send_file(struct connection *conn) {
 
   get_uri_attributes(conn->uri, conn);
 
-  if (!(conn->attrflags.accessallowed)) {
-    report_notfound(conn);
-    return;
-  }
-
-
   // uri MUST start with a /
   if (conn->uri[0] != '/') {
     report_badrequest(conn, "uri must start with a /");
@@ -203,6 +197,26 @@ void send_file(struct connection *conn) {
   if (uri_to_filename(ptr,name)) report_badrequest(conn, "filename includes illegal characters");
 
   get_dir_attributes(conn->filename,conn);
+
+  if (!(conn->attrflags.accessallowed)) {
+    report_notfound(conn);
+    return;
+  }
+
+  // protect htaccess files - temporary measure until <files> is implemented
+  {
+    char temp[256], *src, *dest;
+
+    src=configuration.htaccessfile;
+    dest=temp;
+    while (*src) *dest++ = tolower(*src++);
+    *dest = '\0';
+
+    if (strcmp(conn->filename+strlen(conn->filename)-strlen(temp),temp) == 0) {
+      report_forbidden(conn);
+      return;
+    }
+  }
 
   // if requesting a directory (ie. the uri ends with a /) use index.html
   len = strlen(conn->filename);

@@ -154,7 +154,7 @@ static void scan_defaultfiles_list(char *list, struct attributes *attr) {
     list += ch;
 
     if (n == 1) {
-      filelist[count] = malloc(ch);
+      filelist[count] = malloc(ch+1);
       if (filelist[count] == NULL) return;
       strcpy(filelist[count],buffer);
       count++;
@@ -240,6 +240,8 @@ static struct attributes *create_attribute_structure(char *uri) {
   attr->forbiddenhostscount = attr->allowedhostscount = 0;
   attr->forbiddenfiletypes = attr->allowedfiletypes = NULL;
   attr->forbiddenfiletypescount = attr->allowedfiletypescount = 0;
+  attr->errordocs = NULL;
+  attr->errordocscount = 0;
   attr->methods = (1<<METHOD_GET)|(1<<METHOD_HEAD)|(1<<METHOD_POST);
   // the flags indicate which attributes are defined for an URI
   // this is necessary as attributes may be NULL, so it is not
@@ -426,6 +428,7 @@ static struct attributes *read_attributes_file(char *filename, char *base) {
         if (strcmp(attribute, "defaultfile") == 0) {
           if (section == section_LOCATION && attr->uri[attr->urilen-1] != '/') continue;
           scan_defaultfiles_list(value,attr);
+          if (value) free(value);
 
         } else if ((strcmp(attribute, "homedir") == 0)) {
           if (section == section_LOCATION && attr->uri[attr->urilen-1] == '/') continue;
@@ -478,10 +481,12 @@ static struct attributes *read_attributes_file(char *filename, char *base) {
           // URI is cgi
           attr->defined.is_cgi = 1;
           attr->is_cgi = 1;
+          if (value) free(value);
         } else if (strcmp(attribute, "isnt-cgi") == 0) {
           // URI isn't cgi
           attr->defined.is_cgi = 1;
           attr->is_cgi = 0;
+          if (value) free(value);
         } else if (strcmp(attribute, "cgi-api") == 0) {
           // which type of cgi
           attr->defined.cgi_api = 1;
@@ -540,15 +545,18 @@ static struct attributes *read_attributes_file(char *filename, char *base) {
 
         } else if (strcmp(attribute, "ram-faster") == 0) {
           // allow WebJames to move the file to a faster media - NOT SUPPORTED
+          if (value) free(value);
 
         } else if (strcmp(attribute, "notcacheable") == 0) {
           // data is not cacheable
           attr->defined.cacheable = 1;
           attr->cacheable = 0;
+          if (value) free(value);
         } else if (strcmp(attribute, "cacheable") == 0) {
           // data is cacheable
           attr->defined.cacheable = 1;
           attr->cacheable = 1;
+          if (value) free(value);
 
         } else if (strcmp(attribute, "more-attributes") == 0) {
           if (value) {
@@ -564,10 +572,30 @@ static struct attributes *read_attributes_file(char *filename, char *base) {
           // file does not exist
           attr->defined.hidden = 1;
           attr->hidden = 1;
+          if (value) free(value);
         } else if (strcmp(attribute, "nothidden") == 0) {
           // file _does_ exist
           attr->defined.hidden = 1;
           attr->hidden = 0;
+          if (value) free(value);
+
+        } else if (strcmp(attribute, "errordocument") == 0) {
+          // a custom error report document
+          struct errordoc *newlist;
+          int status,n;
+
+          newlist = realloc(attr->errordocs,(attr->errordocscount+1)*sizeof(struct errordoc));
+          if (newlist) {
+            attr->errordocs = newlist;
+            attr->errordocscount++;
+            // read the status code
+            sscanf(value,"%d%n",&status,&n);
+            attr->errordocs[attr->errordocscount-1].status = status;
+            value+=n;
+            // skip whitespace after status code
+            while (isspace(*value)) value++;
+            attr->errordocs[attr->errordocscount-1].report = value;
+          }
 
         } else {
           if (value)  free(value);
@@ -593,12 +621,24 @@ static struct attributes *read_attributes_file(char *filename, char *base) {
 
 static void merge_attributes2(struct connection *conn, struct attributes *attr) {
 // merge all attributes from attr into conn
+  int i;
 
   if (attr->defined.realm)        conn->realm           = attr->realm;
   if (attr->defined.accessfile)   conn->accessfile      = attr->accessfile;
   if (attr->defined.userandpwd)   conn->userandpwd      = attr->userandpwd;
   if (attr->defined.cgi_api)      conn->cgi_api         = attr->cgi_api;
   if (attr->defined.is_cgi)       conn->flags.is_cgi    = attr->is_cgi;
+  for (i=0; i<attr->errordocscount; i++) {
+    // add to top of linked list
+    struct errordoc *error;
+
+    error = malloc(sizeof(struct errordoc));
+    if (!error) return;
+    error->status = attr->errordocs[i].status;
+    error->report = attr->errordocs[i].report;
+    error->next = conn->errordocs;
+    conn->errordocs = error;
+  }
   if (attr->allowedfiletypescount) {
     conn->allowedfiletypes = attr->allowedfiletypes;
     conn->allowedfiletypescount = attr->allowedfiletypescount;

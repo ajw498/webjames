@@ -1,4 +1,5 @@
 
+
 #define MAXCONNECTIONS    100
 #define HTTPBUFFERSIZE    4096
 
@@ -33,6 +34,16 @@
 #define DNS_TRYING        1
 #define DNS_OK            2
 
+#ifndef ERRORDOC
+#define ERRORDOC
+
+typedef struct errordoc {
+	int status; // http status code
+	char *report; // text to use, or url to redirect to
+	struct errordoc *next; // only used in conn structures, not in attrributes strcutures
+} errordoc;
+
+#endif
 
 
 typedef struct serverinfo {
@@ -94,7 +105,7 @@ typedef struct connection {
   struct cache *cache;        // pointer to cache entry or NULL
 
   int headersize, headerallocated;
-  char *header;               // malloc()'ed - only for cgi-scripts
+  char *header;               // malloc()'ed
 
   FILE *file;                 // if file != NULL, data will be read
                               // directly from the file
@@ -114,6 +125,9 @@ typedef struct connection {
 
   int used;                   // bytes used in the buffer
   char buffer[HTTPBUFFERSIZE+4];
+
+  struct errordoc *errordocs;    // linked list used to hold custom error reports
+
 } connection;
 
 

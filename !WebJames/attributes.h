@@ -5,6 +5,16 @@
 #define ATTR_a_z              28
 #define ATTR_z__              56
 
+#ifndef ERRORDOC
+#define ERRORDOC
+
+typedef struct errordoc {
+	int status; // http status code
+	char *report; // text to use, or url to redirect to
+	struct errordoc *next; // only used in conn structures, not in attrributes strcutures
+} errordoc;
+
+#endif
 
 typedef struct attributes {
   char *accessfile;
@@ -44,6 +54,9 @@ typedef struct attributes {
   int *forbiddenfiletypes;  // list of forbidden filetypes for cgi scripts
   int allowedfiletypescount, forbiddenfiletypescount;
 
+  struct errordoc *errordocs;  // list of custom error reports
+  int errordocscount;
+
   struct {
     unsigned int accessfile  : 1;
     unsigned int userandpwd  : 1;
@@ -67,3 +80,4 @@ typedef struct attributes {
 void init_attributes(char *filename);
 void get_uri_attributes(char *uri, struct connection *conn);
 void get_dir_attributes(char *dir, struct connection *conn);
+

@@ -77,6 +77,7 @@ void open_connection(int socket, char *host, int port) {
   conn->homedirignore = 0;
   conn->allowedfiletypescount=0;
   conn->forbiddenfiletypescount=0;
+  conn->errordocs = NULL;
 
   conn->flags.releasefilebuffer = 0;
   conn->flags.deletefile = 0;
@@ -110,6 +111,7 @@ void close(int cn, int force) {
 // cn               connection entry
 // force            set to 1 to to full close (including dns)
   struct connection *conn;
+  struct errordoc *errordocs;
   int socket, i, clk;
 
   conn = connections[cn];
@@ -166,6 +168,17 @@ void close(int cn, int force) {
   conn->filebuffer = conn->body = conn->header = NULL;
   conn->type = conn->accept =  conn->uri = conn->cookie = NULL;
   conn->authorization = NULL;
+
+  // free the linked list of custom error documents
+  errordocs = conn->errordocs;
+  while (errordocs) {
+    struct errordoc *next;
+
+    next = errordocs->next;
+    free(errordocs);
+    errordocs = next;
+  }
+  conn->errordocs = NULL;
 
   if (conn->file)    fclose(conn->file);
   conn->file = NULL;
