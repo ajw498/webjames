@@ -11,7 +11,8 @@
 </td></tr></table>
 </h3>
 
-
+This product includes PHP, freely available from <a href="http://www.php.net/">http://www.php.net/</a>.
+<p>
 The file snprintf.c was taken from the PHP distribution, which in turn was taken from Apache.
 <pre>
 /* ====================================================================
