@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# $Id: buildrelease,v 1.4 2002/02/22 23:43:41 ajw Exp $
+# $Id: buildrelease,v 1.5 2002/02/24 14:19:47 ajw Exp $
 #
 # usage: buildrelease --webjames=0.34 --php=2.04 --php-dir=../php4
 
@@ -62,7 +62,7 @@ if test $WJVERSION != test; then
 fi
 
 # Build the source zip
-zip -r9, webjames-source-$WJVERSION.zip * -x '*CVS*' '*.cvsignore' \!System scripts
+zip -r9, webjames-source-$WJVERSION.zip * -x '*CVS*' '*.cvsignore' '\!System*' 'scripts*' 'WJ-PHP*'
 
 # Build the release zip
 ./configure
