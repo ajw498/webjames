@@ -1,5 +1,5 @@
 /*
-	$Id: serverparsed.c,v 1.10 2001/09/03 14:10:42 AJW Exp $
+	$Id: serverparsed.c,v 1.11 2001/09/18 21:09:28 AJW Exp $
 	Support for Server Side Includes (SSI)
 */
 
@@ -71,41 +71,43 @@ void serverparsed_start(struct connection *conn)
 	struct serverparsedinfo *info;
 	char *leafname;
 
-	info=malloc(sizeof(struct serverparsedinfo));
-	conn->handlerinfo=info;
-	if (info==NULL) {
-		report_servererr(conn,"Out of memory");
-		return;
-	}
-	info->status=status_BODY;
-	info->bytesinbuffer=0;
-	conn->fileused = 0;
-	info->timefmt=info->errmsg=NULL;
-	info->abbrev=0;
-	info->output=1;
-	info->conditionmet=1;
-	info->child=NULL;
-	if (conn->cache) {
-		conn->filebuffer = conn->cache->buffer;
-		conn->fileinfo.size = conn->cache->size;
-		conn->flags.releasefilebuffer = 0;
-		conn->file = NULL;
-		conn->cache->accesses++;
-
-	} else {
-		FILE *handle;
-
-		handle = fopen(conn->filename, "rb");
-		if (!handle) {
-			report_notfound(conn);
+	if (conn->method!=METHOD_HEAD) {
+		info=malloc(sizeof(struct serverparsedinfo));
+		conn->handlerinfo=info;
+		if (info==NULL) {
+			report_servererr(conn,"Out of memory");
 			return;
 		}
-		/* attempt to get a read-ahead buffer for the file */
-		/* notice: things will still work if malloc fails */
-		conn->filebuffer = EM(malloc(configuration.readaheadbuffer*1024));
-		conn->flags.releasefilebuffer = 1;
-		conn->leftinbuffer = 0;
-		conn->file = handle;
+		info->status=status_BODY;
+		info->bytesinbuffer=0;
+		conn->fileused = 0;
+		info->timefmt=info->errmsg=NULL;
+		info->abbrev=0;
+		info->output=1;
+		info->conditionmet=1;
+		info->child=NULL;
+		if (conn->cache) {
+			conn->filebuffer = conn->cache->buffer;
+			conn->fileinfo.size = conn->cache->size;
+			conn->flags.releasefilebuffer = 0;
+			conn->file = NULL;
+			conn->cache->accesses++;
+	
+		} else {
+			FILE *handle;
+	
+			handle = fopen(conn->filename, "rb");
+			if (!handle) {
+				report_notfound(conn);
+				return;
+			}
+			/* attempt to get a read-ahead buffer for the file */
+			/* notice: things will still work if malloc fails */
+			conn->filebuffer = EM(malloc(configuration.readaheadbuffer*1024));
+			conn->flags.releasefilebuffer = 1;
+			conn->leftinbuffer = 0;
+			conn->file = handle;
+		}
 	}
 
 	if (conn->flags.outputheaders && conn->httpmajor >= 1) {
@@ -134,6 +136,11 @@ void serverparsed_start(struct connection *conn)
 		webjames_writestringr(conn, temp);
 	}
 
+	if (conn->method==METHOD_HEAD) {
+		conn->close(conn,0);
+		return;
+	}
+	
 	/*environment vars are the same as for a CGI script, with a few additions*/
 	cgiscript_setvars(conn);
 	leafname=strrchr(conn->filename,'.');

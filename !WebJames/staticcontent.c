@@ -1,5 +1,5 @@
 /*
-	$Id: staticcontent.c,v 1.9 2001/09/03 14:10:45 AJW Exp $
+	$Id: staticcontent.c,v 1.10 2001/09/18 21:09:27 AJW Exp $
 	Default handler for files with static content
 */
 
@@ -20,7 +20,7 @@
 
 void staticcontent_start(struct connection *conn)
 {
-	if ((conn->method == METHOD_GET) || (conn->method == METHOD_PUT) || (conn->method == METHOD_DELETE)) {
+	if (conn->method != METHOD_POST) {
 		/* was there a valid If-Modified-Since field in the request?? */
 		if (conn->if_modified_since.tm_year > 0) {
 			if (compare_time(&conn->fileinfo.date, &conn->if_modified_since) < 0) {
@@ -28,6 +28,8 @@ void staticcontent_start(struct connection *conn)
 				return;
 			}
 		}
+	}
+	if (conn->method != METHOD_HEAD) {
 		/* if everything OK until now, prepare to send file */
 		conn->fileused = 0;
 		if (conn->cache) {
@@ -81,6 +83,7 @@ void staticcontent_start(struct connection *conn)
 		if (configuration.server[0]) snprintf(temp, TEMPBUFFERSIZE, "Server: %s\r\n\r\n", configuration.server);
 		webjames_writestringr(conn, temp);
 	}
+	if (conn->method == METHOD_HEAD) conn->close(conn,0);
 }
 
 void staticcontent_poll(struct connection *conn,int maxbytes) {
