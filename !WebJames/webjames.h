@@ -1,9 +1,9 @@
 #ifndef WEBJAMES_H
 #define WEBJAMES_H
 
-#define WEBJAMES_H_REVISION "$Revision: 1.34 $"
+#define WEBJAMES_H_REVISION "$Revision: 1.35 $"
 
-#define WEBJAMES_VERSION "0.34"
+#define WEBJAMES_VERSION "0.35-dev"
 #define WEBJAMES_DATE "10/1/02"
 #define WEBJAMES_SERVER_SOFTWARE "WebJames/" WEBJAMES_VERSION
 
@@ -187,7 +187,7 @@ typedef struct config {
 	int timeout, bandwidth;
 	char server[MAX_FILENAME], panic[MAX_PANIC], *xheader[MAX_HEADERS], *logheader[MAX_HEADERS], webmaster[MAX_FILENAME];
 	char delete_script[MAX_FILENAME], put_script[MAX_FILENAME], site[MAX_FILENAME];
-	char attributesfile[MAX_FILENAME], serverip[MAX_FILENAME], cgi_in[MAX_FILENAME], cgi_out[MAX_FILENAME];
+	char attributesfile[MAX_FILENAME], serverip[MAX_FILENAME], cgi_in[MAX_FILENAME], cgi_out[MAX_FILENAME], cgi_dir[MAX_FILENAME];
 	char htaccessfile[MAX_FILENAME];
 	int imagedirs[MAX_IMAGEDIRS];
 	int numimagedirs;
