@@ -2,7 +2,7 @@
 	!PHP
 	Copyright © Alex Waugh 2000
 
-	Version 2.00 6/2/01
+	$Id: PHPFrontEnd.c,v 1.2 2002/02/19 22:45:35 ajw Exp $
 
 
     This program is free software; you can redistribute it and/or modify
@@ -23,11 +23,22 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+
+#define TOOLBOX_H
+#define WIMP_H
+#define WINDOW_H
+#define MESSAGETRANS_H
+#include "SysTypes.h"
+
+#include "event.h"
+#include "oslib/radiobutton.h"
+/*
 #include "tboxlibs/wimp.h"
 #include "tboxlibs/toolbox.h"
 #include "tboxlibs/event.h"
 #include "tboxlibs/wimplib.h"
 #include "tboxlibs/gadgets.h"
+*/
 
 #define event_SAVE 0x100
 #define event_CANCEL 0x101
@@ -45,7 +56,7 @@
 #define E(x) { \
 	_kernel_oserror *err=x;\
 	if (err!=NULL) {\
-		wimp_report_error(err,0,"PHP Config",0,0,0);\
+		xwimp_report_error(err,0,"PHP Config",NULL);\
 		exit(EXIT_FAILURE);\
 	}\
 }
@@ -87,7 +98,7 @@ static int Save(int event_code, ToolboxEvent *event, IdBlock *id_block,void *han
 	UNUSED(id_block);
 	UNUSED(handle);
 
-	E(radiobutton_get_state(0,windowid,icon_STANDALONE,NULL,&selected));
+	E(xradiobutton_get_state(0,windowid,icon_STANDALONE,NULL,&selected));
 	file=fopen("<PHP$Dir>.SetRunType","w");
 	if (file!=NULL) {
 		switch (selected) {
@@ -95,7 +106,7 @@ static int Save(int event_code, ToolboxEvent *event, IdBlock *id_block,void *han
 				fprintf(file,ALIAS RUN "StandAlone %%%%*0\n");
 				break;
 			case icon_MULTITASK:
-				fprintf(file,ALIAS "TaskWindow \"" RUN "StandAlone" " %%%%*0\" -name \"PHP script\" -quit -wimpslot 1700k");
+				fprintf(file,ALIAS "TaskWindow \"" RUN "StandAlone" " %%%%*0\" -name \"PHP script\" -quit -wimpslot 1800k");
 				break;
 			case icon_ANT:
 				fprintf(file,ALIAS RUN "ANT %%%%*0\n");
@@ -107,7 +118,7 @@ static int Save(int event_code, ToolboxEvent *event, IdBlock *id_block,void *han
 				fprintf(file,ALIAS RUN "Netplex %%%%*0\n");
 				break;
 			case icon_WEBJAMES:
-				fprintf(file,ALIAS "WimpSlot -Min 1700k -Max 1700k |M Run <PHP$Dir>.php %%%%*0\n");
+				fprintf(file,ALIAS "WimpSlot -Min 1800k -Max 1800k |M Run <PHP$Dir>.php %%%%*0\n");
 				break;
 		}
 	}
@@ -147,16 +158,16 @@ int main(void)
 	MessagesFD messages;
 	IdBlock id_block;
 
-	if (toolbox_initialise(0, 310, wimp_messages, toolbox_events, "<PHP$Dir>", &messages, &id_block, 0, 0, 0)!=NULL) exit(EXIT_FAILURE);
-    E(event_initialise(&id_block));
-    E(event_set_mask(1+256));
+	if (xtoolbox_initialise(0, 310, (wimp_message_list*)wimp_messages, (toolbox_action_list*)toolbox_events, "<PHP$Dir>", &messages, &id_block, 0, 0, 0)!=NULL) exit(EXIT_FAILURE);
+	event_initialise(&id_block);
+	event_set_mask(1+256);
 
-	E(event_register_toolbox_handler(-1,event_CANCEL,Quit,NULL));
-	E(event_register_toolbox_handler(-1,event_SAVE,Save,NULL));
-	E(event_register_toolbox_handler(-1,event_HELP,Help,NULL));
-	E(event_register_toolbox_handler(-1,Toolbox_ObjectAutoCreated,AutoCreated,NULL));
-	E(event_register_message_handler(Wimp_MQuit,Message_Quit,NULL));
+	event_register_toolbox_handler(event_ANY,event_CANCEL,(event_toolbox_handler*)Quit,NULL);
+	event_register_toolbox_handler(event_ANY,event_SAVE,(event_toolbox_handler*)Save,NULL);
+	event_register_toolbox_handler(event_ANY,event_HELP,(event_toolbox_handler*)Help,NULL);
+	event_register_toolbox_handler(event_ANY,action_OBJECT_AUTO_CREATED/*Toolbox_ObjectAutoCreated*/,(event_toolbox_handler*)AutoCreated,NULL);
+	event_register_message_handler(message_QUIT,Message_Quit,NULL);
 
-	while (TRUE) E(event_poll(&event_code, &poll_block, 0));
+	while (TRUE) event_poll(&event_code, &poll_block, 0);
 
 }
