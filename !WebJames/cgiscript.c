@@ -177,6 +177,28 @@ void script_start_redirect(char *script, struct connection *conn, char *args, in
 	/* remove cgi-spool-input file (if any) */
 	if (input[0])   remove(input);
 
+	/* Remove all system variables that were set */
+	xos_set_var_val("SERVER_SOFTWARE",NULL,-1,0,os_VARTYPE_STRING,NULL,NULL);
+	xos_set_var_val("SERVER_PORT",NULL,-1,0,os_VARTYPE_STRING,NULL,NULL);
+	xos_set_var_val("SERVER_PROTOCOL",NULL,-1,0,os_VARTYPE_STRING,NULL,NULL);
+	xos_set_var_val("SERVER_NAME",NULL,-1,0,os_VARTYPE_STRING,NULL,NULL);
+	xos_set_var_val("SERVER_ADMIN",NULL,-1,0,os_VARTYPE_STRING,NULL,NULL);
+	xos_set_var_val("SCRIPT_NAME",NULL,-1,0,os_VARTYPE_STRING,NULL,NULL);
+	xos_set_var_val("PATH_TRANSLATED",NULL,-1,0,os_VARTYPE_STRING,NULL,NULL);
+	xos_set_var_val("QUERY_STRING",NULL,-1,0,os_VARTYPE_STRING,NULL,NULL);
+	xos_set_var_val("REMOTE_ADDR",NULL,-1,0,os_VARTYPE_STRING,NULL,NULL);
+	xos_set_var_val("REMOTE_HOST",NULL,-1,0,os_VARTYPE_STRING,NULL,NULL);
+	xos_set_var_val("REQUEST_METHOD",NULL,-1,0,os_VARTYPE_STRING,NULL,NULL);
+	xos_set_var_val("CONTENT_LENGTH",NULL,-1,0,os_VARTYPE_STRING,NULL,NULL);
+	xos_set_var_val("CONTENT_TYPE",NULL,-1,0,os_VARTYPE_STRING,NULL,NULL);
+	xos_set_var_val("SERVER_PORT",NULL,-1,0,os_VARTYPE_STRING,NULL,NULL);
+	xos_set_var_val("ENTITY_PATH",NULL,-1,0,os_VARTYPE_STRING,NULL,NULL);
+	xos_set_var_val("AUTH_TYPE",NULL,-1,0,os_VARTYPE_STRING,NULL,NULL);
+	xos_set_var_val("REMOTE_USER",NULL,-1,0,os_VARTYPE_STRING,NULL,NULL);
+	xos_set_var_val("HTTP_COOKIE",NULL,-1,0,os_VARTYPE_STRING,NULL,NULL);
+	xos_set_var_val("HTTP_USER_AGENT",NULL,-1,0,os_VARTYPE_STRING,NULL,NULL);
+	xos_set_var_val("HTTP_REFERER",NULL,-1,0,os_VARTYPE_STRING,NULL,NULL);
+
 	/* disable reading */
 	if (fd_is_set(select_read, conn->socket)) {
 		fd_clear(select_read, conn->socket);
