@@ -1,5 +1,5 @@
 /*
-	$Id: serverparsed.c,v 1.5 2003/10/19 13:41:46 ajw Exp $
+	$Id$
 	Support for Server Side Includes (SSI)
 */
 
@@ -155,7 +155,7 @@ void serverparsed_start(struct connection *conn)
 	leafname=strrchr(conn->filename,'.');
 	if (leafname) {
 		wjstrncpy(temp,leafname+1,TEMPBUFFERSIZE);
-		while ((leafname=strchr(temp,'/'))!=NULL) *leafname='.';
+		while ((leafname=strchr(leafname,'/'))!=NULL) *leafname='.';
 		set_var_val("DOCUMENT_NAME",temp);
 	}
 	set_var_val("DOCUMENT_URI",conn->uri);
@@ -260,17 +260,19 @@ static char *serverparsed_reltouri(char *base,char *rel)
 static char *serverparsed_getvar(struct connection *conn,char *var)
 /*get an environment var, treat dates as special cases*/
 {
-	static char *result=NULL;
+	char *result=NULL;
 	struct serverparsedinfo *info=(struct serverparsedinfo *)conn->handlerinfo;
 
-	if (result) free(result);
-	result=NULL;
 	if (strcmp(var,"DATE_GMT")==0) {
 		time_t tm1;
 		struct tm *tm2;
+		struct memlist *mem;
 
-		result=EM(malloc(50));
-		if (result) {
+		mem=EM(malloc(50+4));
+		if (mem) {
+			mem->next=conn->memlist;
+			conn->memlist=mem;
+			result=mem->data;
 			time(&tm1);
 			tm2=gmtime(&tm1);
 			if (info->timefmt==NULL) time_to_rfc(tm2,result); else strftime(result,49,info->timefmt,tm2);
@@ -279,9 +281,13 @@ static char *serverparsed_getvar(struct connection *conn,char *var)
 	} else if (strcmp(var,"DATE_LOCAL")==0) {
 		time_t tm1;
 		struct tm *tm2;
+		struct memlist *mem;
 
-		result=EM(malloc(50));
-		if (result) {
+		mem=EM(malloc(50+4));
+		if (mem) {
+			mem->next=conn->memlist;
+			conn->memlist=mem;
+			result=mem->data;
 			time(&tm1);
 			tm2=localtime(&tm1);
 			if (info->timefmt==NULL) time_to_rfc(tm2,result); else strftime(result,49,info->timefmt,tm2);
@@ -291,6 +297,7 @@ static char *serverparsed_getvar(struct connection *conn,char *var)
 		int filetype;
 		struct tm time;
 		os_date_and_time utc;
+		struct memlist *mem;
 
 		filetype=get_file_info(conn->filename, NULL, NULL, &utc, NULL, 1);
 
@@ -313,9 +320,12 @@ static char *serverparsed_getvar(struct connection *conn,char *var)
 			default:
 
 				utc_to_localtime(&utc,&time);
-	
-				result=EM(malloc(50));
-				if (result) {
+
+				mem=EM(malloc(50+4));
+				if (mem) {
+					mem->next=conn->memlist;
+					conn->memlist=mem;
+					result=mem->data;
 					if (info->timefmt==NULL) time_to_rfc(&time,result); else strftime(result,49,info->timefmt,&time);
 					result[49]='\0';
 				}
@@ -333,9 +343,14 @@ static char *serverparsed_getvar(struct connection *conn,char *var)
 		size=regs.r[2];
 
 		if (size) {
+			struct memlist *mem;
 			size=~size;
-			result=EM(malloc(size+1));
-			if (result) {
+
+			mem=EM(malloc(size+1+4));
+			if (mem) {
+				mem->next=conn->memlist;
+				conn->memlist=mem;
+				result=mem->data;
 				if (xos_read_var_val(var,result,size,0,os_VARTYPE_STRING,NULL,NULL,NULL)==NULL) result[size]='\0'; else result[0]='\0';
 			}
 		}
@@ -345,17 +360,18 @@ static char *serverparsed_getvar(struct connection *conn,char *var)
 
 #define INCREASE_SIZE(inc) {\
 	if ((o-expanded)+inc>len) {\
-		char *newmem;\
+		struct memlist *newmem;\
 		size_t pos=o-expanded;\
 \
 		len=len+(inc>128 ? 2*inc : 256);\
-		newmem=EM(realloc(expanded,len));\
+		newmem=EM(realloc(mem,len));\
 		if (newmem==NULL) {\
 			serverparsed_writeerror(conn,"Not enough memory");\
 			expanded[0]='\0';\
 			return expanded;\
 		} else {\
-			expanded=newmem;\
+			mem=newmem;\
+			expanded=mem->data;\
 			o=expanded+pos;\
 		}\
 	}\
@@ -364,22 +380,25 @@ static char *serverparsed_getvar(struct connection *conn,char *var)
 static char *serverparsed_expandvars(struct connection *conn,char *str)
 /*expand all variables in the given string*/
 {
-	static char *expanded=NULL;
-	static int valid=0;
+	char *expanded="";
 	size_t len;
+	struct memlist *mem;
 
-	if (valid && expanded) free(expanded);
 	len=strlen(str)*2;
 	if (len<256) len=256;
-	expanded=EM(malloc(len));
-	if (expanded) {
-		char *o=expanded;
+	mem=EM(malloc(len+4));
+
+	if (mem) {
+		char *o=mem->data;
 		char *end, *expandedvar;
 		char var[256];
 		int brackets=0;
 		size_t varlen;
 
-		valid=1;
+		mem->next=conn->memlist;
+		conn->memlist=mem;
+		expanded=mem->data;
+
 		while (*str) {
 			switch (*str) {
 				case '\\':
@@ -421,9 +440,6 @@ static char *serverparsed_expandvars(struct connection *conn,char *str)
 		}
 		INCREASE_SIZE(1);
 		*o='\0';
-	} else {
-		valid=0;
-		expanded="";
 	}
 	return expanded;
 }
@@ -869,7 +885,7 @@ static void serverparsed_execcommand(struct connection *conn,char *cmd)
 
 	newconn->handler = &cmdhandler;
 	newconn->flags.outputheaders=0;
-    newconn->close=serverparsed_close;
+	newconn->close=serverparsed_close;
 	newconn->parent=conn;
 	info->child=newconn;
 
@@ -1031,7 +1047,7 @@ static void serverparsed_command(struct connection *conn,char *command,char *arg
 
 					newconn->handler = get_handler("static-content");
 					newconn->flags.outputheaders=0;
-				    newconn->close=serverparsed_close;
+					newconn->close=serverparsed_close;
 					newconn->parent=conn;
 					info->child=newconn;
 
@@ -1253,7 +1269,6 @@ void serverparsed_poll(struct connection *conn,int maxbytes)
 {
 	struct serverparsedinfo *info=(struct serverparsedinfo *)conn->handlerinfo;
 	int bytes = 0;
-/*	char temp[HTTPBUFFERSIZE];*/
 
 	if (info->child) {
 		handler_poll(info->child,maxbytes);

@@ -77,6 +77,7 @@ struct connection *create_conn(void)
 
 	conn->close=close_real;
 	conn->handlerinfo=NULL;
+	conn->memlist=NULL;
 
 	return conn;
 }
@@ -149,6 +150,7 @@ void close_connection(struct connection *conn, int force, int real) {
 	struct errordoc *errordocs;
 	socket_s socket;
 	int i, clk;
+	struct memlist *mem;
 
 	clk = clock();
 
@@ -189,7 +191,7 @@ void close_connection(struct connection *conn, int force, int real) {
 			webjames_writelog(LOGLEVEL_OPEN, "CLOSE %s", conn->uri);
 		}
 #endif
-    }
+	}
 
 	/* close/release/reset everything that isn't needed for the clf-log */
 	if (conn->header)         free(conn->header);
@@ -213,6 +215,15 @@ void close_connection(struct connection *conn, int force, int real) {
 	conn->uri = conn->host = conn->requesturi = conn->cookie = conn->authorization = NULL;
 	conn->contentlocation = conn->contentlanguage = NULL;
 	conn->regexmatch = NULL;
+
+	mem = conn->memlist;
+	while (mem) {
+		struct memlist *next = mem->next;
+
+		free(mem);
+		mem = next;
+	}
+	conn->memlist = NULL;
 
 	/* free the linked list of custom error documents */
 	errordocs = conn->errordocs;

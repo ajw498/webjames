@@ -98,6 +98,13 @@ typedef struct vhostdetails {
 	struct vhostdetails *next;
 } vhostdetails;
 
+/* Linked list of any memory allocated for this connection. Will be freed
+   when the connection is closed. */
+struct memlist {
+	struct memlist *next;
+	char data[1];
+};
+
 typedef struct connection {
 
 	struct connection *parent; /*the parent connection structure if this was #included from an SSI doc*/
@@ -207,6 +214,7 @@ typedef struct connection {
 
 	void (*close)(struct connection *conn, int force); /*function to call to close the connection*/
 
+	struct memlist *memlist;
 } connection;
 
 typedef	void (*closefn)(struct connection *conn, int force); /*function to call to close the connection*/
