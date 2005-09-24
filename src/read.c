@@ -406,7 +406,7 @@ void pollread_header(struct connection *conn, int bytes)
 				report_busy(conn, "Memory low");
 				return;
 			}
-			memcpy(conn->type, upper+14, len);
+			memcpy(conn->type, line+14, len);
 
 		} else if (strncmp(upper, "COOKIE: ", 8) == 0) {
 			if (conn->cookie)  free(conn->cookie);
