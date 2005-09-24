@@ -132,12 +132,11 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  is working.
  <p>
   You can now put your web pages in the <code>Site</code> directory
- or edit the <a href="config#config">config file</a> to give the location of the pages.
+ or edit the <a href="attributes#attr">attributes file</a> to give the location of the pages.
  You should also change the webmaster email address and if possible server ip
- address in the <a href="config#config">config file</a>.
+ address in the <a href="attributes#attr">attributes file</a>.
  <p>
-  The rest of the <a href="config#config">config file</a>, and the <a href="attributes#attr">
- attributes file</a> can be edited to suit your requirements, but the default
+  The rest of the <a href="attributes#attr">attributes file</a>, and the <a href="config#config">config file</a> can be edited to suit your requirements, but the default
  values should be suitable to start with.  
  <p>
   The above assumes that you are running your browser on the same machine as

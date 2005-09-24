@@ -16,14 +16,10 @@
  <code>&lt;WebJames$Dir&gt;.config</code>.
 
  <p>
-  The config file holds information about the location (on your harddisc)
- of your website, the location of various database files, the maximum
- network-bandwidth WebJames may use, port number (usually 80), log-files
- etc. See the configuration file for details of the various options.
+  The config file holds various bits of information that apply to the configuration of the whole server, such as the location of various database files, the maximum network-bandwidth WebJames may use, port number (usually 80), log-files etc. See the configuration file for details of the various options.
 
  <p>
-  There are rather a lot of options in the config file, but usually you
- will only need to edit the first field - the webmaster-email-address.
+  There are rather a lot of options in the config file, but usually the defaults will be sufficient for most purposes.
 
  <p>
  <h5>Case sensitivity</h5>
