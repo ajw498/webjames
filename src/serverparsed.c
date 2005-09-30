@@ -155,6 +155,7 @@ void serverparsed_start(struct connection *conn)
 	leafname=strrchr(conn->filename,'.');
 	if (leafname) {
 		wjstrncpy(temp,leafname+1,TEMPBUFFERSIZE);
+		leafname=temp;
 		while ((leafname=strchr(leafname,'/'))!=NULL) *leafname='.';
 		set_var_val("DOCUMENT_NAME",temp);
 	}
@@ -266,13 +267,9 @@ static char *serverparsed_getvar(struct connection *conn,char *var)
 	if (strcmp(var,"DATE_GMT")==0) {
 		time_t tm1;
 		struct tm *tm2;
-		struct memlist *mem;
 
-		mem=EM(malloc(50+4));
-		if (mem) {
-			mem->next=conn->memlist;
-			conn->memlist=mem;
-			result=mem->data;
+		result=webjames_alloc(conn,50);
+		if (result) {
 			time(&tm1);
 			tm2=gmtime(&tm1);
 			if (info->timefmt==NULL) time_to_rfc(tm2,result); else strftime(result,49,info->timefmt,tm2);
@@ -281,13 +278,9 @@ static char *serverparsed_getvar(struct connection *conn,char *var)
 	} else if (strcmp(var,"DATE_LOCAL")==0) {
 		time_t tm1;
 		struct tm *tm2;
-		struct memlist *mem;
 
-		mem=EM(malloc(50+4));
-		if (mem) {
-			mem->next=conn->memlist;
-			conn->memlist=mem;
-			result=mem->data;
+		result=webjames_alloc(conn,50);
+		if (result) {
 			time(&tm1);
 			tm2=localtime(&tm1);
 			if (info->timefmt==NULL) time_to_rfc(tm2,result); else strftime(result,49,info->timefmt,tm2);
@@ -297,7 +290,6 @@ static char *serverparsed_getvar(struct connection *conn,char *var)
 		int filetype;
 		struct tm time;
 		os_date_and_time utc;
-		struct memlist *mem;
 
 		filetype=get_file_info(conn->filename, NULL, NULL, &utc, NULL, 1);
 
@@ -321,11 +313,8 @@ static char *serverparsed_getvar(struct connection *conn,char *var)
 
 				utc_to_localtime(&utc,&time);
 
-				mem=EM(malloc(50+4));
-				if (mem) {
-					mem->next=conn->memlist;
-					conn->memlist=mem;
-					result=mem->data;
+				result=webjames_alloc(conn,50);
+				if (result) {
 					if (info->timefmt==NULL) time_to_rfc(&time,result); else strftime(result,49,info->timefmt,&time);
 					result[49]='\0';
 				}
@@ -343,14 +332,10 @@ static char *serverparsed_getvar(struct connection *conn,char *var)
 		size=regs.r[2];
 
 		if (size) {
-			struct memlist *mem;
 			size=~size;
 
-			mem=EM(malloc(size+1+4));
-			if (mem) {
-				mem->next=conn->memlist;
-				conn->memlist=mem;
-				result=mem->data;
+			result=webjames_alloc(conn,size+1);
+			if (result) {
 				if (xos_read_var_val(var,result,size,0,os_VARTYPE_STRING,NULL,NULL,NULL)==NULL) result[size]='\0'; else result[0]='\0';
 			}
 		}
@@ -360,18 +345,20 @@ static char *serverparsed_getvar(struct connection *conn,char *var)
 
 #define INCREASE_SIZE(inc) {\
 	if ((o-expanded)+inc>len) {\
-		struct memlist *newmem;\
+		char *newmem;\
 		size_t pos=o-expanded;\
+		size_t oldlen=len;\
 \
 		len=len+(inc>128 ? 2*inc : 256);\
-		newmem=EM(realloc(mem,len));\
+		newmem=webjames_alloc(conn,len);\
 		if (newmem==NULL) {\
 			serverparsed_writeerror(conn,"Not enough memory");\
 			expanded[0]='\0';\
 			return expanded;\
 		} else {\
+			memcpy(newmem,mem,oldlen);\
 			mem=newmem;\
-			expanded=mem->data;\
+			expanded=mem;\
 			o=expanded+pos;\
 		}\
 	}\
@@ -382,22 +369,20 @@ static char *serverparsed_expandvars(struct connection *conn,char *str)
 {
 	char *expanded="";
 	size_t len;
-	struct memlist *mem;
+	char *mem;
 
 	len=strlen(str)*2;
 	if (len<256) len=256;
-	mem=EM(malloc(len+4));
+	mem=webjames_alloc(conn,len);
 
 	if (mem) {
-		char *o=mem->data;
+		char *o=mem;
 		char *end, *expandedvar;
 		char var[256];
 		int brackets=0;
 		size_t varlen;
 
-		mem->next=conn->memlist;
-		conn->memlist=mem;
-		expanded=mem->data;
+		expanded=mem;
 
 		while (*str) {
 			switch (*str) {
@@ -536,13 +521,11 @@ static int serverparsed_evaluateexpression(struct connection *conn,char *exp)
 			}
 
 			/*split the string into everything to the left of an =, <=, etc and everything to the right*/
-			lhs=lhs0=EM(malloc(len+1));
+			lhs=lhs0=webjames_alloc(conn,len+1);
 			if (lhs==NULL) return 0;
-			rhs=rhs0=EM(malloc(len+1));
-			if (rhs==NULL) {
-				free(lhs);
-				return 0;
-			}
+			rhs=rhs0=webjames_alloc(conn,len+1);
+			if (rhs==NULL) return 0;
+
 			brackets=0;
 			p=lhs;
 			while (*exp) {
@@ -566,8 +549,6 @@ static int serverparsed_evaluateexpression(struct connection *conn,char *exp)
 						op[1]=*exp++;
 						if (op[1]!='=') {
 							serverparsed_writeerror(conn,"Syntax error");
-							free(lhs);
-							free(rhs);
 							return 0;
 						}
 						*p='\0';
@@ -633,8 +614,6 @@ static int serverparsed_evaluateexpression(struct connection *conn,char *exp)
 			} else {
 				ret=(lhs[0]!='\0');
 			}
-			free(lhs0);
-			free(rhs0);
 			return ret;
 	}
 	/*should never reach here*/
@@ -741,10 +720,10 @@ static void serverparsed_includevirtual(struct connection *conn,char *reluri)
 
 	newconn->flags.cacheable=0;
 	newconn->flags.outputheaders=0;
-    newconn->close=serverparsed_close;
+	newconn->close=serverparsed_close;
 	newconn->parent=conn;
 	info->child=newconn;
-    send_file(newconn);
+	send_file(newconn);
 }
 
 static char *serverparsed_virtualtofilename(struct connection *conn,char *virt)
@@ -753,7 +732,8 @@ static char *serverparsed_virtualtofilename(struct connection *conn,char *virt)
 	char *uri;
 	struct connection *newconn;
 	char *name,*ptr;
-	static char filename[256];
+	char *filename;
+	size_t len;
 
 	uri=serverparsed_reltouri(conn->uri,virt); /*convert to an absolute uri*/
 	newconn=create_conn();
@@ -774,7 +754,9 @@ static char *serverparsed_virtualtofilename(struct connection *conn,char *virt)
 		return NULL;
 	}
 
-	wjstrncpy(filename,newconn->filename,MAX_FILENAME);
+	len=strlen(newconn->filename) + 1;
+	filename=webjames_alloc(conn,len);
+	memcpy(filename,newconn->filename,len);
 	close_connection(newconn,0,0);
 	return filename;
 }

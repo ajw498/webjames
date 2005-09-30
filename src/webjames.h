@@ -320,6 +320,8 @@ void webjames_command(char *cmd, int release);
 void abort_reverse_dns(struct connection *conn, int newstatus);
 void read_config(char *config);
 
+void *webjames_alloc(struct connection *conn, size_t size);
+
 #endif /*WEBJAMES_PHP_ONLY*/
 
 #define webjames_writestringr(conn,string) \

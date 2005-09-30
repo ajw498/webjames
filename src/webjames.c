@@ -457,6 +457,19 @@ void *webjames_writelog(int level, char *fmt, ...)
 	return NULL;
 }
 
+void *webjames_alloc(struct connection *conn, size_t size)
+{
+	struct memlist *mem;
+
+	mem = EM(malloc(size + sizeof(struct memlist *)));
+	if (mem == NULL) return NULL;
+
+	mem->next=conn->memlist;
+	conn->memlist=mem;
+
+	return mem->data;
+}
+
 void read_config(char *config)
 /* read all config-options from the config file */
 /* config           configuration file name */
