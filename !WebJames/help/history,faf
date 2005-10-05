@@ -14,7 +14,7 @@
 </td></tr></table>
 </h3>
 
-<i>0.46 (?/?/2005)</i>
+<i>0.46 (5/10/2005)</i>
 
 <ul>
   <li>Fixed a bug that could cause SSI if statements to incorrectly match sometimes.
