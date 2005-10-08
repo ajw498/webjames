@@ -1,5 +1,5 @@
 <?php
-if ($HTTP_GET_VARS["picture"]) {
+if (isset($_GET["picture"])) {
 	#We are being called to generate the picture
 	if (ImageTypes() & IMG_PNG) {
 		$png=1;
@@ -16,17 +16,17 @@ if ($HTTP_GET_VARS["picture"]) {
 	$white = imagecolorallocate($im,255,255,255);
 	imagefill($im,150,150,$white); #Set the background colour
 	imagerectangle($im,0,0,299,299,$black);
-	for ($i=0;$HTTP_GET_VARS["x".$i];$i++) { #Find all shapes we need to plot
-		switch ($HTTP_GET_VARS["s".$i]) {
+	for ($i=0;isset($_GET["x".$i]);$i++) { #Find all shapes we need to plot
+		switch ($_GET["s".$i]) {
 			case 3: #Triangle
-				imagefilledpolygon($im,array($HTTP_GET_VARS["x".$i]-20,$HTTP_GET_VARS["y".$i]+20,$HTTP_GET_VARS["x".$i]+20,$HTTP_GET_VARS["y".$i]+20,$HTTP_GET_VARS["x".$i],$HTTP_GET_VARS["y".$i]-20),3,$red);
+				imagefilledpolygon($im,array($_GET["x".$i]-20,$_GET["y".$i]+20,$_GET["x".$i]+20,$_GET["y".$i]+20,$_GET["x".$i],$_GET["y".$i]-20),3,$red);
 				break;
 			case 2: #Circle
-				imagearc($im,$HTTP_GET_VARS["x".$i],$HTTP_GET_VARS["y".$i],40,40,0,360,$green);
-				imagefilltoborder($im,$HTTP_GET_VARS["x".$i],$HTTP_GET_VARS["y".$i],$green,$green);
+				imagearc($im,$_GET["x".$i],$_GET["y".$i],40,40,0,360,$green);
+				imagefilltoborder($im,$_GET["x".$i],$_GET["y".$i],$green,$green);
 				break;
 			default: #Square
-				imagefilledrectangle($im,$HTTP_GET_VARS["x".$i]-20,$HTTP_GET_VARS["y".$i]-20,$HTTP_GET_VARS["x".$i]+20,$HTTP_GET_VARS["y".$i]+20,$blue);
+				imagefilledrectangle($im,$_GET["x".$i]-20,$_GET["y".$i]-20,$_GET["x".$i]+20,$_GET["y".$i]+20,$blue);
 		}
 	}
 	imagestring($im,4,219,284,date("d/m/Y"),$black); #Add the date to the bottom right corner
@@ -50,26 +50,26 @@ PHP Example
 <INPUT TYPE=radio NAME="shape" VALUE="2">Circle<br>
 <INPUT TYPE=radio NAME="shape" VALUE="3">Triangle<br>
 <?php #Add hidden items to store coordinates of all the shapes added so far
-for ($i=0;$HTTP_GET_VARS["x".$i];$i++) {
-	printf("<INPUT TYPE=hidden NAME=\"%s\" VALUE=\"%d\">\n","x".$i,$HTTP_GET_VARS["x".$i]);
-	printf("<INPUT TYPE=hidden NAME=\"%s\" VALUE=\"%d\">\n","y".$i,$HTTP_GET_VARS["y".$i]);
-	printf("<INPUT TYPE=hidden NAME=\"%s\" VALUE=\"%d\">\n","s".$i,$HTTP_GET_VARS["s".$i]);
+for ($i=0;isset($_GET["x".$i]);$i++) {
+	printf("<INPUT TYPE=hidden NAME=\"%s\" VALUE=\"%d\">\n","x".$i,$_GET["x".$i]);
+	printf("<INPUT TYPE=hidden NAME=\"%s\" VALUE=\"%d\">\n","y".$i,$_GET["y".$i]);
+	printf("<INPUT TYPE=hidden NAME=\"%s\" VALUE=\"%d\">\n","s".$i,$_GET["s".$i]);
 }
-if ($HTTP_GET_VARS["sub_x"]) { #Add the new shape
-	printf("<INPUT TYPE=hidden NAME=\"%s\" VALUE=\"%d\">\n","x".$i,$HTTP_GET_VARS["sub_x"]);
-	printf("<INPUT TYPE=hidden NAME=\"%s\" VALUE=\"%d\">\n","y".$i,$HTTP_GET_VARS["sub_y"]);
-	printf("<INPUT TYPE=hidden NAME=\"%s\" VALUE=\"%d\">\n","s".$i,$HTTP_GET_VARS["shape"]);
+if (isset($_GET["sub_x"])) { #Add the new shape
+	printf("<INPUT TYPE=hidden NAME=\"%s\" VALUE=\"%d\">\n","x".$i,$_GET["sub_x"]);
+	printf("<INPUT TYPE=hidden NAME=\"%s\" VALUE=\"%d\">\n","y".$i,$_GET["sub_y"]);
+	printf("<INPUT TYPE=hidden NAME=\"%s\" VALUE=\"%d\">\n","s".$i,$_GET["shape"]);
 }
 echo "<INPUT TYPE=image src=\"".$_SERVER["PHP_SELF"]."?picture=1";
-for ($i=0;$HTTP_GET_VARS["x".$i];$i++) { #Add parameters to use when fetching the picture
-	printf("&%s=%d","x".$i,$HTTP_GET_VARS["x".$i]);
-	printf("&%s=%d","y".$i,$HTTP_GET_VARS["y".$i]);
-	printf("&%s=%d","s".$i,$HTTP_GET_VARS["s".$i]);
+for ($i=0;isset($_GET["x".$i]);$i++) { #Add parameters to use when fetching the picture
+	printf("&%s=%d","x".$i,$_GET["x".$i]);
+	printf("&%s=%d","y".$i,$_GET["y".$i]);
+	printf("&%s=%d","s".$i,$_GET["s".$i]);
 }
-if ($HTTP_GET_VARS["sub_x"]) { #Add parameters for the shape just created
-	printf("&%s=%d","x".$i,$HTTP_GET_VARS["sub_x"]);
-	printf("&%s=%d","y".$i,$HTTP_GET_VARS["sub_y"]);
-	printf("&%s=%d","s".$i,$HTTP_GET_VARS["shape"]);
+if (isset($_GET["sub_x"])) { #Add parameters for the shape just created
+	printf("&%s=%d","x".$i,$_GET["sub_x"]);
+	printf("&%s=%d","y".$i,$_GET["sub_y"]);
+	printf("&%s=%d","s".$i,$_GET["shape"]);
 }
 echo '" width=300 height=300 name="sub">';
 ?>
