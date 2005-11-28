@@ -81,7 +81,6 @@ EOF
 if ! test -z $PHP; then
 cat >> src/Makefile << EOF
 -include build/php
-include build/php2
 EOF
 fi
 cat >> src/Makefile << EOF

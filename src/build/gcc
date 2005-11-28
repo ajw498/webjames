@@ -34,7 +34,6 @@ GCCINCLUDE = -IOSLib: -IOSLibSupport:
 LINKDEBUG =
 
 #!Run file
-WIMPSLOT = $(WIMPSLOT_UNIXLIB)
 STDERR = .*
 TYPESTDERR = .*
 CLIB = .*

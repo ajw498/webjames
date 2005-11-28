@@ -1,5 +1,0 @@
-# Settings for PHP build
-#
-# $Id: php2,v 1.2 2002/10/20 19:00:02 ajw Exp $
-#
-WIMPSLOT = $(WIMPSLOT_PHP)

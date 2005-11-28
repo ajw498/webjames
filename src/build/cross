@@ -39,7 +39,6 @@ EXT_FF8 = ,ff8
 EXT_FAF = ,faf
 
 #!Run file
-WIMPSLOT = $(WIMPSLOT_UNIXLIB)
 STDERR = .*
 TYPESTDERR = .*
 CLIB = .*
