@@ -14,7 +14,10 @@ Here are some problems that have been encountered that are not WebJames bugs.
 <p>
 <h4>CSS</h4>
 <p>
-Some browsers will only take notice of CSS files if they have the correct mimetype, therefore if you are using CSS files then ensure that there is an entry in your mimemap file to map the filetype of the CSS file to the mimetype <code>text/css</code>
+Some browsers will only take notice of CSS files if they have the correct mimetype, therefore you must make sure that the CSS files have their filetype set to CSS (f79) and that there is a mimemap entry to map this to the content type of <code>text/css</code>.
+<pre>
+  text/css		CSS		f79	.css
+</pre>
 <p>
 <h3>
 <table bgcolor="#cccccc" width="99%"><tr><td>
