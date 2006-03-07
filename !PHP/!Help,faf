@@ -7,13 +7,13 @@
 <table bgcolor="#aaaaaa" width="99%"><tr>
 <td><center>
 <h1>
-PHP 4.3.11
+PHP 5.1.2
 </h1>
 </center>
 </td></tr>
 <tr>
 <td><center><h5>
-RISC OS version 2.19 ported by <a href="mailto:alex@alexwaugh.com">Alex Waugh</a>
+RISC OS version 2.20 ported by <a href="mailto:alex@alexwaugh.com">Alex Waugh</a>
 </h5></center>
 </td>
 </tr></table>
