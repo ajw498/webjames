@@ -136,6 +136,7 @@ typedef struct connection {
 		unsigned int setcsd            : 1;  /* set the currently selected directory to the dir containing the cgi script */
 		unsigned int outputheaders     : 1;  /* output the http headers. set unless this file is nested within an SSI doc */
 		unsigned int autoindex         : 1;  /* autogenerate directory indexes */
+		unsigned int mimeuseext        : 1;  /* use extension rather than filetype to generate content-type header */
 	} flags;
 
 	/* various header-lines, all malloc()'ed */

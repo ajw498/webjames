@@ -190,7 +190,7 @@ void send_file(struct connection *conn)
 			int type, size;
 
 			uri_to_filename(conn->defaultfiles[i], testfile+len, conn->flags.stripextensions);
-			type = get_file_info(testfile,NULL,NULL,NULL,&size,1);
+			type = get_file_info(testfile, NULL, NULL, NULL, &size, 1, 0);
 			if (type != FILE_DOESNT_EXIST) {
 				wjstrncpy(conn->filename,testfile,MAX_FILENAME);
 				indexadded = 1;
@@ -216,7 +216,7 @@ void send_file(struct connection *conn)
 	if (content_negotiate(conn)) return;
 
 	/* check if object exist and get the filetype/mimetype at the same time */
-	conn->fileinfo.filetype = get_file_info(conn->filename, conn->fileinfo.mimetype, &conn->fileinfo.date, NULL, &conn->fileinfo.size,1);
+	conn->fileinfo.filetype = get_file_info(conn->filename, conn->fileinfo.mimetype, &conn->fileinfo.date, NULL, &conn->fileinfo.size, 1, conn->flags.mimeuseext);
 	len = strlen(conn->uri);
 	if (conn->fileinfo.filetype == FILE_DOESNT_EXIST) {
 		report_notfound(conn);
@@ -414,7 +414,7 @@ int check_case(char *filename)
 	}
 }
 
-int get_file_info(char *filename, char *mimetype, struct tm *date, os_date_and_time *utcdate, int *size, int checkcase)
+int get_file_info(char *filename, char *mimetype, struct tm *date, os_date_and_time *utcdate, int *size, int checkcase, int mimeuseext)
 {
 	/* return filetype or error-code, fill in date (secs since 1990) and mimetype */
 	os_date_and_time utc;
@@ -452,9 +452,16 @@ int get_file_info(char *filename, char *mimetype, struct tm *date, os_date_and_t
 	utc[0] = exec &255;
 	if (utcdate) memcpy(utcdate,&utc,sizeof(os_date_and_time));
 	if (date) utc_to_time(&utc, date);
-	
+
 	if (mimetype) {
-		if (E(xmimemaptranslate_filetype_to_mime_type(filetype, typename))) return FILE_NO_MIMETYPE + filetype;
+		if (mimeuseext) {
+			char *ext;
+			ext = strrchr(filename, '.');
+			if (ext) ext = strchr(ext, '/');
+			if ((ext == NULL) || (E(xmimemaptranslate_extension_to_mime_type(ext + 1, typename)))) return FILE_NO_MIMETYPE + filetype;
+		} else {
+			if (E(xmimemaptranslate_filetype_to_mime_type(filetype, typename))) return FILE_NO_MIMETYPE + filetype;
+		}
 		wjstrncpy(mimetype, typename, MAX_MIMETYPE);
 	}
 	return filetype;

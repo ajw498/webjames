@@ -14,6 +14,12 @@
 </td></tr></table>
 </h3>
 
+<i>0.47 (?/??/2006)</i>
+
+<ul>
+  <li>Added MimeUseExt and MimeUseFiletype attributes.
+</ul>
+
 <i>0.46 (5/10/2005)</i>
 
 <ul>

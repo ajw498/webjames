@@ -291,7 +291,7 @@ static char *serverparsed_getvar(struct connection *conn,char *var)
 		struct tm time;
 		os_date_and_time utc;
 
-		filetype=get_file_info(conn->filename, NULL, NULL, &utc, NULL, 1);
+		filetype=get_file_info(conn->filename, NULL, NULL, &utc, NULL, 1, 0);
 
 		switch (filetype) {
 			case OBJECT_IS_DIRECTORY:
@@ -769,7 +769,7 @@ static void serverparsed_fsize(struct connection *conn,char *filename)
 	char buf[12];
 	int filetype;
 
-	filetype=get_file_info(filename, NULL, NULL, NULL, &size, 1);
+	filetype=get_file_info(filename, NULL, NULL, NULL, &size, 1, 0);
 
 	switch (filetype) {
 		case OBJECT_IS_DIRECTORY:
@@ -811,7 +811,7 @@ static void serverparsed_flastmod(struct connection *conn,char *filename)
 	os_date_and_time utc;
 	char str[50]="";
 
-	filetype=get_file_info(filename, NULL, NULL, &utc, NULL, 1);
+	filetype=get_file_info(filename, NULL, NULL, &utc, NULL, 1, 0);
 
 	switch (filetype) {
 		case OBJECT_IS_DIRECTORY:
@@ -1038,7 +1038,7 @@ static void serverparsed_command(struct connection *conn,char *command,char *arg
 					if (newconn->cache) {
 						newconn->fileinfo.size = newconn->cache->size;
 					} else {
-						get_file_info(newconn->filename, NULL, NULL, NULL, &newconn->fileinfo.size,1);
+						get_file_info(newconn->filename, NULL, NULL, NULL, &newconn->fileinfo.size, 1, 0);
 						switch (newconn->fileinfo.filetype) {
 							case FILE_DOESNT_EXIST:
 							case OBJECT_IS_DIRECTORY:

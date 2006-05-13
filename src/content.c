@@ -1,5 +1,5 @@
 /*
-	$Id: content.c,v 1.1 2002/02/17 22:50:10 ajw Exp $
+	$Id$
 	Content negotiation
 */
 
@@ -330,7 +330,7 @@ static struct varmap *content_readmap(char *filename)
 	int valid=0,i;
 	int filetype;
 
-	filetype=get_file_info(filename, NULL, NULL, &date, NULL, 1);
+	filetype=get_file_info(filename, NULL, NULL, &date, NULL, 1, 0);
 
 	if (filetype<0 || filetype>=FILE_NO_MIMETYPE) return NULL;
 

@@ -360,6 +360,18 @@
  </tr>
 
  <tr>
+ <td><code>MimeUseFiletype</code></td>
+ <td>This attribute ensures that the Content-Type header returned to browsers is based on the filetype of the file. The mimemap module is used to convert filetypes to mime-types. This is the default.
+     </td>
+ </tr>
+
+ <tr>
+ <td><code>MimeUseExt</code></td>
+ <td>This attribute ensures that the Content-Type header returned to browsers is based on the filename extension of the file. The mimemap module is used to convert extensions to mime-types.
+     </td>
+ </tr>
+
+ <tr>
  <td><code>Hidden</code></td>
  <td>When set, the file (or the contents of the directory) cannot be
      accessed.

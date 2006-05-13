@@ -34,6 +34,7 @@ typedef struct attributes {
 	char multiviews;       /* 0 no, 1 yes */
 	char cgi_api;          /* 0 normal, 1 redirect */
 	char autoindex;        /* 0 no, 1 yes */
+	char mimeuseext;       /* 0 no, 1 yes */
 
 	int methods;	/* allowed methods, default is GET/HEAD/POST */
 
@@ -77,6 +78,7 @@ typedef struct attributes {
 		unsigned int multiviews         : 1;
 		unsigned int setcsd             : 1;
 		unsigned int autoindex          : 1;
+		unsigned int mimeuseext         : 1;
 		unsigned int is_cgi             : 1;
 		unsigned int cgi_api            : 1;
 		unsigned int homedir            : 1;

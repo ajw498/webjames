@@ -345,7 +345,7 @@ void report(struct connection *conn, int code, int subno, int headerlines, char 
 
 						wjstrncpy(conn->filename,tempconn->filename,MAX_FILENAME);
 
-						tempconn->fileinfo.filetype = get_file_info(tempconn->filename, NULL, &tempconn->fileinfo.date, NULL, &tempconn->fileinfo.size,1);
+						tempconn->fileinfo.filetype = get_file_info(tempconn->filename, NULL, &tempconn->fileinfo.date, NULL, &tempconn->fileinfo.size, 1, 0);
 
 						/* check if object is cached */
 						if (tempconn->flags.cacheable) {

@@ -70,6 +70,7 @@ struct connection *create_conn(void)
 	conn->flags.is_cgi = 0;
 	conn->flags.setcsd = 0;
 	conn->flags.autoindex = 0;
+	conn->flags.mimeuseext = 0;
 	conn->flags.stripextensions = 0;
 	conn->flags.multiviews = 0;
 	conn->statuscode = HTTP_OK;

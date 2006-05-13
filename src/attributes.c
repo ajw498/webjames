@@ -294,7 +294,8 @@ static struct attributes *create_attribute_structure(char *uri) {
 		attr->defined.defaultfile = attr->defined.allowedfiletypes =
 		attr->defined.forbiddenfiletypes = attr->defined.overridefilename =
 		attr->defined.stripextensions = attr->defined.multiviews =
-		attr->defined.setcsd = attr->defined.autoindex = 0;
+		attr->defined.setcsd = attr->defined.autoindex =
+		attr->defined.mimeuseext = 0;
 
 	attr->urilen = strlen(uri);
 	attr->uri = EM(malloc(attr->urilen+1));
@@ -890,6 +891,22 @@ static struct attributes *read_attributes_file(char *filename, char *base, struc
 					attr->autoindex = 0;
 					if (value) free(value);
 
+				} else if (strcmp(attribute, "mimeuseext") == 0) {
+					/* Use filename extension rather than
+					   filetype for generating
+					   content-type header */
+					attr->defined.mimeuseext = 1;
+					attr->mimeuseext = 1;
+					if (value) free(value);
+
+				} else if (strcmp(attribute, "mimeusefiletype") == 0) {
+					/* Use filename extension rather than
+					   filetype for generating
+					   content-type header */
+					attr->defined.mimeuseext = 1;
+					attr->mimeuseext = 0;
+					if (value) free(value);
+
 				} else if (strcmp(attribute, "is-cgi") == 0) {
 					/* URI is cgi */
 					attr->defined.is_cgi = 1;
@@ -1066,6 +1083,7 @@ static void merge_attributes2(struct connection *conn, struct attributes *attr) 
 	
 	if (attr->defined.setcsd)          conn->flags.setcsd          = attr->setcsd;
 	if (attr->defined.autoindex)       conn->flags.autoindex       = attr->autoindex;
+	if (attr->defined.mimeuseext)      conn->flags.mimeuseext      = attr->mimeuseext;
 	if (attr->defined.methods)
 		if (!(attr->methods & (1<<conn->method)))
 			conn->attrflags.accessallowed = 0;
