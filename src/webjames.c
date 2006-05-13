@@ -147,10 +147,10 @@ int webjames_init(char *config)
 			continue;
 		}
 
-
+		arg = 1;
 		ip_setsocketopt(listen, SOCKETOPT_REUSEADDR, &arg, 4);
 
-		ip_linger(listen, 10*60);
+		ip_linger(listen, 10);
 
 		if (!ip_bind(listen, 0, serverinfo.servers[i].port)) {
 			webjames_writelog(LOGLEVEL_ALWAYS, "Couldn't bind to port %d...", serverinfo.servers[i].port);
