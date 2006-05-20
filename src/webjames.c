@@ -477,9 +477,25 @@ void read_config(char *config)
 	FILE *file;
 	char *cmd, *val;
 	char line[256];
+	fileswitch_object_type type;
+
+	/* If the config file is the default and doesn't exist yet in Choices: then copy it */
+	if (strcmp(config, "Choices:WebJames.config") == 0) {
+		if ((xosfile_read_no_path("Choices:WebJames.config", &type, NULL, NULL, NULL, NULL) == NULL) && (type == fileswitch_NOT_FOUND)) {
+			if ((xosfile_read_no_path("<Choices$Write>.WebJames.config", &type, NULL, NULL, NULL, NULL) == NULL) && (type == fileswitch_NOT_FOUND)) {
+				xosfile_create_dir("<Choices$Write>.WebJames", 0);
+				xosfscontrol_copy("<WebJames$Dir>.defaults.config", "<Choices$Write>.WebJames.config", 0, 0, 0, 0, 0, NULL);
+				if ((xosfile_read_no_path("Choices:WebJames.attributes", &type, NULL, NULL, NULL, NULL) == NULL) && (type == fileswitch_NOT_FOUND)) {
+					if ((xosfile_read_no_path("<Choices$Write>.WebJames.attributes", &type, NULL, NULL, NULL, NULL) == NULL) && (type == fileswitch_NOT_FOUND)) {
+						xosfscontrol_copy("<WebJames$Dir>.defaults.attributes", "<Choices$Write>.WebJames.attributes", 0, 0, 0, 0, 0, NULL);
+					}
+				}
+			}
+		}
+	}
 
 	file = fopen(config, "r");
-	if (!file)  return;
+	if (!file) return;
 	do {
 		if (!fgets(line, 256, file))  break;          /* read line */
 		cmd = line;

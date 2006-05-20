@@ -12,5 +12,5 @@ RMEnsure MimeMap 0.10 Error You need version 0.10 (or later) of the MimeMap modu
 
 wimpslot
 Run <WebJames$Dir>.Restart
-Run <WebJames$Dir>.!RunImage <WebJames$dir>.config redirstderr2> <WebJames$Dir>.stderr
+Run <WebJames$Dir>.!RunImage Choices:WebJames.config redirstderr2> <WebJames$Dir>.stderr
 typestderrTaskWindow "Type <WebJames$Dir>.stderr" -quit

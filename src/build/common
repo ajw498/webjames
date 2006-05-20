@@ -73,12 +73,6 @@ $(WJRUN): run-default $(WJTARGET)
 	$(SETTYPE)
 
 
-$(WJATTRIBUTES): attributes-default
-	cp attributes-default $@
-
-$(WJCONFIG): config-default
-	cp config-default $@
-
 $(PHPSETRUNTYPE): setruntype-default
 	cp setruntype-default $@
 
