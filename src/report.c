@@ -650,6 +650,8 @@ void report_unauthorized(struct connection *conn, char *realm) {
 	subs[0].name = "%URL%";
 	subs[0].value = conn->uri;
 
+	if (realm == NULL) realm = "unknown";
+
 	header[0] = EM(malloc(MAX_FILENAME));
 	if (header[0])
 		snprintf(header[0], MAX_FILENAME, "WWW-Authenticate: basic realm=\"%s\"", realm);
