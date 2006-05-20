@@ -376,7 +376,7 @@ int check_access(struct connection *conn, char *authorization)
 		fclose(file);
 		report_unauthorized(conn, conn->realm);
 	} else {
-		webjames_writelog(LOGLEVEL_ALWAYS, "ERR the password file %s wouldn't open", line);
+		webjames_writelog(LOGLEVEL_ALWAYS, "ERR the password file %s wouldn't open", conn->accessfile);
 	}
 	return ACCESS_FAILED;
 }
