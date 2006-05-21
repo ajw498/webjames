@@ -7,13 +7,13 @@
 <table bgcolor="#aaaaaa" width="99%"><tr>
 <td><center>
 <h1>
-PHP 5.1.2
+PHP 5.1.4
 </h1>
 </center>
 </td></tr>
 <tr>
 <td><center><h5>
-RISC OS version 2.20 ported by <a href="mailto:alex@alexwaugh.com">Alex Waugh</a>
+RISC OS version 2.21 ported by <a href="mailto:alex@alexwaugh.com">Alex Waugh</a>
 </h5></center>
 </td>
 </tr></table>
@@ -246,14 +246,10 @@ and if there are multiple paths they should be separated by semi-colons.
 </td></tr></table>
 </h3>
 
-If you have Justin Fletcher's <a href="http://www.movspclr.co.uk/software/internet.html#gmail">GMail</a>
+If you have the <a href="http://www.cp15.org/networking/">hmail</a>
 program (and if it is correctly setup) then you can use the mail()
 function in PHP to send emails.
 <P>
-If you are having problems, you can define the system variable <code>PHP$MailOut</code>
-to a filename, and any messages from gmail will be directed to this file.
-<br>Eg. <code>*Set PHP$MailOut ADFS::4.$.gmailoutput</code>
-<p>
 The mail function will not work when running under the ANT server suite or unregistered versions of Netplex. 
 
 <p>
@@ -263,21 +259,7 @@ The mail function will not work when running under the ANT server suite or unreg
 </td></tr></table>
 </h3>
 
-The following extensions have been included with PHP:
-<ul>
-<li>standard  Various common functions
-<li>pcre      Perl compatible regular expressions
-<li>calendar  Date related functions
-<li>ftp       FTP client
-<li>gd        Create/manipulate png/jpeg/wbpm images
-<li>session   Tracking site visitors
-<li>posix     POSIX functions
-<li>mysql     MySQL client functions
-<li>zlib      Compression functions
-<li>xml       XML parsing
-</ul>
-If there are other extensions that you would like added then let me know
-and I will take a look at them.
+Various extensions have been included with PHP. For a full list, see the output of the phpinfo() function. If there are other extensions that you would like added then let me know and I will take a look at them.
 
 <p>
 <h3>
