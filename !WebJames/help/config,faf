@@ -11,9 +11,8 @@
 </td></tr></table>
 </h3>
 
-  The name of the config file is passed to WebJames as the first argument
- when WebJames is started. Usually the config file is
- <code>&lt;WebJames$Dir&gt;.config</code>.
+  The name of the config file is passed in the !Run file to WebJames as the first argument when WebJames is started. Usually the config file is
+ <code>Choices:WebJames.config</code>.
 
  <p>
   The config file holds various bits of information that apply to the configuration of the whole server, such as the location of various database files, the maximum network-bandwidth WebJames may use, port number (usually 80), log-files etc. See the configuration file for details of the various options.

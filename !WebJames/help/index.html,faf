@@ -12,10 +12,6 @@ WebJames - the web server
 </center>
 </td></tr>
 <tr>
-<td><center><h5>
-Version 0.46
-</h5></center>
-</td>
 </tr></table>
 
 <h5><center><a name="contents">Contents</a></center></h5>
@@ -42,7 +38,6 @@ Version 0.46
 <li><a href="misc#reports">Reports</a><br>
 <li><a href="history#todo">Things that need to be improved</a><br>
 <li><a href="history#history">History</a><br>
-<li><a href="ack#ack">Acknowledgements</a><br>
 <li><a href="compiling#compiling">Compiling WebJames</a><br>
 <li><a href="bugs#solved">Solved problems</a><br>
 <li><a href="bugs#reporting">Problems and bug reporting</a><br>
@@ -149,8 +144,7 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  <h5>Upgrading from an earlier version</h5>
 
  Move the old version somewhere out of the way, then copy the new version in its
- place. You'll probably want to copy your config and attributes (and possibly the
- log files) files from the old version to the new.
+ place. Versions 0.46 and earlier store the config and attributes files inside the !WebJames application. Newer version store them in Choices:WebJames. If upgrading from an old version you'll probably want to copy your config and attributes files from the old version to Choices:WebJames.
 
 
 

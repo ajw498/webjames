@@ -1,0 +1,110 @@
+# WebJames attributes file
+#
+# See the manual for more details of the various attributes
+#
+# URIs and filenames are case-insensitive in WebJames, unless the casesensitive option is set in the config file
+
+# The directory holding the site
+DocumentRoot <WebJames$Dir>.^.Site
+
+# ServerName - the ip-address (eg. 192.168.1.100) or full domain name
+# (eg. www.myserver.com) of the server; if not known, leave empty; if
+# possible, use the full domain name
+ServerName
+
+# ServerAdmin - the emailaddress of the webmaster; this is used to replace
+# %EMAIL% in reports; the SERVER_ADMIN enviromentvariable (used by
+# 'redirect' cgi-scripts) is set to this value
+ServerAdmin i.havent@changed.the.emailaddress.invalid
+
+
+# global atttributes
+<Location />
+DefaultFile index.php index.html index.shtml index
+AutoIndex
+</location>
+
+# Set up some handlers for specific filetypes
+Action perl-script perl %f %u
+<IfHandler !php-script>
+Action php-script php %f %u
+</IfHandler>
+
+# These allow all PHP and Perl files to be run as cgi scripts, wherever they are, unless specifically overridden
+AddFiletypeHandler php-script PHP
+AddFiletypeHandler perl-script Perl
+
+<IfHandler server-parsed>
+# Treat all files with an .shtml extension as SSI files
+AddHandler server-parsed .shtml
+</IfHandler>
+
+<IfHandler send-as-is>
+# send all files with an asis extension without adding any headers
+# the file should contain appropriate headers
+AddHandler send-as-is .asis
+</IfHandler>
+
+# define files with a .var extension to hold a type-map for content negotiation
+AddHandler type-map .var
+
+<IfHandler webjames-script>
+# define which directory holds 'webjames-style' cgi-scripts
+# Using AddHandler or AddFiletypeHandler with no filetype or extension means apply it to all files
+<location /cgi-bin/>
+AddFiletypeHandler webjames-script ALL
+</location>
+</IfHandler>
+
+<IfHandler cgi-script>
+# define which directory holds cgi-scripts using redirection
+<Location /cgi-bin2/>
+AddFiletypeHandler cgi-script
+</location>
+</IfHandler>
+
+# protect .htaccess files
+<files .htaccess>
+hidden
+</files>
+
+# alternative to the above, but protects all files starting with .ht eg. .htaccess, .htpasswd etc.
+#<filesmatch "^\.ht.*">
+#hidden
+#</filesmatch>
+
+# set /help/ to point to the help files within !WebJames
+<location /help/>
+homedir=<WebJames$Dir>.help
+</location>
+
+# password-protect the query-cgi-script
+<location /cgi-bin/query>
+userandpwd=webjames:wibble
+realm=the search engine
+</location>
+
+# password-protect the PUT script
+#<location /cgi-bin/PUT>
+#userandpwd=putuser:putpassword
+#realm='put'
+#methods="PUT"
+#</location>
+#
+# password-protect the DELETE script
+#<location /cgi-bin/DELETE>
+#userandpwd=deleteuser:deletepassword
+#realm='delete'
+#methods="DELETE"
+#</location>
+
+# Example vitualhost section
+#<virtualhost>
+#servername www
+#DocumentRoot IDEFS::Toffee.$.Internet.WWW
+#
+#<location />
+#defaultfile index.php
+#</location>
+#
+#</virtualhost>

@@ -13,7 +13,7 @@
 
   The path to the 'attributes' database file is set in the 
  <a href="config#config">config file</a>; it is usually
- <code>&lt;WebJames$Dir&gt;.attributes</code>.
+ <code>Choices:WebJames.attributes</code>.
 
  <p>
   The 'attributes' database defines attributes for any number of

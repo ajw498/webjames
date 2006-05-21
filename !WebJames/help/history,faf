@@ -14,10 +14,13 @@
 </td></tr></table>
 </h3>
 
-<i>0.47 (?/??/2006)</i>
+<i>0.47 (21/05/2006)</i>
 
 <ul>
   <li>Added MimeUseExt and MimeUseFiletype attributes.
+  <li>Fixed logging of accessfile filename if file not found.
+  <li>Fixed returning junk if realm not specified for a password protected area.
+  <li>Default location of config and attributes files moved to Choices: to ease future upgrading.
 </ul>
 
 <i>0.46 (5/10/2005)</i>
