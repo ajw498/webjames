@@ -1,0 +1,5 @@
+Upgrading from version 0.46 and earlier
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+There is one change in version 0.47 and later of WebJames that should be noted when upgrading. Previously, the default location for the config and attributes files was inside the !WebJames application directory. However, they are now stored in the Choices:WebJames directory within !Boot. This means that there should no longer be any user configuration files inside !WebJames and so makes future upgrades easier and less likely to overwrite config files, particularly when WebJames is added to RiscPkg.
+Therefore, if you are upgrading from an earlier version, you should ensure that you manually copy your old config and attributes files into the new location.
+  

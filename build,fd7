@@ -15,5 +15,5 @@ zip -r9 webjames-source/zip * -x */svn* *cvsignore scripts* WJ-PHP* !System* Sit
 
 config --build=normal
 make
-zip -r9 webjames/zip !WebJames Licences Site -x */svn* *cvsignore Site/Test Licences/PHP
+zip -r9 webjames/zip !WebJames Licences Site README_UPGRADING -x */svn* *cvsignore Site/Test Licences/PHP
 

@@ -64,7 +64,7 @@ zip -r9, webjames-source-$WJVERSION.zip * -x '*CVS*' '*.svn*' '*.cvsignore' '\!S
 # Build the release zip
 ./configure
 make
-zip -r9, webjames-$WJVERSION.zip \!WebJames Site Licences -x '*CVS*' '*.svn*' '*.cvsignore' || exit 1
+zip -r9, webjames-$WJVERSION.zip \!WebJames Site Licences README_UPGRADING -x '*CVS*' '*.svn*' '*.cvsignore' || exit 1
 
 # Build the PHP cgi
 (cd $PHPDIR; ./riscos.configure) || exit 1
@@ -80,7 +80,7 @@ SRCDIR=`pwd`/src
 # make install is likely to fail as it tries to install the cli sapi or pear
 (cd $PHPDIR; make install)
 make || exit 1
-zip -r9, webjames-$WJVERSION-php-$PHPVERSION.zip \!WebJames Site Licences php.ini -x '*CVS*' '*.svn*' '*.cvsignore' || exit 1
+zip -r9, webjames-$WJVERSION-php-$PHPVERSION.zip \!WebJames Site Licences php.ini README_UPGRADING -x '*CVS*' '*.svn*' '*.cvsignore' || exit 1
 
 if test $WJVERSION != test; then
   echo Please tag:
