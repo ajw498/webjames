@@ -39,10 +39,10 @@ if test $WJVERSION != test; then
     echo 'Please update version number in webjames.h'
     exit 1
   fi
-  if test -z `grep "Version $WJVERSION" \!WebJames/help/index.html,faf | sed 'y/ /_/'`; then
-    echo 'Please update version number in !WebJames/help/index.html'
-    exit 1
-  fi
+#  if test -z `grep "Version $WJVERSION" \!WebJames/help/index.html,faf | sed 'y/ /_/'`; then
+#    echo 'Please update version number in !WebJames/help/index.html'
+#    exit 1
+#  fi
   if test -z `grep "<i>$WJVERSION" \!WebJames/help/history,faf | sed 'y/ /_/'`; then
      echo 'Please update version number in !WebJames/help/history'
     exit 1
