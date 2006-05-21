@@ -17,7 +17,6 @@ typedef int socket_s;
 #include "oslib/os.h"
 #include "oslib/socket.h"
 #include <stdarg.h>
-#include "snprintf.h"
 #include <regex.h>
 
 #endif
