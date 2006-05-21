@@ -46,15 +46,13 @@ PHPDIR = $(UP)$(DIRSEP)!PHP$(DIRSEP)
 
 WJTARGET =     $(WJDIR)!RunImage$(EXT_FF8)
 WJRUN =        $(WJDIR)!Run$(EXT_FEB)
-WJPHPMAIL =    $(WJDIR)PHPMail$(EXT_FF8)
 WJPHPHELP =    $(WJDIR)help$(DIRSEP)php$(EXT_FAF)
 
-PHPMAIL =       $(PHPDIR)PHPMail$(EXT_FF8)
 PHPGUI =        $(PHPDIR)!RunImage$(EXT_FF8)
 PHPSETRUNTYPE = $(PHPDIR)SetRunType
 PHPHELP =       $(PHPDIR)!Help$(EXT_FAF)
 
-all: $(WJTARGET) $(WJRUN) $(PHPGUI) $(WJPHPMAIL) $(WJPHPHELP) $(PHPSETRUNTYPE)
+all: $(WJTARGET) $(WJRUN) $(PHPGUI) $(WJPHPHELP) $(PHPSETRUNTYPE)
 
 
 $(WJTARGET): $(WJOBJECTS)
@@ -73,9 +71,6 @@ $(WJRUN): run-default $(WJTARGET)
 $(PHPSETRUNTYPE): setruntype-default
 	cp setruntype-default $@
 
-$(WJPHPMAIL): PHPMail.c
-	$(GCC) $(GCCINCLUDE) -o $@ PHPMail.c $(OSLIB)
-
 $(WJPHPHELP): $(PHPHELP)
 	-$(RM) $(WJPHPHELP)
 	$(LN_S) $(UP)$(DIRSEP)$(PHPHELP) $(WJPHPHELP)
@@ -92,7 +87,6 @@ clean:
 	-$(RM) $(WJDIR)log
 	-$(RM) $(WJDIR)clf
 	-$(RM) $(WJDIR)stderr
-	-$(RM) $(WJPHPMAIL)
 	-$(RM) $(WJPHPHELP)
 	-$(RM) $(PHPDIR)php$(EXT_FF8)
 	-$(RM) $(PHPGUI) $(PHPSETRUNTYPE)
