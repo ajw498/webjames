@@ -13,7 +13,6 @@ WJOBJECTS = \
 	main.o\
 	webjames.o\
 	wjstring.o\
-	snprintf.o\
 	ip.o\
 	stat.o\
 	datetime.o\
@@ -47,8 +46,6 @@ PHPDIR = $(UP)$(DIRSEP)!PHP$(DIRSEP)
 
 WJTARGET =     $(WJDIR)!RunImage$(EXT_FF8)
 WJRUN =        $(WJDIR)!Run$(EXT_FEB)
-WJATTRIBUTES = $(WJDIR)attributes
-WJCONFIG =     $(WJDIR)config
 WJPHPMAIL =    $(WJDIR)PHPMail$(EXT_FF8)
 WJPHPHELP =    $(WJDIR)help$(DIRSEP)php$(EXT_FAF)
 
@@ -57,7 +54,7 @@ PHPGUI =        $(PHPDIR)!RunImage$(EXT_FF8)
 PHPSETRUNTYPE = $(PHPDIR)SetRunType
 PHPHELP =       $(PHPDIR)!Help$(EXT_FAF)
 
-all: $(WJTARGET) $(WJRUN) $(WJATTRIBUTES) $(WJCONFIG) $(PHPGUI) $(WJPHPMAIL) $(WJPHPHELP) $(PHPSETRUNTYPE)
+all: $(WJTARGET) $(WJRUN) $(PHPGUI) $(WJPHPMAIL) $(WJPHPHELP) $(PHPSETRUNTYPE)
 
 
 $(WJTARGET): $(WJOBJECTS)
