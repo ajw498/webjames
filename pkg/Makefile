@@ -26,11 +26,11 @@ php-cgi: clean
 	perl CreatePackage php-cgi
 	zip -r -9 -I ^.php-pkg/zip Apps RiscPkg Sprites.!php SysVars.PHP=24Dir SysVars.File=24Type_18A -x *svn*
 
-.PHONY: clean all
+.PHONY: clean all cleanall
 
 
 clean:
 	-rm -rf Apps RiscPkg/Control
 
 cleanall: clean
-	-rm -rf ../webjames-pkg.zip ../webjames-php-pkg.zip ../php-pkg.zip
+	-rm -rf ../webjames-pkg.zip ../webjames-php-pkg.zip ../webjames-site-pkg.zip ../php-pkg.zip
