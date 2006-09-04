@@ -1,0 +1,82 @@
+#!/usr/bin/perl -w
+#
+#  $Id: CreatePackage 34 2006-04-29 22:33:20Z ajw $
+#
+
+open(CHANGELOG, "<../!WebJames/help/history");
+while (<CHANGELOG>) {
+  if (/(\d\.\d\d) \(/) {
+    $versionwj = $1;
+    last;
+  }
+}
+close CHANGELOG;
+
+open(CHANGELOG, "<../!PHP/ChangeLog");
+$line = <CHANGELOG>;
+$line =~ /^v([\d\.]*) .*/;
+$versionphp = $1;
+close CHANGELOG;
+
+open(OUT,">RiscPkg/Control");
+
+if ($ARGV[0] eq "webjames") {
+
+print OUT qq{Package: WebJames
+Priority: Optional
+Section: Web
+Maintainer: Alex Waugh <alex\@alexwaugh.com>
+Standards-Version: 0.0.0
+Version: $versionwj
+Licence: Free
+Description: An HTTP server.
+Conflicts: PHP-WebJames
+};
+
+} elsif ($ARGV[0] eq "php-webjames") {
+
+print OUT qq{Package: PHP-WebJames
+Priority: Optional
+Section: Web
+Maintainer: Alex Waugh <alex\@alexwaugh.com>
+Standards-Version: 0.0.0
+Version: $versionphp
+Licence: Free
+Description: The WebJames HTTP server with build in PHP interpreter.
+Recommends: hmail
+Conflicts: WebJames
+};
+#Depends: SharedUnixLibrary (>=1.07)
+
+} elsif ($ARGV[0] eq "php-cgi") {
+
+print OUT qq{Package: PHP-CGI
+Priority: Optional
+Section: Web
+Maintainer: Alex Waugh <alex\@alexwaugh.com>
+Standards-Version: 0.0.0
+Version: $versionphp
+Licence: Free
+Description: The CGI version of the PHP programming language interpreter.
+Recommends: hmail
+Conflicts: PHP-WebJames
+};
+#Depends: SharedUnixLibrary (>=1.07)
+
+} elsif ($ARGV[0] eq "site") {
+
+print OUT qq{Package: WebJames-Example-Site
+Priority: Optional
+Section: Web
+Maintainer: Alex Waugh <alex\@alexwaugh.com>
+Standards-Version: 0.0.0
+Version: 1.00
+Licence: Free
+Description: Some example pages and scripts for WebJames.
+Recommends: WebJames
+};
+
+}
+
+close OUT;
+
