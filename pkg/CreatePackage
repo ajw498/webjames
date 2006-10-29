@@ -43,10 +43,11 @@ Standards-Version: 0.0.0
 Version: $versionphp
 Licence: Free
 Description: The WebJames HTTP server with build in PHP interpreter.
-Recommends: hmail
+Depends: UnixLib (>=4.0-3)
+Recommends: PHP-Doc
+Suggests: hmail
 Conflicts: WebJames
 };
-#Depends: SharedUnixLibrary (>=1.07)
 
 } elsif ($ARGV[0] eq "php-cgi") {
 
@@ -58,10 +59,11 @@ Standards-Version: 0.0.0
 Version: $versionphp
 Licence: Free
 Description: The CGI version of the PHP programming language interpreter.
-Recommends: hmail
+Depends: UnixLib (>=4.0-3)
+Recommends: PHP-Doc
+Suggests: hmail
 Conflicts: PHP-WebJames
 };
-#Depends: SharedUnixLibrary (>=1.07)
 
 } elsif ($ARGV[0] eq "site") {
 
@@ -74,6 +76,18 @@ Version: 1.00
 Licence: Free
 Description: Some example pages and scripts for WebJames.
 Recommends: WebJames
+};
+
+} elsif ($ARGV[0] eq "doc") {
+
+print OUT qq{Package: PHP-Doc
+Priority: Optional
+Section: Manuals
+Maintainer: Alex Waugh <alex\@alexwaugh.com>
+Standards-Version: 0.0.0
+Version: 20060906
+Licence: Free
+Description: Documentation for PHP in StrongHelp format.
 };
 
 }
