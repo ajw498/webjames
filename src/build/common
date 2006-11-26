@@ -64,7 +64,7 @@ $(WJTARGET): $(WJOBJECTS)
 
 
 $(WJRUN): run-default $(WJTARGET)
-	perl -e '$$size=`getwimpslot $(WJTARGET)`; $$size="10000k" if ($$size eq ""); while (<>) { s/wimpslot/WimpSlot -min $$size -max $$size/; s/redirstderr$(STDERR)//; s/typestderr$(TYPESTDERR)//; s/clib$(CLIB)//; print;}' run-default > $@
+	perl -e '$$size=`getwimpslot $(WJTARGET)`; $$size="10000k" if ($$size eq ""); $$size=~/(\d+)k/; $$size=$$1+1000; $$size.="k"; while (<>) { s/wimpslot/WimpSlot -min $$size -max $$size/; s/redirstderr$(STDERR)//; s/typestderr$(TYPESTDERR)//; s/clib$(CLIB)//; print;}' run-default > $@
 	$(SETTYPE)
 
 
