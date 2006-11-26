@@ -19,7 +19,7 @@ MEMCHECKLIB =
 STUBS =
 OSLIB = -loslib
 OSLIBSUPPORT = -loslibsupport
-REGEX = -lregex
+REGEX =
 
 #Compiler flags
 THROWBACK = -mpoke-function-name
