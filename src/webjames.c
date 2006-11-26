@@ -389,6 +389,7 @@ int webjames_writestring(struct connection *conn, const char *string)
 	while (len>0) {
 		written = ip_write(conn->socket, string, len, &err);
 		statistics.written += written;
+		string+=written;
 		len-=written;
 		if (err) {
 			if (CHECK_INET_ERR(err->errnum,socket_EPIPE)) {
