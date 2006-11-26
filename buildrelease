@@ -62,7 +62,7 @@ fi
 zip -r9, webjames-source-$WJVERSION.zip * -x '*CVS*' '*.svn*' '*.cvsignore' '\!System*' 'scripts*' 'WJ-PHP*' || exit 1
 
 # Build the release zip
-./configure
+./configure --lib-dir=$LIBDIR
 make
 zip -r9, webjames-$WJVERSION.zip \!WebJames Site Licences README_UPGRADING -x '*CVS*' '*.svn*' '*.cvsignore' || exit 1
 
