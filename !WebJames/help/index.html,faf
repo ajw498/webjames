@@ -123,7 +123,7 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  ports from each other. 
  <p>
   In your web browser, enter the URL <a href="http://localhost/">
- http://localhost/<a>, and you should get a page saying that WebJames
+ http://localhost/</a>, and you should get a page saying that WebJames
  is working.
  <p>
   You can now put your web pages in the <code>Site</code> directory
