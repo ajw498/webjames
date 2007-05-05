@@ -188,9 +188,8 @@ void webjames_command(char *cmd, int release)
 /* release          when == 1, SYS OS_Module,7,,cmd is called on exit */
 {
 	if (strncmp(cmd, "closeall", 8) == 0) {                       /* CLOSEALL */
-		int i;
-		for (i = 0; i < serverinfo.activeconnections; i++)
-			if (connections[i]->socket != socket_CLOSED)  connections[i]->close(connections[i], 1);
+		while (serverinfo.activeconnections > 0)
+			if (connections[0]->socket != socket_CLOSED)  connections[0]->close(connections[0], 1);
 		webjames_writelog(LOGLEVEL_CMD, "ALL CONNECTIONS CLOSED");
 
 	} else if (strncmp(cmd, "flushcache", 10) == 0) {         /* FLUSHCACHE */
@@ -238,8 +237,8 @@ void webjames_kill(void)
 	
 
 	/* close all open sockets */
-	for (i = 0; i < serverinfo.activeconnections; i++)
-		if (connections[i]->socket != socket_CLOSED)  connections[i]->close(connections[i], 1);
+	while (serverinfo.activeconnections > 0)
+		if (connections[0]->socket != socket_CLOSED)  connections[0]->close(connections[0], 1);
 
 	close_log();
 
@@ -297,11 +296,17 @@ int webjames_poll(int cs)
 		int clk;
 		clk = clock();
 		for (i = 0; i < serverinfo.activeconnections; i++) {
-			if ( ((connections[i]->status == WJ_STATUS_HEADER)  ||
-						(connections[i]->status == WJ_STATUS_BODY)    ||
-						(connections[i]->status == WJ_STATUS_WRITING)) &&
-						(clk > connections[i]->timeoflastactivity + 100*configuration.timeout) )
-							connections[i]->close(connections[i], 1);
+			if ( (connections[i]->status == WJ_STATUS_ERROR) ||
+			     (((connections[i]->status == WJ_STATUS_HEADER)  ||
+			       (connections[i]->status == WJ_STATUS_BODY)    ||
+			       (connections[i]->status == WJ_STATUS_WRITING)) &&
+			       (clk > connections[i]->timeoflastactivity + 100*configuration.timeout)) ) {
+				connections[i]->close(connections[i], 1);
+				/* Closing the connection rearranges the connections list,
+				   so break out of the loop. Any further entries will just
+				   get dealt with next poll */
+				break;
+			}
 		}
 	}
 
@@ -386,20 +391,25 @@ int webjames_writestring(struct connection *conn, const char *string)
 	int len, written=0;
 
 	len = strlen(string);
-	while (len>0) {
-		written = ip_write(conn->socket, string, len, &err);
-		statistics.written += written;
-		string+=written;
-		len-=written;
-		if (err) {
-			if (CHECK_INET_ERR(err->errnum,socket_EPIPE)) {
-				webjames_writelog(LOGLEVEL_ABORT, "ABORT connection closed by client");
-			} else {
-				webjames_writelog(LOGLEVEL_OSERROR,"ERROR %s",err->errmess);
+	if (conn->status == WJ_STATUS_WRITING) {
+		while (len>0) {
+			written = ip_write(conn->socket, string, len, &err);
+			statistics.written += written;
+			string+=written;
+			len-=written;
+			if (err) {
+				if (CHECK_INET_ERR(err->errnum,socket_EPIPE)) {
+					webjames_writelog(LOGLEVEL_ABORT, "ABORT connection closed by client");
+				} else {
+					webjames_writelog(LOGLEVEL_OSERROR,"ERROR %s",err->errmess);
+				}
+				conn->status = WJ_STATUS_ERROR;
+				len=written=-1;
 			}
-			conn->close(conn,1);
-			len=written=-1;
 		}
+	} else {
+		/* The connection has been closed for some reason */
+		written = -1;
 	}
 	return written;
 }
@@ -410,16 +420,21 @@ int webjames_writebuffer(struct connection *conn, const char *buffer, int size)
 {
 	os_error *err;
 
-	size = ip_write(conn->socket, buffer, size, &err);
-	statistics.written += size;
-	if (err) {
-		if (CHECK_INET_ERR(err->errnum,socket_EPIPE)) {
-			webjames_writelog(LOGLEVEL_ABORT, "ABORT connection closed by client");
-		} else {
-			webjames_writelog(LOGLEVEL_OSERROR,"ERROR %s",err->errmess);
+	if (conn->status == WJ_STATUS_WRITING) {
+		size = ip_write(conn->socket, buffer, size, &err);
+		statistics.written += size;
+		if (err) {
+			if (CHECK_INET_ERR(err->errnum,socket_EPIPE)) {
+				webjames_writelog(LOGLEVEL_ABORT, "ABORT connection closed by client");
+			} else {
+				webjames_writelog(LOGLEVEL_OSERROR,"ERROR %s",err->errmess);
+			}
+			conn->status = WJ_STATUS_ERROR;
+			size = -1;
 		}
-		conn->close(conn,1);
-		size=-1;
+	} else {
+		/* The connection has been closed for some reason */
+		size = -1;
 	}
 	return size;
 }
@@ -430,15 +445,20 @@ int webjames_readbuffer(struct connection *conn, char *buffer, int size)
 {
 	os_error *err;
 
-	size = ip_read(conn->socket, buffer, size, &err);
-	if (err) {
-		if (CHECK_INET_ERR(err->errnum,socket_EPIPE)) {
-			webjames_writelog(LOGLEVEL_ABORT, "ABORT connection closed by client");
-		} else {
-			webjames_writelog(LOGLEVEL_OSERROR,"ERROR %s",err->errmess);
+	if (conn->status != WJ_STATUS_ERROR) {
+		size = ip_read(conn->socket, buffer, size, &err);
+		if (err) {
+			if (CHECK_INET_ERR(err->errnum,socket_EPIPE)) {
+				webjames_writelog(LOGLEVEL_ABORT, "ABORT connection closed by client");
+			} else {
+				webjames_writelog(LOGLEVEL_OSERROR,"ERROR %s",err->errmess);
+			}
+			conn->status = WJ_STATUS_ERROR;
+			size = -1;
 		}
-		conn->close(conn,1);
-		size=-1;
+	} else {
+		/* The connection has been closed for some reason */
+		size = -1;
 	}
 	return size;
 }

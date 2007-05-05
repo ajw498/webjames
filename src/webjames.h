@@ -3,8 +3,8 @@
 
 #define WEBJAMES_H_REVISION "$Rev$"
 
-#define WEBJAMES_VERSION "0.47"
-#define WEBJAMES_DATE "21/05/06"
+#define WEBJAMES_VERSION "0.48"
+#define WEBJAMES_DATE "05/05/07"
 #define WEBJAMES_SERVER_SOFTWARE "WebJames/" WEBJAMES_VERSION
 
 #ifdef WEBJAMES_PHP_ONLY
@@ -32,6 +32,7 @@ typedef int socket_s;
 #define WJ_STATUS_BODY    2
 #define WJ_STATUS_WRITING 3
 #define WJ_STATUS_DNS     4
+#define WJ_STATUS_ERROR   5
 
 #define METHOD_GET        0
 #define METHOD_POST       1
