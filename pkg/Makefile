@@ -16,15 +16,15 @@ site: clean
 
 php-webjames: clean
 	mkdir -p Apps/Web
-	cp -r ../!WebJames Apps/Web
+	cp -rL ../!WebJames Apps/Web
 	perl CreatePackage php-webjames
-	zip -r -9 -I ^.webjames-php-pkg/zip Apps RiscPkg Sprites.!webjames SysVars.WebJames=24Dir SysVars.File=24Type_18A -x *svn*
+	zip -r -9 -, ../webjames-php-pkg.zip Apps RiscPkg Sprites/!webjames SysVars/WebJames=24Dir SysVars/File=24Type_18A -x *svn*
 
 php-cgi: clean
 	mkdir -p Apps/Web
-	cp -r ../!PHP Apps/Web
+	cp -rL ../!PHP Apps/Web
 	perl CreatePackage php-cgi
-	zip -r -9 -I ^.php-pkg/zip Apps RiscPkg Sprites.!php SysVars.PHP=24Dir SysVars.File=24Type_18A -x *svn*
+	zip -r -9 -, ../php-pkg.zip Apps RiscPkg Sprites/!php SysVars/PHP=24Dir SysVars/File=24Type_18A -x *svn*
 
 .PHONY: clean all cleanall
 

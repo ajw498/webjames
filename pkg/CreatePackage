@@ -3,7 +3,7 @@
 #  $Id: CreatePackage 34 2006-04-29 22:33:20Z ajw $
 #
 
-open(CHANGELOG, "<../!WebJames/help/history");
+open(CHANGELOG, "<../!WebJames/help/history,faf");
 while (<CHANGELOG>) {
   if (/(\d\.\d\d) \(/) {
     $versionwj = $1;
