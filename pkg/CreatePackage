@@ -26,7 +26,7 @@ print OUT qq{Package: WebJames
 Priority: Optional
 Section: Web
 Maintainer: Alex Waugh <alex\@alexwaugh.com>
-Standards-Version: 0.0.0
+Standards-Version: 0.1.0
 Version: $versionwj
 Licence: Free
 Description: An HTTP server.
@@ -39,7 +39,7 @@ print OUT qq{Package: PHP-WebJames
 Priority: Optional
 Section: Web
 Maintainer: Alex Waugh <alex\@alexwaugh.com>
-Standards-Version: 0.0.0
+Standards-Version: 0.1.0
 Version: $versionphp
 Licence: Free
 Description: The WebJames HTTP server with build in PHP interpreter.
@@ -55,7 +55,7 @@ print OUT qq{Package: PHP-CGI
 Priority: Optional
 Section: Web
 Maintainer: Alex Waugh <alex\@alexwaugh.com>
-Standards-Version: 0.0.0
+Standards-Version: 0.1.0
 Version: $versionphp
 Licence: Free
 Description: The CGI version of the PHP programming language interpreter.
@@ -71,7 +71,7 @@ print OUT qq{Package: WebJames-Example-Site
 Priority: Optional
 Section: Web
 Maintainer: Alex Waugh <alex\@alexwaugh.com>
-Standards-Version: 0.0.0
+Standards-Version: 0.1.0
 Version: 1.00
 Licence: Free
 Description: Some example pages and scripts for WebJames.
@@ -84,7 +84,7 @@ print OUT qq{Package: PHP-Doc
 Priority: Optional
 Section: Manuals
 Maintainer: Alex Waugh <alex\@alexwaugh.com>
-Standards-Version: 0.0.0
+Standards-Version: 0.1.0
 Version: 20060906
 Licence: Free
 Description: Documentation for PHP in StrongHelp format.
